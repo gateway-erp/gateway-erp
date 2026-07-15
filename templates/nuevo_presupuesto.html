@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nuevo Presupuesto — Gateway</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="topbar">
+  <img src="/static/logo.png" alt="Gateway">
+  <h1>Nuevo Presupuesto</h1>
+  <div class="sep"></div>
+  <div class="chip" id="chip-numero">{{ numero }}</div>
+</div>
+
+<form method="POST" action="/generar" id="form-presupuesto">
+
+  <!-- ══ FILA SUPERIOR: datos + cliente | sidebar ════════════════════════════ -->
+  <div class="layout">
+    <div style="display:flex;flex-direction:column;gap:20px;">
+
+      <!-- cabecera -->
+      <div class="card">
+        <div class="card-title">Datos del presupuesto</div>
+        <div class="row">
+          <div class="field">
+            <label>Fecha</label>
+            <input type="date" name="fecha" id="fecha" value="{{ fecha }}" required>
+          </div>
+          <div class="field">
+            <label>Válido hasta</label>
+            <input type="date" name="validez" id="validez" value="{{ validez }}">
+          </div>
+          <div class="field" style="flex:2">
+            <label>Ref. presupuesto</label>
+            <input type="text" name="ref" id="ref" placeholder="Ej: Notebook LENOVO ThinkBook" autocomplete="off">
+          </div>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label>Condiciones de pago</label>
+            <input type="text" name="condiciones_pago" placeholder="A la recepción de la factura" value="A la recepción de la factura">
+          </div>
+        </div>
+      </div>
+
+      <!-- cliente -->
+      <div class="card">
+        <div class="card-title">Cliente</div>
+        <div class="row">
+          <div class="field" style="flex:2">
+            <label>Buscar cliente</label>
+            <div class="autocomplete-wrap">
+              <input type="text" id="cliente-search" placeholder="Nombre o código de cliente…" autocomplete="off">
+              <div class="autocomplete-list" id="cliente-list"></div>
+            </div>
+            <input type="hidden" name="cliente_id" id="cliente_id">
+          </div>
+        </div>
+
+        <div class="cliente-datos" id="cliente-datos">
+          <div class="row">
+            <div class="field" style="flex:3">
+              <label>Nombre / Razón social</label>
+              <input type="text" name="cliente_nombre" id="cliente_nombre" placeholder="Nombre del cliente">
+            </div>
+            <div class="field" style="flex:1;min-width:140px">
+              <label>CUIT</label>
+              <input type="text" name="cliente_cuit" id="cliente_cuit" placeholder="XX-XXXXXXXX-X">
+            </div>
+          </div>
+          <div class="row">
+            <div class="field" style="flex:2">
+              <label>Dirección</label>
+              <input type="text" name="cliente_direccion" id="cliente_direccion" placeholder="Dirección">
+            </div>
+            <div class="field">
+              <label>Ciudad / CP</label>
+              <input type="text" name="cliente_ciudad" id="cliente_ciudad" placeholder="Ciudad">
+            </div>
+          </div>
+        </div>
+
+        <button type="button" id="btn-nuevo-cliente" class="btn-add-item" style="margin-top:6px">
+          + Nuevo cliente
+        </button>
+      </div>
+
+    </div><!-- /col izquierda -->
+
+    <!-- ══ SIDEBAR ═══════════════════════════════════════════════════════════ -->
+    <div class="sidebar">
+
+      <!-- cotización dólar -->
+      <div class="card">
+        <div class="card-title">Cotización USD</div>
+        <div class="cotiz-valor" id="cotiz-valor">—</div>
+        <div class="cotiz-label">1 USD = <span id="cotiz-ars">...</span> ARS</div>
+
+        <div style="margin:14px 0 6px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Conversor auxiliar</div>
+
+        <div class="conversor-row">
+          <input type="number" id="conv-usd" placeholder="0" step="0.01" oninput="convertir('usd')">
+          <span class="moneda-tag">USD</span>
+        </div>
+        <div class="conversor-row">
+          <input type="number" id="conv-ars" placeholder="0" step="0.01" oninput="convertir('ars')">
+          <span class="moneda-tag">ARS</span>
+        </div>
+
+        <div class="cotiz-fuente" id="cotiz-fuente">Actualizando cotización…</div>
+      </div>
+
+      <!-- generar PDF -->
+      <div class="card">
+        <div class="card-title">Generar</div>
+        <button type="submit" class="btn-generar">⬇ Generar PDF</button>
+      </div>
+
+    </div><!-- /sidebar -->
+  </div><!-- /layout superior -->
+
+  <!-- ══ ÍTEMS: ancho completo ═══════════════════════════════════════════════ -->
+  <div class="layout-full">
+    <div class="card">
+      <div class="card-title" style="display:flex;align-items:center;gap:12px">
+        <span>Ítems</span>
+        <div class="moneda-tabs" style="margin:0">
+          <div class="moneda-tab active" data-moneda="ARS" onclick="setMoneda('ARS',this)">$ Pesos ARS</div>
+          <div class="moneda-tab"        data-moneda="USD" onclick="setMoneda('USD',this)">USD Dólares</div>
+        </div>
+      </div>
+      <input type="hidden" name="moneda" id="moneda-input" value="ARS">
+
+      <table class="items-table">
+        <thead>
+          <tr>
+            <th class="td-desc">Descripción</th>
+            <th class="td-pu"   style="text-align:right">P.U.</th>
+            <th class="td-cant" style="text-align:right">Cant.</th>
+            <th class="td-iva"  style="text-align:right">IVA %</th>
+            <th class="td-base" style="text-align:right">Base imponible</th>
+            <th class="td-del"></th>
+          </tr>
+        </thead>
+        <tbody id="items-body"></tbody>
+      </table>
+
+      <button type="button" class="btn-add-item" onclick="addItem()">+ Agregar ítem</button>
+
+      <div class="totales">
+        <div class="totales-box">
+          <div class="totales-row"><span>Base imponible</span><span id="t-base">0,00</span></div>
+          <div class="totales-row"><span id="t-iva-label">IVA</span><span id="t-iva">0,00</span></div>
+          <div class="totales-row total-final"><span>Total</span><span id="t-total">0,00</span></div>
+        </div>
+      </div>
+    </div>
+  </div><!-- /layout-full -->
+
+</form>
+
+<script>
+// ── cotización dólar ──────────────────────────────────────────────────────────
+let tasaUSD = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+  const inputUsd = document.createElement('input');
+  inputUsd.type        = 'number';
+  inputUsd.placeholder = 'Ingresá cotización manual';
+  inputUsd.style.cssText = 'margin-top:8px;width:100%;';
+  inputUsd.addEventListener('input', () => {
+    tasaUSD = parseFloat(inputUsd.value) || null;
+    if (tasaUSD) {
+      document.getElementById('cotiz-valor').textContent = '$ ' + fmt(tasaUSD);
+      document.getElementById('cotiz-ars').textContent   = fmt(tasaUSD);
+    }
+  });
+  document.getElementById('cotiz-fuente').before(inputUsd);
+  document.getElementById('cotiz-fuente').textContent = 'Ingresá el valor hasta conectar la API';
+});
+
+function convertir(desde) {
+  if (!tasaUSD) return;
+  const usdEl = document.getElementById('conv-usd');
+  const arsEl = document.getElementById('conv-ars');
+  if (desde === 'usd') {
+    arsEl.value = ((parseFloat(usdEl.value)||0) * tasaUSD).toFixed(2);
+  } else {
+    usdEl.value = ((parseFloat(arsEl.value)||0) / tasaUSD).toFixed(2);
+  }
+}
+
+// ── moneda ────────────────────────────────────────────────────────────────────
+function setMoneda(m, el) {
+  document.querySelectorAll('.moneda-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('moneda-input').value = m;
+}
+
+// ── autocomplete cliente ──────────────────────────────────────────────────────
+const clienteSearch = document.getElementById('cliente-search');
+const clienteList   = document.getElementById('cliente-list');
+const clienteId     = document.getElementById('cliente_id');
+const clienteDatos  = document.getElementById('cliente-datos');
+let clienteTimeout  = null;
+
+clienteSearch.addEventListener('input', () => {
+  clearTimeout(clienteTimeout);
+  clienteTimeout = setTimeout(async () => {
+    const q = clienteSearch.value.trim();
+    if (q.length < 1) { clienteList.classList.remove('open'); return; }
+    const res  = await fetch(`/api/clientes?q=${encodeURIComponent(q)}`);
+    const data = await res.json();
+    clienteList.innerHTML = data.map(c =>
+      `<div class="autocomplete-item" onclick="selCliente(${c.codigo},'${esc(c.nombre)}','${esc(c.cuit||'')}','${esc(c.direccion||'')}','${esc(c.ciudad||'')}')">
+        <span class="codigo">C-${String(c.codigo).padStart(4,'0')}</span>
+        <span class="nombre">${c.nombre}</span>
+       </div>`
+    ).join('') || '<div class="autocomplete-item" style="color:var(--muted)">Sin resultados</div>';
+    clienteList.classList.add('open');
+  }, 200);
+});
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.autocomplete-wrap')) clienteList.classList.remove('open');
+});
+
+function selCliente(codigo, nombre, cuit, dir, ciudad) {
+  clienteId.value = codigo;
+  clienteSearch.value = nombre;
+  clienteList.classList.remove('open');
+  document.getElementById('cliente_nombre').value    = nombre;
+  document.getElementById('cliente_cuit').value      = cuit;
+  document.getElementById('cliente_direccion').value = dir;
+  document.getElementById('cliente_ciudad').value    = ciudad;
+  clienteDatos.classList.add('visible');
+  document.getElementById('btn-nuevo-cliente').style.display = 'none';
+}
+
+document.getElementById('btn-nuevo-cliente').addEventListener('click', () => {
+  clienteId.value = '';
+  clienteSearch.value = '';
+  ['cliente_nombre','cliente_cuit','cliente_direccion','cliente_ciudad'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  clienteDatos.classList.add('visible');
+  document.getElementById('btn-nuevo-cliente').style.display = 'none';
+  document.getElementById('cliente_nombre').focus();
+});
+
+// ── fecha → validez automática (+1 mes) ──────────────────────────────────────
+document.getElementById('fecha').addEventListener('change', function() {
+  const d = new Date(this.value + 'T00:00:00');
+  d.setMonth(d.getMonth() + 1);
+  document.getElementById('validez').value = d.toISOString().split('T')[0];
+});
+
+// ── ítems ─────────────────────────────────────────────────────────────────────
+let itemCount = 0;
+
+function addItem(desc='', pu='', cant=1, iva=21) {
+  const id  = itemCount++;
+  const row = document.createElement('tr');
+  row.id    = `item-${id}`;
+  row.innerHTML = `
+    <td class="td-desc" style="position:relative">
+      <input type="text" name="desc[]" value="${esc(desc)}" placeholder="Descripción del ítem…"
+             autocomplete="off" oninput="buscarSug(this,${id})" onblur="hideSug(${id})">
+      <div class="sug-list" id="sug-${id}"></div>
+    </td>
+    <td class="td-pu">
+      <input type="number" name="pu[]" value="${pu}" placeholder="0,00" step="0.01" min="0"
+             oninput="recalc(${id})" style="text-align:right">
+    </td>
+    <td class="td-cant">
+      <input type="number" name="cant[]" value="${cant}" min="1" step="1"
+             oninput="recalc(${id})" style="text-align:right">
+    </td>
+    <td class="td-iva">
+      <select name="iva[]" onchange="recalc(${id})" style="padding:6px 4px">
+        <option value="0"    ${iva==0?'selected':''}>0%</option>
+        <option value="10.5" ${iva==10.5?'selected':''}>10,5%</option>
+        <option value="21"   ${iva==21?'selected':''}>21%</option>
+      </select>
+    </td>
+    <td class="td-base"><div class="base-cell" id="base-${id}">0,00</div></td>
+    <td class="td-del"><button type="button" class="btn-del" onclick="delItem(${id})">×</button></td>
+  `;
+  document.getElementById('items-body').appendChild(row);
+  if (pu) recalc(id);
+}
+
+function delItem(id) {
+  document.getElementById(`item-${id}`)?.remove();
+  recalcTotales();
+}
+
+function recalc(id) {
+  const row  = document.getElementById(`item-${id}`);
+  if (!row) return;
+  const pu   = parseFloat(row.querySelector('[name="pu[]"]').value)   || 0;
+  const cant = parseFloat(row.querySelector('[name="cant[]"]').value) || 0;
+  document.getElementById(`base-${id}`).textContent = fmt(pu * cant);
+  recalcTotales();
+}
+
+function recalcTotales() {
+  let base = 0, iva = 0;
+  document.querySelectorAll('#items-body tr').forEach(row => {
+    const pu   = parseFloat(row.querySelector('[name="pu[]"]')?.value)   || 0;
+    const cant = parseFloat(row.querySelector('[name="cant[]"]')?.value) || 0;
+    const ivap = parseFloat(row.querySelector('[name="iva[]"]')?.value)  || 0;
+    const b    = pu * cant;
+    base += b;
+    iva  += b * ivap / 100;
+  });
+  document.getElementById('t-base').textContent  = fmt(base);
+  document.getElementById('t-iva').textContent   = fmt(iva);
+  document.getElementById('t-total').textContent = fmt(base + iva);
+}
+
+// ── sugerencias ítems ─────────────────────────────────────────────────────────
+let sugTimeout = null;
+async function buscarSug(input, id) {
+  clearTimeout(sugTimeout);
+  sugTimeout = setTimeout(async () => {
+    const q   = input.value.trim();
+    const box = document.getElementById(`sug-${id}`);
+    if (q.length < 2) { box.classList.remove('open'); return; }
+    const res  = await fetch(`/api/items-sugeridos?q=${encodeURIComponent(q)}`);
+    const data = await res.json();
+    if (!data.length) { box.classList.remove('open'); return; }
+    box.innerHTML = data.map(s =>
+      `<div class="sug-item" onmousedown="elegirSug(${id},'${esc(s.descripcion)}',${s.precio_unitario},${s.iva_pct})">
+        ${s.descripcion}<span class="sug-pu">${fmt(s.precio_unitario)}</span>
+       </div>`
+    ).join('');
+    box.classList.add('open');
+  }, 200);
+}
+function hideSug(id) {
+  setTimeout(() => document.getElementById(`sug-${id}`)?.classList.remove('open'), 200);
+}
+function elegirSug(id, desc, pu, iva) {
+  const row = document.getElementById(`item-${id}`);
+  row.querySelector('[name="desc[]"]').value = desc;
+  row.querySelector('[name="pu[]"]').value   = pu;
+  row.querySelector('[name="iva[]"]').value  = iva;
+  document.getElementById(`sug-${id}`).classList.remove('open');
+  recalc(id);
+}
+
+function fmt(n) {
+  return n.toLocaleString('es-AR', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function esc(s) {
+  return String(s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+}
+
+addItem();
+</script>
+</body>
+</html>

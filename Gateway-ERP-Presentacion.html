@@ -1,0 +1,673 @@
+<title>Gateway ERP — Sistema de Gestión Integral</title>
+<style>
+:root {
+  --bg:         #0A1628;
+  --surface:    #0F1E35;
+  --surface-2:  #162844;
+  --surface-3:  #1C3358;
+  --border:     #1E3A5F;
+  --accent:     #00C4B4;
+  --accent-dim: #007A6E;
+  --accent-glow:rgba(0,196,180,.15);
+  --text:       #E8F0F8;
+  --text-muted: #7A9AB8;
+  --text-dim:   #4A6B8A;
+  --done:       #22C55E;
+  --plan:       #F59E0B;
+  --radius:     10px;
+}
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg:         #EEF3F9;
+    --surface:    #FFFFFF;
+    --surface-2:  #E2EBF4;
+    --surface-3:  #D4E2F0;
+    --border:     #BDD0E4;
+    --accent:     #007A6E;
+    --accent-dim: #005F55;
+    --accent-glow:rgba(0,122,110,.1);
+    --text:       #0A1628;
+    --text-muted: #4A6B8A;
+    --text-dim:   #7A9AB8;
+    --done:       #16A34A;
+    --plan:       #D97706;
+  }
+}
+:root[data-theme="light"] {
+  --bg:#EEF3F9; --surface:#FFFFFF; --surface-2:#E2EBF4; --surface-3:#D4E2F0;
+  --border:#BDD0E4; --accent:#007A6E; --accent-dim:#005F55;
+  --accent-glow:rgba(0,122,110,.1);
+  --text:#0A1628; --text-muted:#4A6B8A; --text-dim:#7A9AB8;
+  --done:#16A34A; --plan:#D97706;
+}
+:root[data-theme="dark"] {
+  --bg:#0A1628; --surface:#0F1E35; --surface-2:#162844; --surface-3:#1C3358;
+  --border:#1E3A5F; --accent:#00C4B4; --accent-dim:#007A6E;
+  --accent-glow:rgba(0,196,180,.15);
+  --text:#E8F0F8; --text-muted:#7A9AB8; --text-dim:#4A6B8A;
+  --done:#22C55E; --plan:#F59E0B;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Trebuchet MS', 'Lucida Grande', Candara, system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 32px; height: 54px;
+}
+.topbar-brand {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 13px; font-weight: 700; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--accent);
+}
+.topbar-brand .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+.theme-toggle {
+  background: var(--surface-2); border: 1px solid var(--border);
+  color: var(--text-muted); border-radius: 6px;
+  padding: 5px 12px; font-size: 12px; cursor: pointer;
+  transition: all .2s;
+}
+.theme-toggle:hover { color: var(--text); border-color: var(--accent); }
+
+/* ── HERO ── */
+.hero {
+  padding: 72px 32px 60px;
+  max-width: 900px; margin: 0 auto; text-align: center;
+}
+.hero-eyebrow {
+  font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 20px;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+}
+.hero-eyebrow::before, .hero-eyebrow::after {
+  content: ''; flex: 1; max-width: 60px;
+  height: 1px; background: var(--accent-dim);
+}
+.hero h1 {
+  font-size: clamp(36px, 6vw, 64px);
+  font-weight: 700; letter-spacing: -1px;
+  line-height: 1.1; color: var(--text);
+  text-wrap: balance;
+}
+.hero h1 span { color: var(--accent); }
+.hero-sub {
+  margin-top: 20px;
+  font-size: 17px; color: var(--text-muted);
+  max-width: 600px; margin-left: auto; margin-right: auto;
+  text-wrap: balance;
+}
+.hero-meta {
+  display: flex; justify-content: center; gap: 24px;
+  margin-top: 36px; flex-wrap: wrap;
+}
+.hero-pill {
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 20px; padding: 6px 16px;
+  font-size: 12px; color: var(--text-muted); letter-spacing: .3px;
+}
+.hero-pill strong { color: var(--accent); }
+
+/* ── SECTION ── */
+.section {
+  max-width: 1100px; margin: 0 auto;
+  padding: 16px 32px 64px;
+}
+.section-label {
+  font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
+  color: var(--accent); margin-bottom: 10px;
+}
+.section-title {
+  font-size: 22px; font-weight: 700; color: var(--text);
+  margin-bottom: 32px;
+}
+.divider {
+  height: 1px; background: var(--border);
+  max-width: 1100px; margin: 0 auto;
+}
+
+/* ── WORKFLOW ── */
+.workflow {
+  display: flex; align-items: stretch;
+  gap: 0; overflow-x: auto; padding-bottom: 4px;
+}
+.wf-step {
+  flex: 1; min-width: 120px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-right: none;
+  padding: 18px 14px 16px;
+  position: relative;
+  transition: background .2s;
+}
+.wf-step:first-child { border-radius: var(--radius) 0 0 var(--radius); }
+.wf-step:last-child  { border-right: 1px solid var(--border); border-radius: 0 var(--radius) var(--radius) 0; }
+.wf-step:hover { background: var(--surface-2); }
+.wf-arrow {
+  position: absolute; right: -14px; top: 50%;
+  transform: translateY(-50%);
+  width: 0; height: 0;
+  border-top: 10px solid transparent;
+  border-bottom: 10px solid transparent;
+  border-left: 13px solid var(--accent);
+  z-index: 2;
+}
+.wf-num {
+  font-family: 'Courier New', monospace;
+  font-size: 10px; color: var(--accent); letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+.wf-name {
+  font-size: 12px; font-weight: 700; color: var(--text);
+  line-height: 1.3; margin-bottom: 4px;
+}
+.wf-desc { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
+.wf-step.active { background: var(--accent-glow); border-color: var(--accent); }
+.wf-step.active .wf-name { color: var(--accent); }
+
+/* ── MODULE GRID ── */
+.module-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(460px, 1fr));
+  gap: 16px;
+}
+.module-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  transition: border-color .2s, transform .2s;
+  position: relative; overflow: hidden;
+}
+.module-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 3px; background: var(--border);
+  transition: background .2s;
+}
+.module-card.active::before { background: var(--done); }
+.module-card.planned::before { background: var(--plan); }
+.module-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+
+.module-header {
+  display: flex; align-items: flex-start;
+  justify-content: space-between; margin-bottom: 14px;
+}
+.module-icon {
+  width: 42px; height: 42px;
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+}
+.module-badge {
+  font-size: 10px; letter-spacing: .8px; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 4px; font-weight: 700;
+}
+.badge-active  { background: rgba(34,197,94,.15); color: var(--done); }
+.badge-planned { background: rgba(245,158,11,.12); color: var(--plan); }
+.badge-done    { background: rgba(0,196,180,.12);  color: var(--accent); }
+
+.module-name {
+  font-size: 17px; font-weight: 700; color: var(--text);
+  margin-bottom: 6px;
+}
+.module-desc {
+  font-size: 13px; color: var(--text-muted); margin-bottom: 16px;
+  line-height: 1.5;
+}
+.feature-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.feature-list li {
+  font-size: 12px; color: var(--text-muted);
+  display: flex; gap: 8px; align-items: flex-start; line-height: 1.4;
+}
+.feature-list li::before {
+  content: '›'; color: var(--accent);
+  font-size: 14px; line-height: 1.2; flex-shrink: 0;
+}
+
+/* ── ALERTS HIGHLIGHT ── */
+.alert-box {
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 16px 20px; margin-top: 16px;
+}
+.alert-box-title { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--accent); margin-bottom: 6px; }
+.alert-box p { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+
+/* ── TRANSVERSAL GRID ── */
+.trans-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+}
+.trans-item {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 18px 16px;
+  display: flex; gap: 12px; align-items: flex-start;
+}
+.trans-icon { font-size: 20px; flex-shrink: 0; margin-top: 1px; }
+.trans-label { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+.trans-desc  { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
+
+/* ── STACK ── */
+.stack-row {
+  display: flex; flex-wrap: wrap; gap: 10px;
+}
+.feat-block {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 24px 28px 28px;
+}
+.feat-mod-title {
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--accent);
+  margin-bottom: 14px;
+}
+.feat-list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.feat-list li {
+  font-size: 13.5px;
+  color: var(--text-dim);
+  line-height: 1.55;
+}
+.stack-chip {
+  background: var(--surface-2); border: 1px solid var(--border);
+  border-radius: 6px; padding: 8px 16px;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.stack-chip .sc-label { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-dim); }
+.stack-chip .sc-val   { font-size: 13px; font-weight: 700; color: var(--text); }
+
+/* ── TIMELINE ── */
+.timeline { display: flex; flex-direction: column; gap: 0; }
+.tl-item {
+  display: flex; gap: 20px; position: relative;
+}
+.tl-item::before {
+  content: '';
+  position: absolute; left: 7px; top: 24px; bottom: -24px;
+  width: 2px; background: var(--border);
+}
+.tl-item:last-child::before { display: none; }
+.tl-dot {
+  width: 16px; height: 16px; border-radius: 50%; flex-shrink: 0;
+  margin-top: 8px; border: 2px solid var(--border);
+  background: var(--surface);
+  position: relative; z-index: 1;
+}
+.tl-dot.done    { background: var(--done);    border-color: var(--done); }
+.tl-dot.active  { background: var(--accent);  border-color: var(--accent); box-shadow: 0 0 10px var(--accent); }
+.tl-dot.planned { background: var(--surface); border-color: var(--plan); }
+.tl-content { padding-bottom: 28px; }
+.tl-phase   { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 2px; }
+.tl-mod     { font-size: 15px; font-weight: 700; color: var(--text); }
+.tl-desc    { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+
+/* ── FOOTER ── */
+.footer {
+  border-top: 1px solid var(--border);
+  padding: 24px 32px;
+  display: flex; justify-content: space-between; align-items: center;
+  max-width: 1100px; margin: 0 auto;
+  font-size: 11px; color: var(--text-dim); letter-spacing: .3px;
+  flex-wrap: wrap; gap: 8px;
+}
+</style>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="dot"></div>
+    Gateway ERP
+  </div>
+  <button class="theme-toggle" onclick="toggleTheme()">Cambiar tema</button>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-eyebrow">Gateway</div>
+  <h1>Sistema de Gestión Integral<br><span>+ Módulos de trabajo</span></h1>
+  <p class="hero-sub">
+    Una plataforma web propia para Gateway que reemplaza Word, Excel y correos dispersos.
+    Accesible desde cualquier dispositivo, sin instalación.
+  </p>
+  <div class="hero-meta">
+    <div class="hero-pill"><strong>4</strong> módulos</div>
+    <div class="hero-pill"><strong>4–6</strong> meses de desarrollo</div>
+    <div class="hero-pill">Stack <strong>Python + Google Sheets</strong></div>
+    <div class="hero-pill">Acceso <strong>remoto, multidispositivo</strong></div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- CADENA DE TRABAJO -->
+<div class="section">
+  <div class="section-label">Flujo operativo</div>
+  <div class="section-title">La cadena de trabajo completa, integrada</div>
+
+  <div class="workflow">
+    <div class="wf-step">
+      <div class="wf-num">01</div>
+      <div class="wf-name">Pedido de presupuesto</div>
+      <div class="wf-desc">Llega por email del cliente</div>
+      <div class="wf-arrow"></div>
+    </div>
+    <div class="wf-step active">
+      <div class="wf-num">02</div>
+      <div class="wf-name">Generación y envío</div>
+      <div class="wf-desc">PDF automático con diseño de marca</div>
+      <div class="wf-arrow"></div>
+    </div>
+    <div class="wf-step active">
+      <div class="wf-num">03</div>
+      <div class="wf-name">Aprobación</div>
+      <div class="wf-desc">El cliente aprueba y manda la OC</div>
+      <div class="wf-arrow"></div>
+    </div>
+    <div class="wf-step">
+      <div class="wf-num">04</div>
+      <div class="wf-name">Orden de Compra</div>
+      <div class="wf-desc">Habilita encarar el trabajo</div>
+      <div class="wf-arrow"></div>
+    </div>
+    <div class="wf-step">
+      <div class="wf-num">05</div>
+      <div class="wf-name">Ejecución del trabajo</div>
+      <div class="wf-desc">Programador asigna a técnicos</div>
+      <div class="wf-arrow"></div>
+    </div>
+    <div class="wf-step">
+      <div class="wf-num">06</div>
+      <div class="wf-name">Facturación</div>
+      <div class="wf-desc">Alerta automática al operador</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="divider"></div>
+
+<!-- MÓDULOS -->
+<div class="section">
+  <div class="section-label">Módulos del sistema</div>
+  <div class="section-title">Seis módulos, un solo sistema</div>
+
+  <div class="module-grid">
+
+    <!-- Presupuestos -->
+    <div class="module-card active">
+      <div class="module-header">
+        <div class="module-icon">📄</div>
+        <div class="module-badge badge-active">En desarrollo</div>
+      </div>
+      <div class="module-name">Presupuestos</div>
+      <div class="module-desc">Reemplaza el proceso manual en Word. El operador carga los datos en un formulario y el sistema genera el PDF listo para enviar.</div>
+      <ul class="feature-list">
+        <li>Numeración automática mensual (PR2607-0001)</li>
+        <li>PDF con diseño de marca Gateway idéntico al actual</li>
+        <li>Base de clientes con CUIT y autocompletado por nombre</li>
+        <li>Ítems con autocompletado aprendido de presupuestos anteriores</li>
+        <li>IVA por ítem (0% / 10,5% / 21%), totales automáticos</li>
+        <li>Selector ARS / USD con conversor y cotización en tiempo real</li>
+        <li>Validez automática +1 mes, editable</li>
+      </ul>
+    </div>
+
+    <!-- Órdenes de Compra -->
+    <div class="module-card planned">
+      <div class="module-header">
+        <div class="module-icon">📋</div>
+        <div class="module-badge badge-planned">Planificado</div>
+      </div>
+      <div class="module-name">Órdenes de Compra</div>
+      <div class="module-desc">El eslabón que conecta el presupuesto aprobado con la ejecución y la facturación. Elimina los emails intermedios.</div>
+      <ul class="feature-list">
+        <li>Carga de OC recibida vinculada al presupuesto</li>
+        <li>Conversión de presupuesto aprobado en OC con número propio</li>
+        <li>Panel del programador: OC activas, en proceso, listas para facturar</li>
+        <li>Handoff directo al operador de facturación con alerta interna</li>
+        <li>Bandeja de OC pendientes + historial de facturadas</li>
+        <li>Sin emails intermedios — todo en el sistema</li>
+      </ul>
+    </div>
+
+    <!-- Facturación -->
+    <div class="module-card planned">
+      <div class="module-header">
+        <div class="module-icon">🧾</div>
+        <div class="module-badge badge-planned">Planificado</div>
+      </div>
+      <div class="module-name">Facturación</div>
+      <div class="module-desc">Emisión de facturas vinculadas a OC, con herramientas de planificación fiscal y alertas de límite mensual.</div>
+      <ul class="feature-list">
+        <li>Facturas vinculadas a la OC correspondiente</li>
+        <li>Historial por cliente y por período</li>
+        <li>Alerta antes de emitir si se acerca al límite mensual</li>
+        <li>Cálculo estimado de Ingresos Brutos</li>
+        <li>Proyección IVA compras vs. IVA ventas para planificación</li>
+        <li>Integración AFIP (a evaluar)</li>
+      </ul>
+    </div>
+
+    <!-- Agenda -->
+    <div class="module-card planned">
+      <div class="module-header">
+        <div class="module-icon">📅</div>
+        <div class="module-badge badge-planned">Planificado</div>
+      </div>
+      <div class="module-name">Agenda / Calendario</div>
+      <div class="module-desc">El centro de coordinación diaria del programador. Une mantenimientos fijos, trabajos asignados y pedidos al vuelo.</div>
+      <ul class="feature-list">
+        <li>15 mantenimientos mensuales obligatorios precargados y recurrentes</li>
+        <li>Recordatorio diario de pendientes al abrir la agenda</li>
+        <li>Carga rápida de pedidos al vuelo → quedan como tarea pendiente</li>
+        <li>Asignación de trabajos a técnicos</li>
+        <li>Resumen automático del día siguiente con recordatorio si no se envió</li>
+        <li>Vista de pendientes sin asignar vs. programados</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- TRANSVERSAL -->
+<div class="section">
+  <div class="section-label">Características del sistema</div>
+  <div class="section-title">Transversal a todos los módulos</div>
+
+  <div class="trans-grid">
+    <div class="trans-item">
+      <div class="trans-icon">🌐</div>
+      <div>
+        <div class="trans-label">Acceso remoto</div>
+        <div class="trans-desc">Cualquier PC, tablet o celular. Sin instalación, sin actualizaciones manuales.</div>
+      </div>
+    </div>
+    <div class="trans-item">
+      <div class="trans-icon">🔐</div>
+      <div>
+        <div class="trans-label">Permisos por rol</div>
+        <div class="trans-desc">Programador, operador de facturación, técnico. Cada uno ve solo lo que le corresponde.</div>
+      </div>
+    </div>
+    <div class="trans-item">
+      <div class="trans-icon">🔔</div>
+      <div>
+        <div class="trans-label">Alertas internas</div>
+        <div class="trans-desc">Notificaciones entre operadores sin depender de emails. OC listas, límites de facturación, mantenimientos vencidos.</div>
+      </div>
+    </div>
+    <div class="trans-item">
+      <div class="trans-icon">📊</div>
+      <div>
+        <div class="trans-label">Informes de gestión</div>
+        <div class="trans-desc">Facturación mensual, OC abiertas, mantenimientos cumplidos, proyección fiscal.</div>
+      </div>
+    </div>
+    <div class="trans-item">
+      <div class="trans-icon">☁️</div>
+      <div>
+        <div class="trans-label">Datos en Google Drive</div>
+        <div class="trans-desc">Base de datos en Google Sheets. La suite que ya usan, cero costo adicional, siempre disponible.</div>
+      </div>
+    </div>
+    <div class="trans-item">
+      <div class="trans-icon">💱</div>
+      <div>
+        <div class="trans-label">Cotización en tiempo real</div>
+        <div class="trans-desc">API del dólar siempre visible. Conversor ARS/USD auxiliar en cualquier pantalla.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- STACK + ROADMAP -->
+<div class="section">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:48px;flex-wrap:wrap">
+
+    <div>
+      <div class="section-label">Tecnología</div>
+      <div class="section-title" style="margin-bottom:20px">Stack definido</div>
+      <div class="stack-row">
+        <div class="stack-chip"><span class="sc-label">Backend</span><span class="sc-val">Python / FastAPI</span></div>
+        <div class="stack-chip"><span class="sc-label">Base de datos</span><span class="sc-val">Google Sheets API</span></div>
+        <div class="stack-chip"><span class="sc-label">Frontend</span><span class="sc-val">Web responsive</span></div>
+        <div class="stack-chip"><span class="sc-label">Autenticación</span><span class="sc-val">Google Login</span></div>
+        <div class="stack-chip"><span class="sc-label">Hosting</span><span class="sc-val">A definir</span></div>
+        <div class="stack-chip"><span class="sc-label">PDF</span><span class="sc-val">ReportLab</span></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">Hoja de ruta</div>
+      <div class="section-title" style="margin-bottom:20px">Estimación 4–6 meses</div>
+      <div class="timeline">
+        <div class="tl-item">
+          <div class="tl-dot active"></div>
+          <div class="tl-content">
+            <div class="tl-phase">Mes 1–2</div>
+            <div class="tl-mod">Presupuestos</div>
+            <div class="tl-desc">Formulario, PDF, clientes, conexión Google Sheets</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot planned"></div>
+          <div class="tl-content">
+            <div class="tl-phase">Mes 2–3</div>
+            <div class="tl-mod">Órdenes de Compra</div>
+            <div class="tl-desc">Vinculación con presupuestos, alertas, handoff a facturación</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot planned"></div>
+          <div class="tl-content">
+            <div class="tl-phase">Mes 3–4</div>
+            <div class="tl-mod">Agenda / Calendario</div>
+            <div class="tl-desc">Mantenimientos, asignación de técnicos, envío diario</div>
+          </div>
+        </div>
+        <div class="tl-item">
+          <div class="tl-dot planned"></div>
+          <div class="tl-content">
+            <div class="tl-phase">Mes 4–6</div>
+            <div class="tl-mod">Facturación</div>
+            <div class="tl-desc">Cierre del ciclo completo, informes y alertas fiscales</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- DETALLE DE FUNCIONALIDADES -->
+<div class="section">
+  <div class="section-label">Detalle completo</div>
+  <div class="section-title" style="margin-bottom:32px">Qué resuelve cada módulo</div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:40px">
+
+    <div class="feat-block">
+      <div class="feat-mod-title">Presupuestos</div>
+      <ul class="feat-list">
+        <li>Diseño uniforme y estructurado que no varía ni se rompe, eliminando el trabajo de corregir formato cada vez.</li>
+        <li>Sumas, subtotales y totales calculados de forma automática.</li>
+        <li>IVA e ítems utilizados anteriormente se completan de manera semi-automática, agilizando la carga sin perder flexibilidad.</li>
+        <li>Cada presupuesto se exporta en PDF y se guarda automáticamente en carpetas organizadas por cliente, sin intervención manual.</li>
+        <li>Numeración correlativa mensual generada por el sistema.</li>
+        <li>Conversión dólar/peso integrada con visualización en tiempo real, sin necesidad de consultar otras herramientas.</li>
+      </ul>
+    </div>
+
+    <div class="feat-block">
+      <div class="feat-mod-title">Operación / Órdenes de Compra / Facturación</div>
+      <ul class="feat-list">
+        <li>Cuando el cliente aprueba y emite la OC, el sistema genera un aviso interno directo al responsable, sin emails intermedios.</li>
+        <li>Los trabajos derivados de esa OC se anexan automáticamente a la agenda del programador.</li>
+        <li>Seguimiento en tiempo real de qué órdenes están pendientes de facturar y cuáles ya fueron procesadas.</li>
+        <li>Alertas de límite de facturación mensual con cálculo instantáneo de IVA e Ingresos Brutos.</li>
+      </ul>
+    </div>
+
+    <div class="feat-block" style="grid-column:1 / -1">
+      <div class="feat-mod-title">Grilla Laboral / Agenda</div>
+      <ul class="feat-list" style="columns:2;column-gap:40px">
+        <li>Los mantenimientos mensuales obligatorios se incorporan automáticamente a la grilla, con alertas de vencimiento y seguimiento de realizados vs. pendientes.</li>
+        <li>Carga rápida de trabajos no programados que surgen en el día, registrados como pendientes al instante.</li>
+        <li>Recordatorios automáticos de tareas pendientes.</li>
+        <li>Envío automático del resumen de trabajos para el día siguiente, con aviso si no se completó.</li>
+      </ul>
+    </div>
+
+  </div>
+</div>
+
+<div class="divider"></div>
+<div class="footer">
+  <span>Gateway — Sistema de Gestión Integral</span>
+  <span>Versión 0.1 · Julio 2026 · Documento interno</span>
+</div>
+
+<script>
+function toggleTheme() {
+  const root = document.documentElement;
+  const current = root.getAttribute('data-theme');
+  const isDark = current === 'dark' || (!current && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  root.setAttribute('data-theme', isDark ? 'light' : 'dark');
+}
+</script>

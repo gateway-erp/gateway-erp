@@ -1,0 +1,33 @@
+# Entorno virtual Python
+.venv/
+
+# Caché Python
+__pycache__/
+*.pyc
+*.pyo
+
+# PDFs generados (output operativo)
+presupuestos/output/
+presupuestos/PRUEBA_*.pdf
+
+# Datos locales temporales (se migran a Google Sheets)
+data/
+
+# Archivos del Word original
+*.docx
+
+# PDFs de presentación (generados desde el HTML)
+Gateway-ERP-Presentacion.pdf
+
+# PDFs sueltos en la raíz (ejemplos, pruebas)
+*.pdf
+
+# Claude Code
+.claude/
+
+# Claves / variables de entorno
+*.json.key
+credentials*.json
+service_account*.json
+.env
+.env.*

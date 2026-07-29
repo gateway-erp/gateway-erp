@@ -25,7 +25,7 @@ Sistema web propio para Gateway que reemplaza y centraliza herramientas dispersa
 - **Base de datos**: Google Sheets vía API con Service Account (suite Google ya en uso, acceso remoto, cero costo adicional)
 - **Frontend**: Web app responsive — misma interfaz en PC, tablet y celular. Sin instalación, sin actualizaciones manuales.
 - **Autenticación**: Google Login
-- **Hosting**: A definir — confirmar si hosting actual de gateway.com.ar es VPS o compartido. Si es compartido, usar servicio aparte (Render/Railway/Fly.io capa gratuita)
+- **Hosting**: gateway.com.ar corre en hosting compartido tipo revendedor (Ferozo/DonWeb, Linux, Plesk) — confirmado 2026-07-28, sin acceso root. Mismo panel donde viven otros proyectos de Gateway (dolibarr, epesi, osticket, etc. bajo `public_html`). El backend Python no puede correr ahí: se usará un servicio aparte (Render/Railway/Fly.io capa gratuita), conectado a gateway.com.ar por subdominio o proxy — falta elegir cuál y definir la conexión
 - **Diseño modular**: cada módulo con su propia lógica y permisos para poder delegar accesos por rol (programador, operador de facturación, técnico)
 
 ---

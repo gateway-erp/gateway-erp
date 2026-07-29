@@ -6,7 +6,8 @@
 
 - [ ] **Google Sheets como DB**: el usuario tiene que crear el proyecto en Google Cloud, activar las APIs, generar la Service Account y pasar la clave JSON. Ver pasos en BIBLIA_PROYECTO.md → sección "Próximo paso del módulo Presupuestos".
 - [ ] **API del dólar**: el usuario va a indicar de qué fuente traer la cotización USD/ARS.
-- [ ] **Hosting**: confirmar si gateway.com.ar es VPS con acceso root o hosting compartido (cPanel). Define dónde corre el backend Python.
+- [x] ~~**Hosting**: confirmar si gateway.com.ar es VPS con acceso root o hosting compartido.~~ Resuelto 2026-07-28: es hosting compartido (Ferozo/DonWeb, Linux, Plesk), sin root. Ver BIBLIA_PROYECTO.md → Stack tecnológico.
+- [ ] **Servicio externo para el backend**: elegir entre Render / Railway / Fly.io (capa gratuita) y definir cómo se conecta gateway.com.ar al backend (subdominio tipo `app.gateway.com.ar` vs. proxy desde el hosting compartido).
 
 ## Decisiones de negocio (pendientes de definición)
 
@@ -17,4 +18,4 @@
 - [ ] ¿Los 15 mantenimientos mensuales tienen cliente/fecha/frecuencia definidos para precargarlos?
 
 ---
-*Última actualización: 2026-07-10*
+*Última actualización: 2026-07-28*

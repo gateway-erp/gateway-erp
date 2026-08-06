@@ -26,6 +26,40 @@ templates = _Templates()
 
 # ── rutas ─────────────────────────────────────────────────────────────────────
 @app.get("/", response_class=HTMLResponse)
+async def dashboard(request: Request):
+    historial = db.load_historial()
+    hoy = date.today()
+    mes_actual = f"{str(hoy.year)[2:]}{hoy.month:02d}"
+
+    # calcular totales por presupuesto
+    def calcular_total(p):
+        items = p.get("items", [])
+        if isinstance(items, list):
+            base = sum(i.get("precio_unitario", 0) * i.get("cantidad", 1) for i in items)
+            iva  = sum(i.get("precio_unitario", 0) * i.get("cantidad", 1) * i.get("iva_pct", 0) / 100 for i in items)
+            return base + iva
+        return 0
+
+    def fmt(n):
+        return f"{n:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+
+    for p in historial:
+        p["total_fmt"] = fmt(p.get("total", 0))
+
+    stats = {
+        "mes":        sum(1 for p in historial if mes_actual in p.get("numero", "")),
+        "pendientes": sum(1 for p in historial if p.get("estado") in ("generado", "enviado")),
+        "aprobados":  sum(1 for p in historial if p.get("estado") == "aprobado" and mes_actual in p.get("numero", "")),
+    }
+
+    return templates.TemplateResponse("dashboard.html", {
+        "request":        request,
+        "historial":      list(reversed(historial)),
+        "stats":          stats,
+        "proximo_numero": db.peek_numero(),
+    })
+
+@app.get("/nuevo", response_class=HTMLResponse)
 async def form(request: Request):
     hoy     = date.today()
     validez = hoy + timedelta(days=30)

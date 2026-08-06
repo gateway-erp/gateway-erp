@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gateway — Gestión</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy:      #0F1F3D;
+      --navy-mid:  #162644;
+      --navy-card: #1C3056;
+      --navy-line: #243a66;
+      --accent:    #3B82F6;
+      --accent-h:  #2563EB;
+      --green:     #22C55E;
+      --amber:     #F59E0B;
+      --red:       #EF4444;
+      --text:      #F0F4FF;
+      --text-dim:  #8BA3CC;
+      --font-main: 'Montserrat', sans-serif;
+      --font-num:  'Inter', sans-serif;
+    }
+
+    body {
+      background: var(--navy);
+      color: var(--text);
+      font-family: var(--font-main);
+      min-height: 100vh;
+    }
+
+    /* ── TOPBAR ── */
+    .topbar {
+      background: var(--navy-mid);
+      border-bottom: 1px solid var(--navy-line);
+      padding: 0 32px;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .topbar-logo {
+      height: 36px;
+      width: auto;
+    }
+    .topbar-sep {
+      width: 1px;
+      height: 28px;
+      background: var(--navy-line);
+    }
+    .topbar-nav {
+      display: flex;
+      gap: 4px;
+      flex: 1;
+    }
+    .nav-item {
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-dim);
+      cursor: pointer;
+      text-decoration: none;
+      transition: background .15s, color .15s;
+    }
+    .nav-item:hover  { background: var(--navy-card); color: var(--text); }
+    .nav-item.active { background: var(--accent);    color: #fff; }
+
+    /* ── CONTENIDO ── */
+    .page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 36px 24px;
+    }
+
+    /* ── STATS ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .stat-card {
+      background: var(--navy-card);
+      border: 1px solid var(--navy-line);
+      border-radius: 12px;
+      padding: 20px 24px;
+    }
+    .stat-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+      margin-bottom: 8px;
+    }
+    .stat-value {
+      font-family: var(--font-num);
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1;
+    }
+    .stat-value.accent { color: var(--accent); }
+    .stat-sub {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+
+    /* ── TABLA ── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+    .btn-nuevo {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-family: var(--font-main);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: background .15s;
+    }
+    .btn-nuevo:hover { background: var(--accent-h); }
+
+    .tabla-wrap {
+      background: var(--navy-card);
+      border: 1px solid var(--navy-line);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    thead th {
+      background: var(--navy-mid);
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .8px;
+      color: var(--text-dim);
+      border-bottom: 1px solid var(--navy-line);
+    }
+    tbody tr {
+      border-bottom: 1px solid var(--navy-line);
+      transition: background .12s;
+      cursor: pointer;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(59,130,246,.07); }
+    tbody td {
+      padding: 14px 16px;
+      font-size: 13.5px;
+    }
+    .td-num {
+      font-family: var(--font-num);
+      font-weight: 600;
+      color: var(--accent);
+      white-space: nowrap;
+    }
+    .td-monto {
+      font-family: var(--font-num);
+      font-weight: 600;
+      text-align: right;
+      white-space: nowrap;
+    }
+    .td-moneda {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-left: 3px;
+    }
+
+    /* ── BADGES DE ESTADO ── */
+    .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .badge-generado  { background: rgba(59,130,246,.15); color: #93C5FD; }
+    .badge-enviado   { background: rgba(245,158,11,.15);  color: #FCD34D; }
+    .badge-aprobado  { background: rgba(34,197,94,.15);   color: #86EFAC; }
+    .badge-rechazado { background: rgba(239,68,68,.15);   color: #FCA5A5; }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-dim);
+    }
+    .empty-state p { margin-top: 8px; font-size: 13px; }
+  </style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <img src="/static/logo-gateway.jpeg" alt="Gateway" class="topbar-logo">
+  <div class="topbar-sep"></div>
+  <nav class="topbar-nav">
+    <a class="nav-item active" href="/">Presupuestos</a>
+    <a class="nav-item" href="#">OC</a>
+    <a class="nav-item" href="#">Facturación</a>
+    <a class="nav-item" href="#">Agenda</a>
+  </nav>
+</div>
+
+<!-- CONTENIDO -->
+<div class="page">
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Este mes</div>
+      <div class="stat-value accent">{{ stats.mes }}</div>
+      <div class="stat-sub">presupuestos generados</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Pendientes de respuesta</div>
+      <div class="stat-value">{{ stats.pendientes }}</div>
+      <div class="stat-sub">enviados sin confirmar</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Aprobados este mes</div>
+      <div class="stat-value">{{ stats.aprobados }}</div>
+      <div class="stat-sub">órdenes de compra recibidas</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Próximo número</div>
+      <div class="stat-value" style="font-size:20px">{{ proximo_numero }}</div>
+      <div class="stat-sub">numeración automática</div>
+    </div>
+  </div>
+
+  <!-- TABLA -->
+  <div class="section-header">
+    <div class="section-title">Presupuestos</div>
+    <a href="/nuevo" class="btn-nuevo">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Nuevo presupuesto
+    </a>
+  </div>
+
+  <div class="tabla-wrap">
+    {% if historial %}
+    <table>
+      <thead>
+        <tr>
+          <th>N°</th>
+          <th>Cliente</th>
+          <th>Referencia</th>
+          <th>Fecha</th>
+          <th style="text-align:right">Monto</th>
+          <th>Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in historial %}
+        <tr>
+          <td class="td-num">{{ p.numero }}</td>
+          <td>{{ p.cliente_nombre }}</td>
+          <td style="color:var(--text-dim)">{{ p.ref_cliente or '—' }}</td>
+          <td style="color:var(--text-dim);font-family:var(--font-num)">{{ p.fecha }}</td>
+          <td class="td-monto">{{ p.total_fmt }}<span class="td-moneda">{{ p.moneda }}</span></td>
+          <td><span class="badge badge-{{ p.estado }}">{{ p.estado|capitalize }}</span></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".3"><path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      <p>Todavía no hay presupuestos. ¡Creá el primero!</p>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+</body>
+</html>

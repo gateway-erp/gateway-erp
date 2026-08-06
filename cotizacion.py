@@ -15,20 +15,6 @@ def _parse_num(s):
     except Exception:
         return None
 
-def _dolar_de_tabla(tabla):
-    """Devuelve (compra, venta) del dólar en una tabla, o (None, None)."""
-    for tr in tabla.find_all("tr"):
-        celdas = tr.find_all("td")
-        if len(celdas) < 3:
-            continue
-        nombre = celdas[0].get_text(strip=True).lower()
-        if "dolar" in nombre or "dólar" in nombre or "u.s" in nombre:
-            compra = _parse_num(celdas[1].get_text(strip=True))
-            venta  = _parse_num(celdas[2].get_text(strip=True))
-            if compra and venta and compra < 100_000 and venta < 100_000:
-                return compra, venta
-    return None, None
-
 def _scrape():
     resultado = {
         "billete": {"compra": None, "venta": None},
@@ -42,47 +28,41 @@ def _scrape():
         r.raise_for_status()
         soup = BeautifulSoup(r.text, "html.parser")
 
-        # Estrategia: buscar los contenedores que tienen "Billete" y "Divisa" en su heading
-        secciones = {"billete": None, "divisa": None}
+        # Recolectar todos los pares (compra, venta) de filas con "dólar"
+        # filtrando valores absurdos (> 100.000 son claramente erróneos para USD/ARS)
+        pares = []
+        vistas = set()  # evitar duplicados exactos
 
-        # Intentar por encabezados h2/h3/h4 o divs con el texto
-        for heading in soup.find_all(["h2", "h3", "h4", "th", "div", "span"]):
-            txt = heading.get_text(strip=True).lower()
-            if "billete" in txt and secciones["billete"] is None:
-                # Buscar la tabla más cercana después de este heading
-                tabla = heading.find_next("table")
-                if tabla:
-                    secciones["billete"] = tabla
-            elif "divisa" in txt and secciones["divisa"] is None:
-                tabla = heading.find_next("table")
-                if tabla:
-                    secciones["divisa"] = tabla
-
-        # Extraer valores de cada sección
-        for tipo, tabla in secciones.items():
-            if tabla is None:
+        for tr in soup.find_all("tr"):
+            celdas = tr.find_all("td")
+            if len(celdas) < 3:
                 continue
-            compra, venta = _dolar_de_tabla(tabla)
-            if compra and venta:
-                resultado[tipo]["compra"] = compra
-                resultado[tipo]["venta"]  = venta
+            nombre = celdas[0].get_text(strip=True).lower()
+            if not ("dolar" in nombre or "dólar" in nombre or "u.s" in nombre):
+                continue
+            compra = _parse_num(celdas[1].get_text(strip=True))
+            venta  = _parse_num(celdas[2].get_text(strip=True))
+            if not compra or not venta:
+                continue
+            if compra > 100_000 or venta > 100_000:
+                continue
+            clave = (compra, venta)
+            if clave in vistas:
+                continue
+            vistas.add(clave)
+            pares.append({"compra": compra, "venta": venta})
 
-        # Fallback: si siguen vacíos, tomar las dos primeras tablas de la página en orden
-        if resultado["billete"]["venta"] is None and resultado["divisa"]["venta"] is None:
-            tablas = soup.find_all("table")
-            pares = []
-            for t in tablas:
-                c, v = _dolar_de_tabla(t)
-                if c and v:
-                    pares.append((c, v))
-                if len(pares) == 2:
-                    break
-            if len(pares) >= 1:
-                resultado["billete"]["compra"] = pares[0][0]
-                resultado["billete"]["venta"]  = pares[0][1]
-            if len(pares) >= 2:
-                resultado["divisa"]["compra"] = pares[1][0]
-                resultado["divisa"]["venta"]  = pares[1][1]
+        # El BNA muestra primero Billetes y luego Divisas en el HTML
+        if len(pares) >= 1:
+            resultado["billete"]["compra"] = pares[0]["compra"]
+            resultado["billete"]["venta"]  = pares[0]["venta"]
+        if len(pares) >= 2:
+            resultado["divisa"]["compra"] = pares[1]["compra"]
+            resultado["divisa"]["venta"]  = pares[1]["venta"]
+
+        # Si solo hay un par, replicarlo en divisa (mejor que mostrar vacío)
+        if len(pares) == 1:
+            resultado["divisa"] = dict(resultado["billete"])
 
         # Hora de actualización
         hora_tag = soup.find(string=lambda t: t and "Hora Actualización" in str(t))

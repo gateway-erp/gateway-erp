@@ -156,7 +156,7 @@ def generar_presupuesto(datos, output_path):
     emisor_rows = [
         [Paragraph("Emisor:", s("el", fontName="Helvetica", fontSize=7, textColor=colors.grey))],
         [Paragraph("GateWay",               cb)],
-        [Paragraph("Rivadavia 919",         cs)],
+        [Paragraph("Berutti 974",            cs)],
         [Paragraph("2804 Campana",          cs)],
         [Spacer(1, 2*mm)],
         [Paragraph("Teléfono: +54-3489-683375",          cs)],
@@ -242,6 +242,28 @@ def generar_presupuesto(datos, output_path):
     ))
     elements.append(Spacer(1, 1*mm))
     elements.append(items_t)
+
+    # ── CONDICIONES DEL PRESUPUESTO ───────────────────────────────────────────
+    condiciones = datos.get("condiciones_presupuesto", "").strip()
+    if condiciones:
+        elements.append(Spacer(1, 4*mm))
+        cond_style = s("cond", fontName="Helvetica", fontSize=8, leading=12, textColor=colors.HexColor("#4b5563"))
+        bold_style = s("condb", fontName="Helvetica-Bold", fontSize=8, leading=12, textColor=colors.HexColor("#374151"))
+        cond_data = [[
+            Paragraph("IMPORTANTE:", bold_style),
+            Paragraph(condiciones, cond_style),
+        ]]
+        cond_t = Table(cond_data, colWidths=[22*mm, W - 22*mm])
+        cond_t.setStyle(TableStyle([
+            ("BACKGROUND",    (0,0), (-1,-1), colors.HexColor("#F3F4F6")),
+            ("BOX",           (0,0), (-1,-1), 0.4, colors.HexColor("#D1D5DB")),
+            ("LEFTPADDING",   (0,0), (-1,-1), 6),
+            ("RIGHTPADDING",  (0,0), (-1,-1), 6),
+            ("TOPPADDING",    (0,0), (-1,-1), 5),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 5),
+            ("VALIGN",        (0,0), (-1,-1), "TOP"),
+        ]))
+        elements.append(cond_t)
 
     doc.build(elements)
     print(f"PDF generado: {output_path}")

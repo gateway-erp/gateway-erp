@@ -146,7 +146,8 @@ async def generar(request: Request):
         "fecha_validez":    form_data.get("validez", ""),
         "codigo_cliente":   f"C-{cliente['codigo']:04d}",
         "moneda":           form_data.get("moneda", "ARS"),
-        "condiciones_pago": form_data.get("condiciones_pago", ""),
+        "condiciones_pago":           form_data.get("condiciones_pago", ""),
+        "condiciones_presupuesto":    form_data.get("condiciones_presupuesto", ""),
         "cliente":          cliente,
         "items":            items,
     }

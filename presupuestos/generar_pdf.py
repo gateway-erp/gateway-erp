@@ -7,7 +7,9 @@ from reportlab.lib.enums import TA_RIGHT, TA_LEFT, TA_CENTER
 from reportlab.pdfgen import canvas as pdfcanvas
 import os
 
-LOGO_PATH = os.path.join(os.path.dirname(__file__), "..", "assets", "logo_gateway_0.png")
+_NEW_LOGO = os.path.join(os.path.dirname(__file__), "..", "Logo-Gateway.jpeg")
+_OLD_LOGO = os.path.join(os.path.dirname(__file__), "..", "assets", "logo_gateway_0.png")
+LOGO_PATH = _NEW_LOGO if os.path.exists(_NEW_LOGO) else _OLD_LOGO
 NAVY       = colors.HexColor("#1B2A4A")
 LIGHT_GRAY = colors.HexColor("#F2F2F2")
 WHITE      = colors.white

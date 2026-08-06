@@ -28,41 +28,80 @@ def _scrape():
         r.raise_for_status()
         soup = BeautifulSoup(r.text, "html.parser")
 
-        # BNA tiene dos tablas: una para billetes y otra para divisas
-        tablas = soup.select("table.table")
+        # Buscar todas las filas de la página que contengan "Dólar" o "Dollar"
+        dollar_rows = []
+        for tr in soup.find_all("tr"):
+            celdas = tr.find_all("td")
+            if not celdas:
+                continue
+            texto = celdas[0].get_text(strip=True).lower()
+            if "dolar" in texto or "dólar" in texto or "u.s" in texto or "dollar" in texto:
+                compra = _parse_num(celdas[1].get_text(strip=True)) if len(celdas) > 1 else None
+                venta  = _parse_num(celdas[2].get_text(strip=True)) if len(celdas) > 2 else None
+                if compra and venta:
+                    dollar_rows.append({"compra": compra, "venta": venta, "tr": tr})
 
-        for tabla in tablas:
-            filas = tabla.select("tr")
-            for fila in filas:
-                celdas = [td.get_text(strip=True) for td in fila.select("td")]
-                if not celdas:
-                    continue
-                nombre = celdas[0].lower()
-                if "dolar" in nombre or "u.s" in nombre or "usa" in nombre:
-                    compra = _parse_num(celdas[1]) if len(celdas) > 1 else None
-                    venta  = _parse_num(celdas[2]) if len(celdas) > 2 else None
+        # Asignar por orden de aparición: primera = billete, segunda = divisa
+        # También intentar detectar por contexto del contenedor
+        for row in dollar_rows:
+            tr = row["tr"]
+            # Subir en el DOM buscando un encabezado que identifique la sección
+            seccion = ""
+            node = tr.parent  # tbody o table
+            while node and node.name not in ("body", "html"):
+                # buscar el hermano/ancestro anterior con texto de sección
+                prev = node.find_previous_sibling()
+                if prev:
+                    txt = prev.get_text(" ", strip=True).lower()
+                    if "billete" in txt:
+                        seccion = "billete"
+                        break
+                    if "divisa" in txt:
+                        seccion = "divisa"
+                        break
+                # también buscar h2/h3/h4 cerca
+                for tag in ("h2", "h3", "h4", "h5", "div"):
+                    heading = node.find_previous(tag)
+                    if heading:
+                        txt = heading.get_text(strip=True).lower()
+                        if "billete" in txt:
+                            seccion = "billete"
+                            break
+                        if "divisa" in txt:
+                            seccion = "divisa"
+                            break
+                if seccion:
+                    break
+                node = node.parent
 
-                    # Determinar si es billetes o divisas por el contexto del thead
-                    thead = tabla.find_previous("h2") or tabla.find_previous("h3") or tabla.find_previous("div", class_="col-sm-4")
-                    titulo = thead.get_text(strip=True).lower() if thead else ""
+            if seccion == "billete" and resultado["billete"]["venta"] is None:
+                resultado["billete"]["compra"] = row["compra"]
+                resultado["billete"]["venta"]  = row["venta"]
+            elif seccion == "divisa" and resultado["divisa"]["venta"] is None:
+                resultado["divisa"]["compra"] = row["compra"]
+                resultado["divisa"]["venta"]  = row["venta"]
 
-                    if "billete" in titulo and resultado["billete"]["venta"] is None:
-                        resultado["billete"]["compra"] = compra
-                        resultado["billete"]["venta"]  = venta
-                    elif "divisa" in titulo and resultado["divisa"]["venta"] is None:
-                        resultado["divisa"]["compra"] = compra
-                        resultado["divisa"]["venta"]  = venta
+        # Fallback: si no se pudo detectar por sección, usar orden de aparición
+        if resultado["billete"]["venta"] is None and resultado["divisa"]["venta"] is None:
+            if len(dollar_rows) >= 1:
+                resultado["billete"]["compra"] = dollar_rows[0]["compra"]
+                resultado["billete"]["venta"]  = dollar_rows[0]["venta"]
+            if len(dollar_rows) >= 2:
+                resultado["divisa"]["compra"] = dollar_rows[1]["compra"]
+                resultado["divisa"]["venta"]  = dollar_rows[1]["venta"]
+        elif resultado["billete"]["venta"] is None and len(dollar_rows) >= 1:
+            # Tenemos divisa pero no billete — asignar la primera fila encontrada
+            for row in dollar_rows:
+                if row["compra"] != resultado["divisa"]["compra"]:
+                    resultado["billete"]["compra"] = row["compra"]
+                    resultado["billete"]["venta"]  = row["venta"]
+                    break
 
-        # Intentar sacar fecha/hora de actualización
-        hora_tag = soup.find(string=lambda t: t and "Hora Actualización" in t)
+        # Fecha/hora
+        resultado["fecha"] = datetime.now().strftime("%d/%m/%Y")
+        hora_tag = soup.find(string=lambda t: t and "Hora Actualización" in str(t))
         if hora_tag:
-            resultado["hora"] = hora_tag.strip().replace("Hora Actualización:", "").strip()
-
-        fecha_tag = soup.find("td", string=lambda t: t and "/" in str(t) and len(str(t)) < 12)
-        if fecha_tag:
-            resultado["fecha"] = fecha_tag.get_text(strip=True)
-        else:
-            resultado["fecha"] = datetime.now().strftime("%d/%m/%Y")
+            resultado["hora"] = str(hora_tag).replace("Hora Actualización:", "").strip()
 
     except Exception as e:
         resultado["error"] = str(e)

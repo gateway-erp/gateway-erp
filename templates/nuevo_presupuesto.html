@@ -207,6 +207,9 @@ function renderCotiz() {
   document.getElementById('conv-tipo-label').textContent =
     'venta ' + _cotizTipo;
   tasaUSD = d.venta || d.compra || null;
+  // recalcular conversor con la nueva tasa
+  if (document.getElementById('conv-usd').value) convertir('usd');
+  if (!document.getElementById('conv-usd').value && document.getElementById('conv-ars').value) convertir('ars');
 }
 
 document.addEventListener('DOMContentLoaded', async () => {

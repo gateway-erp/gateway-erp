@@ -1,15 +1,15 @@
 :root {
   --navy:      #1B2A4A;
   --navy-light:#2a3f6f;
-  --gray-bg:   #F5F6F8;
-  --gray-line: #DDE1E7;
+  --gray-bg:   #E8ECF0;
+  --gray-line: #C8CDD6;
   --text:      #1a1a2e;
   --muted:     #6b7280;
   --white:     #ffffff;
   --green:     #16a34a;
   --red:       #dc2626;
   --radius:    8px;
-  --shadow:    0 1px 3px rgba(0,0,0,.10), 0 1px 2px rgba(0,0,0,.06);
+  --shadow:    0 1px 4px rgba(0,0,0,.13), 0 1px 3px rgba(0,0,0,.08);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -68,6 +68,7 @@ body {
 .card {
   background: var(--white);
   border-radius: var(--radius);
+  border: 1px solid var(--gray-line);
   box-shadow: var(--shadow);
   padding: 20px 24px;
 }
@@ -79,7 +80,7 @@ body {
   color: var(--muted);
   margin-bottom: 16px;
   padding-bottom: 10px;
-  border-bottom: 1px solid var(--gray-line);
+  border-bottom: 2px solid var(--gray-line);
 }
 
 /* ── form elements ── */

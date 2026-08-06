@@ -150,8 +150,8 @@ def generar_presupuesto(datos, output_path):
     elements.append(Spacer(1, 5*mm))
 
     # ── EMISOR / DESTINATARIO ─────────────────────────────────────────────────
-    cs = s("cs", fontName="Helvetica", fontSize=8, leading=12)
-    cb = s("cb", fontName="Helvetica-Bold", fontSize=9, leading=13)
+    cs = s("cs", fontName="Helvetica",      fontSize=8, leading=12, textColor=NAVY)
+    cb = s("cb", fontName="Helvetica-Bold", fontSize=9, leading=13, textColor=NAVY)
 
     emisor_rows = [
         [Paragraph("Emisor:", s("el", fontName="Helvetica", fontSize=7, textColor=colors.grey))],

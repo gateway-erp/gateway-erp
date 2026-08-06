@@ -98,22 +98,42 @@
 
       <!-- cotización dólar -->
       <div class="card">
-        <div class="card-title">Cotización USD</div>
-        <div class="cotiz-valor" id="cotiz-valor">—</div>
-        <div class="cotiz-label">1 USD = <span id="cotiz-ars">...</span> ARS</div>
+        <div class="card-title">Cotización USD — BNA</div>
 
-        <div style="margin:14px 0 6px;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Conversor auxiliar</div>
-
-        <div class="conversor-row">
-          <input type="number" id="conv-usd" placeholder="0" step="0.01" oninput="convertir('usd')">
-          <span class="moneda-tag">USD</span>
-        </div>
-        <div class="conversor-row">
-          <input type="number" id="conv-ars" placeholder="0" step="0.01" oninput="convertir('ars')">
-          <span class="moneda-tag">ARS</span>
+        <!-- tabs billete / divisa -->
+        <div style="display:flex;gap:6px;margin-bottom:12px">
+          <button type="button" class="cotiz-tab active" onclick="setCotizTipo('billete',this)">Billete</button>
+          <button type="button" class="cotiz-tab"        onclick="setCotizTipo('divisa',this)">Divisa</button>
         </div>
 
-        <div class="cotiz-fuente" id="cotiz-fuente">Actualizando cotización…</div>
+        <div id="cotiz-loading" style="font-size:12px;color:var(--muted)">Cargando…</div>
+
+        <div id="cotiz-data" style="display:none">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+            <div style="background:var(--surface,#f5f5f5);border-radius:6px;padding:8px;text-align:center">
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Compra</div>
+              <div id="cotiz-compra" style="font-size:18px;font-weight:700">—</div>
+            </div>
+            <div style="background:var(--surface,#f5f5f5);border-radius:6px;padding:8px;text-align:center">
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">Venta</div>
+              <div id="cotiz-venta" style="font-size:18px;font-weight:700;color:#1B2A4A">—</div>
+            </div>
+          </div>
+          <div id="cotiz-fecha" style="font-size:10px;color:var(--muted);margin-bottom:10px"></div>
+
+          <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Conversor</div>
+          <div class="conversor-row">
+            <input type="number" id="conv-usd" placeholder="0" step="0.01" oninput="convertir('usd')">
+            <span class="moneda-tag">USD</span>
+          </div>
+          <div class="conversor-row">
+            <input type="number" id="conv-ars" placeholder="0" step="0.01" oninput="convertir('ars')">
+            <span class="moneda-tag">ARS</span>
+          </div>
+          <div style="font-size:10px;color:var(--muted);margin-top:6px">Usando cotización <span id="conv-tipo-label">venta billete</span></div>
+        </div>
+
+        <div id="cotiz-error" style="display:none;font-size:12px;color:#c00;margin-top:8px"></div>
       </div>
 
       <!-- generar PDF -->
@@ -166,23 +186,46 @@
 </form>
 
 <script>
-// ── cotización dólar ──────────────────────────────────────────────────────────
-let tasaUSD = null;
+// ── cotización dólar BNA ──────────────────────────────────────────────────────
+let _cotizData = null;
+let _cotizTipo = 'billete'; // 'billete' | 'divisa'
+let tasaUSD    = null;
 
-document.addEventListener('DOMContentLoaded', () => {
-  const inputUsd = document.createElement('input');
-  inputUsd.type        = 'number';
-  inputUsd.placeholder = 'Ingresá cotización manual';
-  inputUsd.style.cssText = 'margin-top:8px;width:100%;';
-  inputUsd.addEventListener('input', () => {
-    tasaUSD = parseFloat(inputUsd.value) || null;
-    if (tasaUSD) {
-      document.getElementById('cotiz-valor').textContent = '$ ' + fmt(tasaUSD);
-      document.getElementById('cotiz-ars').textContent   = fmt(tasaUSD);
+function setCotizTipo(tipo, btn) {
+  _cotizTipo = tipo;
+  document.querySelectorAll('.cotiz-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  if (_cotizData) renderCotiz();
+}
+
+function renderCotiz() {
+  const d = _cotizData[_cotizTipo];
+  document.getElementById('cotiz-compra').textContent = d.compra ? fmt(d.compra) : '—';
+  document.getElementById('cotiz-venta').textContent  = d.venta  ? fmt(d.venta)  : '—';
+  document.getElementById('cotiz-fecha').textContent  =
+    'Actualizado: ' + (_cotizData.fecha || '') + ' ' + (_cotizData.hora || '');
+  document.getElementById('conv-tipo-label').textContent =
+    'venta ' + _cotizTipo;
+  tasaUSD = d.venta || d.compra || null;
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const res  = await fetch('/api/cotizacion');
+    const data = await res.json();
+    _cotizData = data;
+    if (data.error && !data.billete?.venta && !data.divisa?.venta) {
+      throw new Error(data.error);
     }
-  });
-  document.getElementById('cotiz-fuente').before(inputUsd);
-  document.getElementById('cotiz-fuente').textContent = 'Ingresá el valor hasta conectar la API';
+    document.getElementById('cotiz-loading').style.display = 'none';
+    document.getElementById('cotiz-data').style.display    = 'block';
+    renderCotiz();
+  } catch(e) {
+    document.getElementById('cotiz-loading').style.display = 'none';
+    const errEl = document.getElementById('cotiz-error');
+    errEl.style.display = 'block';
+    errEl.textContent   = 'No se pudo obtener la cotización del BNA.';
+  }
 });
 
 function convertir(desde) {

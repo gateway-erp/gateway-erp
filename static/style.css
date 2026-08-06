@@ -227,6 +227,24 @@ input[readonly] { background: var(--gray-bg); color: var(--muted); }
 .sidebar { display: flex; flex-direction: column; gap: 16px; }
 
 /* cotización */
+.cotiz-tab {
+  flex: 1;
+  padding: 6px 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.cotiz-tab.active {
+  background: var(--navy, #1B2A4A);
+  color: #fff;
+  border-color: var(--navy, #1B2A4A);
+}
 .cotiz-valor {
   font-size: 28px;
   font-weight: 700;

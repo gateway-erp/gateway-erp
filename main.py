@@ -6,6 +6,7 @@ from datetime import date, timedelta
 import os
 
 import db
+import cotizacion
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -70,6 +71,10 @@ async def form(request: Request):
         "validez": validez.strftime("%Y-%m-%d"),
         "numero":  numero,
     })
+
+@app.get("/api/cotizacion")
+async def api_cotizacion():
+    return cotizacion.get_cotizacion()
 
 @app.get("/api/clientes")
 async def buscar_clientes(q: str = ""):

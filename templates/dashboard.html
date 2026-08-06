@@ -206,6 +206,20 @@
     .badge-enviado   { background: rgba(245,158,11,.15);  color: #FCD34D; }
     .badge-aprobado  { background: rgba(34,197,94,.15);   color: #86EFAC; }
     .badge-rechazado { background: rgba(239,68,68,.15);   color: #FCA5A5; }
+    .btn-pdf {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 600;
+      color: #93C5FD;
+      background: rgba(59,130,246,.12);
+      border: 1px solid rgba(59,130,246,.25);
+      border-radius: 5px;
+      padding: 3px 9px;
+      text-decoration: none;
+      white-space: nowrap;
+      transition: background .15s;
+    }
+    .btn-pdf:hover { background: rgba(59,130,246,.25); }
 
     .empty-state {
       text-align: center;
@@ -276,6 +290,7 @@
           <th>Fecha</th>
           <th style="text-align:right">Monto</th>
           <th>Estado</th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
@@ -287,6 +302,11 @@
           <td style="color:var(--text-dim);font-family:var(--font-num)">{{ p.fecha }}</td>
           <td class="td-monto">{{ p.total_fmt }}<span class="td-moneda">{{ p.moneda }}</span></td>
           <td><span class="badge badge-{{ p.estado }}">{{ p.estado|capitalize }}</span></td>
+          <td>
+            {% if p.archivo %}
+            <a href="/pdf/{{ p.archivo }}" target="_blank" class="btn-pdf">↓ PDF</a>
+            {% else %}—{% endif %}
+          </td>
         </tr>
         {% endfor %}
       </tbody>

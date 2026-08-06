@@ -72,6 +72,14 @@ async def form(request: Request):
         "numero":  numero,
     })
 
+@app.get("/pdf/{nombre_archivo:path}")
+async def ver_pdf(nombre_archivo: str):
+    path = os.path.join("presupuestos", "output", nombre_archivo)
+    if not os.path.exists(path):
+        from fastapi.responses import JSONResponse
+        return JSONResponse({"error": "PDF no encontrado"}, status_code=404)
+    return FileResponse(path, media_type="application/pdf", filename=nombre_archivo)
+
 @app.get("/api/cotizacion")
 async def api_cotizacion():
     return cotizacion.get_cotizacion()

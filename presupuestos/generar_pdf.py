@@ -11,7 +11,7 @@ _NEW_LOGO = os.path.join(os.path.dirname(__file__), "..", "Logo-Gateway.jpeg")
 _OLD_LOGO = os.path.join(os.path.dirname(__file__), "..", "assets", "logo_gateway_0.png")
 LOGO_PATH = _NEW_LOGO if os.path.exists(_NEW_LOGO) else _OLD_LOGO
 NAVY       = colors.HexColor("#1B2A4A")
-LIGHT_GRAY = colors.HexColor("#F2F2F2")
+LIGHT_GRAY = colors.HexColor("#E4E8EE")
 WHITE      = colors.white
 
 PAGE_W, PAGE_H = A4
@@ -228,7 +228,7 @@ def generar_presupuesto(datos, output_path):
     items_t.setStyle(TableStyle([
         ("BACKGROUND",    (0,0), (-1,0), NAVY),
         ("ROWBACKGROUNDS",(0,1), (-1,-1), [WHITE, LIGHT_GRAY]),
-        ("GRID",          (0,0), (-1,-1), 0.3, colors.lightgrey),
+        ("GRID",          (0,0), (-1,-1), 0.5, colors.HexColor("#B0B8C6")),
         ("LEFTPADDING",   (0,0), (-1,-1), 4),
         ("RIGHTPADDING",  (0,0), (-1,-1), 4),
         ("TOPPADDING",    (0,0), (-1,-1), 3),
@@ -247,21 +247,23 @@ def generar_presupuesto(datos, output_path):
     condiciones = datos.get("condiciones_presupuesto", "").strip()
     if condiciones:
         elements.append(Spacer(1, 4*mm))
-        cond_style = s("cond", fontName="Helvetica", fontSize=8, leading=12, textColor=colors.HexColor("#4b5563"))
-        bold_style = s("condb", fontName="Helvetica-Bold", fontSize=8, leading=12, textColor=colors.HexColor("#374151"))
-        cond_data = [[
-            Paragraph("IMPORTANTE:", bold_style),
-            Paragraph(condiciones, cond_style),
-        ]]
-        cond_t = Table(cond_data, colWidths=[22*mm, W - 22*mm])
+        cond_inline = s("cond_inline",
+            fontName="Helvetica", fontSize=8, leading=13,
+            textColor=colors.HexColor("#374151"),
+            leftIndent=0,
+        )
+        texto = f'<b>IMPORTANTE: </b>{condiciones}'
+        cond_t = Table(
+            [[Paragraph(texto, cond_inline)]],
+            colWidths=[W],
+        )
         cond_t.setStyle(TableStyle([
-            ("BACKGROUND",    (0,0), (-1,-1), colors.HexColor("#F3F4F6")),
-            ("BOX",           (0,0), (-1,-1), 0.4, colors.HexColor("#D1D5DB")),
-            ("LEFTPADDING",   (0,0), (-1,-1), 6),
-            ("RIGHTPADDING",  (0,0), (-1,-1), 6),
-            ("TOPPADDING",    (0,0), (-1,-1), 5),
-            ("BOTTOMPADDING", (0,0), (-1,-1), 5),
-            ("VALIGN",        (0,0), (-1,-1), "TOP"),
+            ("BACKGROUND",    (0,0), (-1,-1), colors.HexColor("#EEF0F4")),
+            ("BOX",           (0,0), (-1,-1), 0.8, colors.HexColor("#B0B8C6")),
+            ("LEFTPADDING",   (0,0), (-1,-1), 8),
+            ("RIGHTPADDING",  (0,0), (-1,-1), 8),
+            ("TOPPADDING",    (0,0), (-1,-1), 6),
+            ("BOTTOMPADDING", (0,0), (-1,-1), 6),
         ]))
         elements.append(cond_t)
 

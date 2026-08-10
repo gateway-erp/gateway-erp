@@ -106,14 +106,23 @@ async def generar(request: Request):
 
     if cliente_id and cliente_id.isdigit():
         cliente = next((c for c in clientes if str(c["codigo"]) == cliente_id), None)
-        if cliente and form_data.get("cliente_cuit"):
+        if not cliente:
+            return HTMLResponse("<h3>Error: cliente no encontrado. Volvé atrás e intentá de nuevo.</h3>", status_code=400)
+        if form_data.get("cliente_cuit"):
             cliente["cuit"] = form_data.get("cliente_cuit", "")
             db.actualizar_cuit(cliente_id, cliente["cuit"])
     else:
+        nombre_nuevo = form_data.get("cliente_nombre", "").strip()
+        if not nombre_nuevo:
+            return HTMLResponse(
+                "<h3>Error: ingresá el nombre del cliente antes de generar.</h3>"
+                "<p><a href='/nuevo'>← Volver</a></p>",
+                status_code=400
+            )
         codigo  = db.next_codigo_cliente()
         cliente = {
             "codigo":    codigo,
-            "nombre":    form_data.get("cliente_nombre", ""),
+            "nombre":    nombre_nuevo,
             "cuit":      form_data.get("cliente_cuit", ""),
             "direccion": form_data.get("cliente_direccion", ""),
             "ciudad":    form_data.get("cliente_ciudad", ""),

@@ -139,7 +139,7 @@
       <!-- generar PDF -->
       <div class="card">
         <div class="card-title">Generar</div>
-        <button type="submit" class="btn-generar">⬇ Generar PDF</button>
+        <button type="submit" class="btn-generar" id="btn-generar">⬇ Generar PDF</button>
       </div>
 
     </div><!-- /sidebar -->
@@ -422,6 +422,17 @@ function esc(s) {
 }
 
 addItem();
+
+// ── validación antes de generar ───────────────────────────────────────────────
+document.getElementById('form-presupuesto').addEventListener('submit', function(e) {
+  const clienteNombre = document.getElementById('cliente_nombre').value.trim();
+  const clienteId     = document.getElementById('cliente_id').value.trim();
+  if (!clienteNombre && !clienteId) {
+    e.preventDefault();
+    alert('Tenés que seleccionar o completar los datos del cliente antes de generar el presupuesto.');
+    document.getElementById('cliente-search').focus();
+  }
+});
 </script>
 </body>
 </html>

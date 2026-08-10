@@ -303,7 +303,9 @@
           <td class="td-monto">{{ p.total_fmt }}<span class="td-moneda">{{ p.moneda }}</span></td>
           <td><span class="badge badge-{{ p.estado }}">{{ p.estado|capitalize }}</span></td>
           <td>
-            {% if p.archivo %}
+            {% if p.drive_link %}
+            <a href="{{ p.drive_link }}" target="_blank" class="btn-pdf">↓ PDF</a>
+            {% elif p.archivo %}
             <a href="/pdf/{{ p.archivo }}" target="_blank" class="btn-pdf">↓ PDF</a>
             {% else %}—{% endif %}
           </td>

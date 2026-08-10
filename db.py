@@ -118,9 +118,9 @@ def next_numero():
 
 # ── HISTORIAL ─────────────────────────────────────────────────────────────────
 _H_HIS = ["numero", "ref_cliente", "fecha", "fecha_validez", "codigo_cliente",
-          "moneda", "condiciones_pago", "cliente_nombre", "archivo", "estado", "total"]
+          "moneda", "condiciones_pago", "cliente_nombre", "archivo", "estado", "total", "drive_link"]
 
-def guardar_historial(datos, nombre_archivo):
+def guardar_historial(datos, nombre_archivo, drive_link=None):
     items = datos.get("items", [])
     base  = sum(i["precio_unitario"] * i["cantidad"] for i in items)
     iva   = sum(i["precio_unitario"] * i["cantidad"] * i["iva_pct"] / 100 for i in items)
@@ -139,6 +139,7 @@ def guardar_historial(datos, nombre_archivo):
         nombre_archivo,
         "generado",
         total,
+        drive_link or "",
     ])
 
 def load_historial():

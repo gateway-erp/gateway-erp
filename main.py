@@ -166,6 +166,19 @@ async def generar(request: Request):
     from presupuestos.generar_pdf import generar_presupuesto
     generar_presupuesto(datos, output_path)
 
-    db.guardar_historial(datos, nombre_archivo)
+    # Subir a Google Drive
+    drive_link = None
+    try:
+        import drive as drive_mod
+        drive_link = drive_mod.subir_presupuesto(
+            pdf_path       = output_path,
+            nombre_archivo = nombre_archivo,
+            codigo_cliente = cliente["codigo"],
+            nombre_cliente = cliente["nombre"],
+        )
+    except Exception as e:
+        print(f"[Drive] Error al subir PDF: {e}")
+
+    db.guardar_historial(datos, nombre_archivo, drive_link=drive_link)
 
     return FileResponse(output_path, media_type="application/pdf", filename=nombre_archivo)

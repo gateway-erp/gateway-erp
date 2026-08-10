@@ -134,7 +134,7 @@ def generar_presupuesto(datos, output_path):
         [Paragraph(f"Ref. : {datos['numero']}",               s("r1", fontName="Helvetica", fontSize=8, textColor=NAVY, alignment=TA_RIGHT))],
         [Paragraph(f"Ref. cliente : {datos['ref_cliente']}",  s("r2", fontName="Helvetica", fontSize=8, textColor=NAVY, alignment=TA_RIGHT))],
         [Paragraph(f"Fecha : {datos['fecha']}",               s("r3", fontName="Helvetica", fontSize=8, textColor=NAVY, alignment=TA_RIGHT))],
-        [Paragraph(f"Fecha fin de validez : {datos['fecha_validez']}", s("r4", fontName="Helvetica", fontSize=8, textColor=NAVY, alignment=TA_RIGHT))],
+        [Paragraph(f"Válido hasta : {datos['fecha_validez']}", s("r4", fontName="Helvetica", fontSize=8, textColor=NAVY, alignment=TA_RIGHT))],
         [Paragraph(f"Código cliente : {datos['codigo_cliente']}", s("r5", fontName="Helvetica", fontSize=8, textColor=NAVY, alignment=TA_RIGHT))],
     ]
     ref_table = Table(ref_data, colWidths=[70*mm])
@@ -172,15 +172,16 @@ def generar_presupuesto(datos, output_path):
 
     cliente = datos["cliente"]
     dest_rows = [
-        [Paragraph("Enviar a:", s("ea", fontName="Helvetica", fontSize=7, textColor=colors.grey))],
-        [Paragraph(cliente["nombre"],    cb)],
+        [Paragraph("Cliente:", s("ea", fontName="Helvetica", fontSize=7, textColor=colors.grey))],
+        [Paragraph(cliente["nombre"], cb)],
     ]
     if cliente.get("cuit"):
         dest_rows.append([Paragraph(f"CUIT: {cliente['cuit']}", cs)])
-    dest_rows += [
-        [Paragraph(cliente.get("direccion", ""), cs)],
-        [Paragraph(cliente.get("ciudad", ""),    cs)],
-    ]
+    if cliente.get("direccion"):
+        dest_rows.append([Paragraph(f"Dirección: {cliente['direccion']}", cs)])
+    if cliente.get("ciudad"):
+        dest_rows.append([Paragraph(f"Ciudad: {cliente['ciudad']}", cs)])
+
     dest_t = Table(dest_rows, colWidths=[W/2 - 5*mm])
     dest_t.setStyle(TableStyle([
         ("BOX", (0,0),(-1,-1), 0.5, colors.lightgrey),

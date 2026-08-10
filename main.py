@@ -119,15 +119,23 @@ async def generar(request: Request):
                 "<p><a href='/nuevo'>← Volver</a></p>",
                 status_code=400
             )
-        codigo  = db.next_codigo_cliente()
-        cliente = {
-            "codigo":    codigo,
-            "nombre":    nombre_nuevo,
-            "cuit":      form_data.get("cliente_cuit", ""),
-            "direccion": form_data.get("cliente_direccion", ""),
-            "ciudad":    form_data.get("cliente_ciudad", ""),
-        }
-        db.crear_cliente(cliente)
+        # Reusar cliente si ya existe con ese nombre (evita duplicados)
+        existente = db.buscar_cliente_por_nombre(nombre_nuevo)
+        if existente:
+            cliente = existente
+            if form_data.get("cliente_cuit"):
+                cliente["cuit"] = form_data.get("cliente_cuit", "")
+                db.actualizar_cuit(str(cliente["codigo"]), cliente["cuit"])
+        else:
+            codigo  = db.next_codigo_cliente()
+            cliente = {
+                "codigo":    codigo,
+                "nombre":    nombre_nuevo,
+                "cuit":      form_data.get("cliente_cuit", ""),
+                "direccion": form_data.get("cliente_direccion", ""),
+                "ciudad":    form_data.get("cliente_ciudad", ""),
+            }
+            db.crear_cliente(cliente)
 
     # ── ítems ─────────────────────────────────────────────────────────────────
     descripciones = form_data.getlist("desc[]")

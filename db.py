@@ -41,6 +41,11 @@ def _ws(name, headers):
     sh = _client().open_by_key(SPREADSHEET_ID)
     try:
         ws = sh.worksheet(name)
+        # Sincronizar columnas nuevas si el header está desactualizado
+        current = ws.row_values(1)
+        for i, h in enumerate(headers):
+            if h not in current:
+                ws.update_cell(1, i + 1, h)
     except gspread.WorksheetNotFound:
         ws = sh.add_worksheet(title=name, rows=1000, cols=len(headers))
         ws.append_row(headers)
@@ -52,6 +57,14 @@ _H_CLI = ["codigo", "nombre", "cuit", "direccion", "ciudad"]
 
 def load_clientes():
     return _ws("clientes", _H_CLI).get_all_records()
+
+def buscar_cliente_por_nombre(nombre):
+    """Retorna el cliente si ya existe con ese nombre (case-insensitive), o None."""
+    nombre_lower = nombre.strip().lower()
+    for c in load_clientes():
+        if str(c.get("nombre", "")).strip().lower() == nombre_lower:
+            return c
+    return None
 
 def crear_cliente(cliente):
     ws = _ws("clientes", _H_CLI)

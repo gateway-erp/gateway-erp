@@ -41,11 +41,16 @@ def _ws(name, headers):
     sh = _client().open_by_key(SPREADSHEET_ID)
     try:
         ws = sh.worksheet(name)
-        # Sincronizar columnas nuevas si el header está desactualizado
         current = ws.row_values(1)
-        for i, h in enumerate(headers):
-            if h not in current:
-                ws.update_cell(1, i + 1, h)
+        nuevas = [h for h in headers if h not in current]
+        if nuevas:
+            # Expandir la hoja si faltan columnas
+            needed_cols = len(headers)
+            if ws.col_count < needed_cols:
+                ws.resize(rows=ws.row_count, cols=needed_cols)
+            for i, h in enumerate(headers):
+                if h not in current:
+                    ws.update_cell(1, i + 1, h)
     except gspread.WorksheetNotFound:
         ws = sh.add_worksheet(title=name, rows=1000, cols=len(headers))
         ws.append_row(headers)

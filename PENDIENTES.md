@@ -2,23 +2,49 @@
 
 ---
 
-## Técnicos (a resolver antes de continuar desarrollo)
+## Módulo Presupuestos / Pipeline — pendientes técnicos
 
-- [ ] **Google Sheets como DB — EN CURSO, retomar desde la compu donde está logueada la cuenta de Google que se va a usar.** Contexto (2026-07-29): el usuario quiere migrar de los JSON locales a una cuenta de Gmail como base de datos real, porque ahí ya vive información importante de la empresa ("el alma de los archivos"). Quedaron 2 preguntas sin responder antes de empezar a implementar:
-  1. ¿Qué cuenta de Gmail/Google se usa? (opciones charladas: `aplicacionesgateway@gmail.com` — la misma usada para los commits de git —, otra cuenta puntual, o crear una cuenta nueva dedicada)
-  2. Los presupuestos ya existentes que el usuario menciona — ¿están hoy en una planilla de Google Sheets ya armada (se conecta directo), en archivos sueltos Word/PDF/Excel (hay que pensar cómo migrarlos), o es otra cosa?
-  Una vez respondidas, seguir con los pasos ya anotados: crear proyecto en Google Cloud, activar Sheets API + Drive API, crear Service Account, generar clave JSON, compartir el/los Sheets con el email de la service account. Ver también BIBLIA_PROYECTO.md → sección "Próximo paso del módulo Presupuestos".
-- [ ] **API del dólar**: el usuario va a indicar de qué fuente traer la cotización USD/ARS.
-- [x] ~~**Hosting**: confirmar si gateway.com.ar es VPS con acceso root o hosting compartido.~~ Resuelto 2026-07-28: es hosting compartido (Ferozo/DonWeb, Linux, Plesk), sin root. Ver BIBLIA_PROYECTO.md → Stack tecnológico.
-- [x] ~~**Servicio externo para el backend**: elegir servicio y definir cómo se conecta gateway.com.ar.~~ Resuelto 2026-07-29: se eligió **Render** (plan free). Deploy funcionando en `https://gateway-erp.onrender.com`, repo en GitHub (`gateway-erp/gateway-erp`) conectado con auto-deploy en cada push a `master`. Dominio propio en curso: `gestion.gateway.com.ar` (CNAME → `gateway-erp.onrender.com` ya cargado en la zona DNS de Ferozo, propagando). Limitación conocida: sin disco persistente en el plan free — los datos no sobreviven reinicios, de ahí la urgencia de migrar a Sheets.
+- [ ] **Auto-extracción de PDFs con pymupdf**: al subir una OC, factura u OP, que el sistema lea el PDF y pre-complete los campos del popup automáticamente. Formatos ya analizados: Toyota OC (SAP), Toyota OP, Swetech OP, Master Bus (3 PDFs), Facturas Gateway AFIP.
+- [ ] **Vista LISTA** como alternativa al kanban — toggle en el dashboard para ver todos los presupuestos en tabla con filtros por estado, cliente, fecha.
+- [ ] **Limpieza de filas vacías** en la hoja `clientes` de Sheets (códigos 2-10 generados durante debugging). Hacer manualmente desde Google Sheets.
+- [ ] **Endpoint /debug-error**: sacar de producción una vez estabilizado (o dejarlo solo para IPs internas).
+
+## Módulo Presupuestos — mejoras de UX pendientes
+
+- [ ] Al aprobar un presupuesto sin adjuntar PDF de OC, el sistema avanza igualmente. Implementado "Editar OC" para corrección posterior — OK. Evaluar si agregar validación de campos mínimos (al menos N° OC).
+- [ ] Regenerar PDF de presupuestos viejos (pre-Drive) y subirlos a Drive retroactivamente — los 12 de prueba de agosto 2026 están perdidos, no urgente.
+
+## Pipeline — funcionalidades pendientes
+
+- [ ] **Indicador de días sin respuesta** en cards Enviados — mostrar cuántos días pasaron desde la fecha del presupuesto para que el operador sepa qué hacer seguimiento.
+- [ ] **Historial de acciones** por presupuesto — registro de cuándo cambió de estado y quién lo hizo (preparación para multi-usuario).
+- [ ] **Notificación** cuando un presupuesto lleva N días sin respuesta (email o banner en dashboard).
 
 ## Decisiones de negocio (pendientes de definición)
 
-- [ ] ¿El número de OC lo genera el sistema o lo ingresa el cliente en la OC que manda?
-- [ ] ¿Cuál es el límite mensual de facturación actual? (para configurar la alerta)
+- [ ] ¿El número de OC lo genera el sistema o lo ingresa el operador copiando el que manda el cliente? → **Confirmado**: lo ingresa el operador desde la OC del cliente.
+- [ ] ¿Cuál es el límite mensual de facturación actual? (para configurar la alerta futura)
 - [ ] ¿Facturación electrónica AFIP? (módulo más complejo, a decidir si entra en el alcance)
 - [ ] ¿Los técnicos van a tener acceso al sistema para ver sus tareas asignadas, o solo lo ve el programador?
 - [ ] ¿Los 15 mantenimientos mensuales tienen cliente/fecha/frecuencia definidos para precargarlos?
 
+## Módulos nuevos — por arrancar
+
+- [ ] **Agenda / Calendario**: mantenimientos mensuales obligatorios, trabajos rápidos, asignación a técnicos, resumen diario.
+- [ ] **Autenticación Google Login**: control de acceso con roles (operador, facturación, etc.)
+
 ---
-*Última actualización: 2026-07-29*
+
+## Resueltos ✓
+
+- [x] Hosting: Render free plan — `gestion.gateway.com.ar` live
+- [x] Google Sheets como DB — Service Account configurado, todas las hojas activas
+- [x] Google Drive como almacenamiento persistente — PDFs subidos automáticamente por cliente
+- [x] API del dólar: dolarapi.com (oficial=billete, mayorista=divisa), cache 30 min
+- [x] Pipeline completo Enviado→Aprobado→Facturado→Cobrado con popups y Drive upload
+- [x] Kanban dashboard con dot verde/rojo para estado de cobro
+- [x] Hojas Sheets: `historial` (+ columnas OC), `facturas` (nueva)
+- [x] Editar OC desde cards Aprobados sin cambiar de estado
+
+---
+*Última actualización: 2026-08-13*

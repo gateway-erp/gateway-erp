@@ -12,21 +12,25 @@ Sistema web propio para Gateway que reemplaza y centraliza herramientas dispersa
 ## Módulos planificados
 | Módulo | Descripción | Estado |
 |---|---|---|
-| Presupuestos | Crear, enviar y hacer seguimiento de presupuestos | En desarrollo |
-| Órdenes de Compra | Vinculadas a presupuestos, handoff a facturación con alertas | Planificado |
-| Facturación | Emisión, historial, alertas de límite, proyección fiscal | Planificado |
+| Presupuestos | Crear PDF, historial, pipeline kanban | **LIVE en producción** |
+| OC + Factura + Cobro | Enganche al presupuesto vía pipeline | **LIVE en producción** |
 | Agenda / Calendario | Mantenimientos, trabajos, asignación a técnicos, envío diario | Planificado |
+| Facturación AFIP | Integración con AFIP, alertas fiscales | Planificado |
 | Layout Cámaras | Ya desarrollado — integrar como módulo del sistema | Hecho (externo) |
 
 ---
 
 ## Stack tecnológico
-- **Backend**: Python (FastAPI)
-- **Base de datos**: Google Sheets vía API con Service Account (suite Google ya en uso, acceso remoto, cero costo adicional)
-- **Frontend**: Web app responsive — misma interfaz en PC, tablet y celular. Sin instalación, sin actualizaciones manuales.
-- **Autenticación**: Google Login
-- **Hosting**: gateway.com.ar corre en hosting compartido tipo revendedor (Ferozo/DonWeb, Linux, Plesk) — confirmado 2026-07-28, sin acceso root. Mismo panel donde viven otros proyectos de Gateway (dolibarr, epesi, osticket, etc. bajo `public_html`). El backend Python no puede correr ahí: se usará un servicio aparte (Render/Railway/Fly.io capa gratuita), conectado a gateway.com.ar por subdominio o proxy — falta elegir cuál y definir la conexión
-- **Diseño modular**: cada módulo con su propia lógica y permisos para poder delegar accesos por rol (programador, operador de facturación, técnico)
+- **Backend**: Python 3.11 / FastAPI — hosteado en **Render** (free plan, auto-deploy desde GitHub)
+- **Base de datos**: **Google Sheets** vía Service Account (`gateway-erp-bot@gateway-erp-504713.iam.gserviceaccount.com`). Planilla: `Gateway_ERP-Basededatos` (ID: `1dGgARZE2Ow-4yibOX6IM1mNd6VOLSmrPS1F4SceYrYI`)
+- **Almacenamiento de archivos**: **Google Drive** — PDFs subidos automáticamente a estructura por cliente (`Clientes/C-XXXX - Nombre/Presupuestos|OC|Facturas|OP/`). El filesystem de Render es efímero; Drive es la persistencia real.
+- **PDF**: ReportLab para presupuestos. pymupdf instalado (pendiente auto-extracción)
+- **Frontend**: HTML + JS vanilla + CSS propio (tema navy/gris oscuro, responsive)
+- **Cotización USD**: API dolarapi.com — `oficial` = billete (minorista), `mayorista` = divisa. Cache 30 min.
+- **URL producción**: `https://gestion.gateway.com.ar` (CNAME → gateway-erp.onrender.com)
+- **GitHub**: `gateway-erp/gateway-erp` (privado) — push a master = deploy automático
+- **Autenticación**: pendiente (Google Login)
+- **Diseño modular**: cada módulo con su propia lógica y permisos para poder delegar accesos por rol
 
 ---
 
@@ -38,7 +42,7 @@ Sistema web propio para Gateway que reemplaza y centraliza herramientas dispersa
 ## Registro por módulo
 
 ### Presupuestos
-**Estado: funcional en local — pendiente conexión Google Sheets y hosting.**
+**Estado: LIVE en producción (gestion.gateway.com.ar) — 2026-08-13**
 
 #### Problemas del proceso anterior (Word) que resuelve
 1. Diseño se corrría al escribir → plantilla fija generada desde código
@@ -112,35 +116,122 @@ reportlab, pillow
 pymupdf
 ```
 
-#### Próximo paso del módulo
-Conectar Google Sheets como base de datos vía Service Account (reemplaza los JSON de `data/`). Pasos para el usuario:
-1. Ir a console.cloud.google.com → crear proyecto "Gateway ERP"
-2. Activar Google Sheets API y Google Drive API
-3. Crear Service Account (IAM & Admin → Service Accounts)
-4. Generar clave JSON y compartirla
-5. Compartir los Sheets con el email de la service account
+#### Decisiones de diseño del PDF
+- Fondo: `#EEF0F4`, grilla `#B0B8C6`, alternancia filas gris claro `#E4E8EE`
+- Logo: `Logo-Gateway.jpeg` (en raíz del proyecto), con fallback a `assets/logo_gateway_0.png`
+- Dirección: Berutti 974, 2804 Campana
+- IMPORTANTE: bloque de ancho completo con `<b>IMPORTANTE: </b>` inline en ReportLab
+- Pie fijo: condiciones de pago + caja firma + totales (base + IVA por alícuota + total navy)
+
+#### Cotización USD en el formulario
+- Dos pestañas: Billete (minorista) y Divisa (mayorista)
+- Al cambiar de pestaña se recalcula el conversor si tiene valor ingresado
+- Boxes de compra/venta con fondo gris oscuro y borde para contraste
+
+#### Archivos del módulo (estado actual)
+```
+main.py                    ← FastAPI: rutas, endpoints pipeline, lógica de negocio
+db.py                      ← Toda la lógica de Sheets: clientes, items, historial, facturas
+drive.py                   ← Integración Drive: subir_presupuesto(), subir_documento()
+cotizacion.py              ← API dolarapi.com con cache 30 min
+presupuestos/generar_pdf.py ← ReportLab PDF
+templates/
+  nuevo_presupuesto.html   ← Formulario de carga con autocomplete y conversor
+  dashboard.html           ← Dashboard kanban (vista principal)
+static/style.css           ← Estilos del formulario
+Logo-Gateway.jpeg          ← Logo oficial (en raíz)
+requirements.txt           ← Dependencias Python (incluye google-api-python-client)
+runtime.txt                ← Python 3.11 (fuerza versión en Render)
+```
 
 ---
 
-### Órdenes de Compra (OC)
-**Estado: planificado.**
+### Pipeline Presupuesto → OC → Factura → Cobro
+**Estado: LIVE en producción — 2026-08-13**
 
-Cadena completa:
-`Email de pedido → Presupuesto → Aprobación → OC → Trabajo realizado → Factura`
+#### Flujo de estados
+```
+Enviado → Aprobado → Facturado → (cobrado 🟢 / pendiente cobro 🔴)
+        ↘ Rechazado (colapsado al pie del kanban, conservado para reflotar)
+```
 
-- OC vinculada al presupuesto aprobado (número propio de OC del cliente)
-- Panel del programador: OC activas, pendientes de facturar, facturadas
-- Handoff sin emails: el programador marca OC lista → aparece en bandeja del operador de facturación
-- Alertas bidireccionales entre programador y operador
-- Bandeja de OC pendientes + historial de facturadas
+- **Enviado**: estado inicial automático al generar el PDF
+- **Aprobado**: cliente confirmó verbalmente o con OC formal. El operador registra N° OC, fecha, monto y opcionalmente sube el PDF de la OC.
+- **Facturado**: se emite factura Gateway (puede haber N facturas por presupuesto — ej. insumos + mano de obra). El operador registra N° factura, fechas y opcionalmente sube el PDF.
+- **Cobrado**: se registra la Orden de Pago del cliente, con retenciones desglosadas por tipo. El sistema calcula el monto neto automáticamente.
+
+#### Vista kanban del dashboard
+- 3 columnas: Enviados / Aprobados / Facturados
+- Rechazados colapsados al pie (toggle)
+- Dot verde 🟢 = todas las facturas del presupuesto cobradas; rojo 🔴 = alguna pendiente; gris = sin OP registrada
+- Botón "Editar OC" en Aprobados para corregir datos sin cambiar de estado
+
+#### Modelo de datos — hojas en Google Sheets
+
+**Hoja `historial`** (presupuestos + datos OC):
+```
+numero | ref_cliente | fecha | fecha_validez | codigo_cliente |
+moneda | condiciones_pago | cliente_nombre | archivo | estado | total | drive_link |
+oc_numero | oc_fecha | oc_monto | oc_drive_link
+```
+
+**Hoja `facturas`** (N:1 con presupuesto — 1 fila por factura):
+```
+presupuesto_numero | fact_numero | fact_fecha | fact_vto_pago | fact_monto |
+fact_drive_link | op_numero | op_fecha | op_monto_bruto |
+ret_ganancias | ret_iibb | ret_seghigiene | ret_otros |
+op_monto_neto | op_drive_link | ret_drive_link_1 | ret_drive_link_2 | cobro_ok
+```
+
+`op_monto_neto = op_monto_bruto - (ret_ganancias + ret_iibb + ret_seghigiene + ret_otros)`
+
+#### Relaciones entre documentos
+- 1 Presupuesto → 1 OC → N Facturas → cada Factura tiene 1 Orden de Pago (1:1)
+- Si hay 2 facturas (insumos + mano de obra) → 2 filas en hoja facturas, cada una con su propia OP
+
+#### Estructura de carpetas en Google Drive
+```
+Datos_Software_ERP/ (raíz: 14UwyCzQ0CvKF6vFQHEeqfWiHbs2PoMwI)
+  └─ Clientes/
+       └─ C-0001 - TOYOTA BOSHOKU/
+            ├─ Presupuestos/        ← PDFs de presupuestos Gateway
+            ├─ Ordenes de Compra/   ← PDFs de OC del cliente
+            ├─ Facturas/            ← PDFs de facturas Gateway
+            └─ Ordenes de Pago/     ← OP + Certs. Retención del cliente
+```
+Carpetas creadas automáticamente al subir cada documento. Los PDFs son públicos "anyone with link can view".
+
+#### Endpoints del pipeline
+```
+POST /api/rechazar/{numero}    ← Cambia estado a "rechazado"
+POST /api/aprobar/{numero}     ← Registra OC, cambia estado a "aprobado"
+                                  Form: oc_numero, oc_fecha, oc_monto, archivo (PDF)
+POST /api/facturar/{numero}    ← Registra factura, cambia estado a "facturado"
+                                  Form: fact_numero, fact_fecha, fact_vto_pago, fact_monto, archivo
+POST /api/cobrar/{numero}      ← Registra cobro en hoja facturas
+                                  Form: fact_numero, op_numero, op_fecha, op_monto_bruto,
+                                        ret_ganancias, ret_iibb, ret_seghigiene, ret_otros,
+                                        archivo_op, archivo_ret1, archivo_ret2
+GET  /api/facturas/{numero}    ← Lista facturas de un presupuesto
+GET  /debug-error              ← Diagnóstico: cuenta historial y facturas en Sheets
+```
+
+#### Documentos reales analizados (para futura auto-extracción con pymupdf)
+- **Toyota TBAR**: OC formato SAP (4500073819) con N° OC, fecha, monto claramente identificables
+- **Toyota OP**: Orden de Pago Toyota (formato PDF estructurado)
+- **Swetech**: OP con retenciones embebidas en el mismo PDF
+- **Master Bus**: OP + Cert. Retención Ganancias + Cert. Retención IIBB (3 PDFs separados)
+- **Facturas Gateway**: formato AFIP FCE MiPyMEs tipo A (COD 201) y Factura A (COD 01). N° OC embebida en descripción del ítem.
+
+#### PDFs en Render (filesystem efímero)
+Los PDFs generados en `presupuestos/output/` se pierden con cada redeploy. La fuente de verdad es Google Drive. Los presupuestos generados a partir del 2026-08-06 tienen `drive_link` persistente. Los anteriores (de prueba) no tienen recuperación.
 
 ---
 
-### Facturación
+### Facturación AFIP
 **Estado: planificado.**
 
 - Facturas vinculadas a OC
-- Historial por cliente y período
 - Alerta de límite mensual de facturación antes de emitir
 - Cálculo estimado de Ingresos Brutos
 - Proyección IVA compras vs. IVA ventas para planificación fiscal

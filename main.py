@@ -27,10 +27,25 @@ templates = _Templates()
 
 
 # ── rutas ─────────────────────────────────────────────────────────────────────
+@app.get("/debug-error")
+async def debug_error():
+    import traceback
+    try:
+        historial = db.load_historial()
+        facturas  = db.load_facturas()
+        return JSONResponse({"ok": True, "historial_count": len(historial), "facturas_count": len(facturas)})
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e), "trace": traceback.format_exc()}, status_code=200)
+
+
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
     historial  = db.load_historial()
-    todas_facs = db.load_facturas()
+    try:
+        todas_facs = db.load_facturas()
+    except Exception as e:
+        print(f"[Dashboard] Error cargando facturas: {e}")
+        todas_facs = []
     hoy        = date.today()
     mes_actual = f"{str(hoy.year)[2:]}{hoy.month:02d}"
 

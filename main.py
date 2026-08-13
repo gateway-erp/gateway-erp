@@ -1,9 +1,10 @@
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi import FastAPI, Request, UploadFile, File, Form
+from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from jinja2 import Environment, FileSystemLoader
 from datetime import date, timedelta
-import os
+from typing import Optional
+import os, shutil
 
 import db
 import cotizacion
@@ -28,24 +29,32 @@ templates = _Templates()
 # ── rutas ─────────────────────────────────────────────────────────────────────
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
-    historial = db.load_historial()
-    hoy = date.today()
+    historial  = db.load_historial()
+    todas_facs = db.load_facturas()
+    hoy        = date.today()
     mes_actual = f"{str(hoy.year)[2:]}{hoy.month:02d}"
 
-    # calcular totales por presupuesto
-    def calcular_total(p):
-        items = p.get("items", [])
-        if isinstance(items, list):
-            base = sum(i.get("precio_unitario", 0) * i.get("cantidad", 1) for i in items)
-            iva  = sum(i.get("precio_unitario", 0) * i.get("cantidad", 1) * i.get("iva_pct", 0) / 100 for i in items)
-            return base + iva
-        return 0
-
     def fmt(n):
-        return f"{n:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        try:
+            return f"{float(n):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+        except Exception:
+            return "—"
+
+    # Indexar facturas por presupuesto
+    facs_por_presup = {}
+    for f in todas_facs:
+        k = str(f.get("presupuesto_numero", ""))
+        facs_por_presup.setdefault(k, []).append(f)
 
     for p in historial:
         p["total_fmt"] = fmt(p.get("total", 0))
+        numero = str(p.get("numero", ""))
+        facs   = facs_por_presup.get(numero, [])
+        p["facturas"] = facs
+        if facs:
+            p["cobro_ok"] = all(str(f.get("cobro_ok", "no")).lower() == "si" for f in facs)
+        else:
+            p["cobro_ok"] = None  # sin facturas
 
     stats = {
         "mes":        sum(1 for p in historial if mes_actual in p.get("numero", "")),
@@ -53,9 +62,10 @@ async def dashboard(request: Request):
         "aprobados":  sum(1 for p in historial if p.get("estado") == "aprobado" and mes_actual in p.get("numero", "")),
     }
 
+    historial_rev = list(reversed(historial))
     return templates.TemplateResponse("dashboard.html", {
         "request":        request,
-        "historial":      list(reversed(historial)),
+        "historial":      historial_rev,
         "stats":          stats,
         "proximo_numero": db.peek_numero(),
     })
@@ -199,3 +209,129 @@ async def generar(request: Request):
     db.guardar_historial(datos, nombre_archivo, drive_link=drive_link)
 
     return FileResponse(output_path, media_type="application/pdf", filename=nombre_archivo)
+
+
+# ── PIPELINE — cambio de estado ───────────────────────────────────────────────
+@app.post("/api/rechazar/{numero}")
+async def rechazar(numero: str):
+    ok = db.actualizar_estado(numero, "rechazado")
+    return JSONResponse({"ok": ok})
+
+
+@app.post("/api/aprobar/{numero}")
+async def aprobar(
+    numero: str,
+    oc_numero: str = Form(""),
+    oc_fecha: str = Form(""),
+    oc_monto: str = Form(""),
+    archivo: Optional[UploadFile] = File(None),
+):
+    drive_link = ""
+    if archivo and archivo.filename:
+        tmp = f"presupuestos/output/OC_{numero}_{archivo.filename}"
+        with open(tmp, "wb") as f:
+            shutil.copyfileobj(archivo.file, f)
+        try:
+            import drive as drive_mod
+            # Extraer codigo_cliente del historial
+            historial = db.load_historial()
+            p = next((x for x in historial if str(x["numero"]) == numero), {})
+            cod = str(p.get("codigo_cliente", "")).replace("C-", "")
+            nombre_cli = p.get("cliente_nombre", "")
+            drive_link = drive_mod.subir_documento(
+                pdf_path=tmp, nombre_archivo=archivo.filename,
+                codigo_cliente=cod, nombre_cliente=nombre_cli,
+                subcarpeta="Ordenes de Compra",
+            )
+        except Exception as e:
+            print(f"[Drive] Error OC: {e}")
+
+    ok = db.guardar_oc(numero, oc_numero, oc_fecha, oc_monto, drive_link)
+    return JSONResponse({"ok": ok, "drive_link": drive_link})
+
+
+@app.post("/api/facturar/{numero}")
+async def facturar(
+    numero: str,
+    fact_numero: str = Form(""),
+    fact_fecha: str = Form(""),
+    fact_vto_pago: str = Form(""),
+    fact_monto: str = Form(""),
+    archivo: Optional[UploadFile] = File(None),
+):
+    drive_link = ""
+    if archivo and archivo.filename:
+        tmp = f"presupuestos/output/FAC_{numero}_{archivo.filename}"
+        with open(tmp, "wb") as f:
+            shutil.copyfileobj(archivo.file, f)
+        try:
+            import drive as drive_mod
+            historial = db.load_historial()
+            p = next((x for x in historial if str(x["numero"]) == numero), {})
+            cod = str(p.get("codigo_cliente", "")).replace("C-", "")
+            nombre_cli = p.get("cliente_nombre", "")
+            drive_link = drive_mod.subir_documento(
+                pdf_path=tmp, nombre_archivo=archivo.filename,
+                codigo_cliente=cod, nombre_cliente=nombre_cli,
+                subcarpeta="Facturas",
+            )
+        except Exception as e:
+            print(f"[Drive] Error FAC: {e}")
+
+    db.guardar_factura(numero, fact_numero, fact_fecha, fact_vto_pago, fact_monto, drive_link)
+    db.actualizar_estado(numero, "facturado")
+    return JSONResponse({"ok": True, "drive_link": drive_link})
+
+
+@app.post("/api/cobrar/{numero}")
+async def cobrar(
+    numero: str,
+    fact_numero: str = Form(""),
+    op_numero: str = Form(""),
+    op_fecha: str = Form(""),
+    op_monto_bruto: str = Form(""),
+    ret_ganancias: str = Form("0"),
+    ret_iibb: str = Form("0"),
+    ret_seghigiene: str = Form("0"),
+    ret_otros: str = Form("0"),
+    archivo_op: Optional[UploadFile] = File(None),
+    archivo_ret1: Optional[UploadFile] = File(None),
+    archivo_ret2: Optional[UploadFile] = File(None),
+):
+    historial = db.load_historial()
+    p = next((x for x in historial if str(x["numero"]) == numero), {})
+    cod = str(p.get("codigo_cliente", "")).replace("C-", "")
+    nombre_cli = p.get("cliente_nombre", "")
+
+    def _subir(upl, prefijo):
+        if not upl or not upl.filename:
+            return ""
+        tmp = f"presupuestos/output/{prefijo}_{numero}_{upl.filename}"
+        with open(tmp, "wb") as f:
+            shutil.copyfileobj(upl.file, f)
+        try:
+            import drive as drive_mod
+            return drive_mod.subir_documento(
+                pdf_path=tmp, nombre_archivo=upl.filename,
+                codigo_cliente=cod, nombre_cliente=nombre_cli,
+                subcarpeta="Ordenes de Pago",
+            )
+        except Exception as e:
+            print(f"[Drive] Error {prefijo}: {e}")
+            return ""
+
+    op_link   = _subir(archivo_op,   "OP")
+    ret1_link = _subir(archivo_ret1, "RET1")
+    ret2_link = _subir(archivo_ret2, "RET2")
+
+    ok = db.guardar_cobro(
+        numero, fact_numero, op_numero, op_fecha, op_monto_bruto,
+        ret_ganancias, ret_iibb, ret_seghigiene, ret_otros,
+        op_link, ret1_link, ret2_link,
+    )
+    return JSONResponse({"ok": ok})
+
+
+@app.get("/api/facturas/{numero}")
+async def get_facturas(numero: str):
+    return db.load_facturas_por_presupuesto(numero)

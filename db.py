@@ -130,8 +130,11 @@ def next_numero():
 
 
 # ── HISTORIAL ─────────────────────────────────────────────────────────────────
-_H_HIS = ["numero", "ref_cliente", "fecha", "fecha_validez", "codigo_cliente",
-          "moneda", "condiciones_pago", "cliente_nombre", "archivo", "estado", "total", "drive_link"]
+_H_HIS = [
+    "numero", "ref_cliente", "fecha", "fecha_validez", "codigo_cliente",
+    "moneda", "condiciones_pago", "cliente_nombre", "archivo", "estado", "total", "drive_link",
+    "oc_numero", "oc_fecha", "oc_monto", "oc_drive_link",
+]
 
 def guardar_historial(datos, nombre_archivo, drive_link=None):
     items = datos.get("items", [])
@@ -150,10 +153,97 @@ def guardar_historial(datos, nombre_archivo, drive_link=None):
         datos["condiciones_pago"],
         datos["cliente"]["nombre"],
         nombre_archivo,
-        "generado",
+        "enviado",
         total,
         drive_link or "",
+        "", "", "", "",  # OC columns vacíos
     ])
 
 def load_historial():
     return _ws("historial", _H_HIS).get_all_records()
+
+def actualizar_estado(numero, estado):
+    ws = _ws("historial", _H_HIS)
+    col = _H_HIS.index("estado") + 1
+    for i, r in enumerate(ws.get_all_records(), start=2):
+        if str(r["numero"]) == str(numero):
+            ws.update_cell(i, col, estado)
+            return True
+    return False
+
+def guardar_oc(numero, oc_numero, oc_fecha, oc_monto, oc_drive_link=""):
+    ws = _ws("historial", _H_HIS)
+    records = ws.get_all_records()
+    for i, r in enumerate(records, start=2):
+        if str(r["numero"]) == str(numero):
+            col_base = _H_HIS.index("oc_numero") + 1
+            ws.update_cell(i, col_base,     oc_numero)
+            ws.update_cell(i, col_base + 1, oc_fecha)
+            ws.update_cell(i, col_base + 2, oc_monto)
+            ws.update_cell(i, col_base + 3, oc_drive_link)
+            ws.update_cell(i, _H_HIS.index("estado") + 1, "aprobado")
+            return True
+    return False
+
+
+# ── FACTURAS ──────────────────────────────────────────────────────────────────
+_H_FAC = [
+    "presupuesto_numero", "fact_numero", "fact_fecha", "fact_vto_pago", "fact_monto",
+    "fact_drive_link", "op_numero", "op_fecha", "op_monto_bruto",
+    "ret_ganancias", "ret_iibb", "ret_seghigiene", "ret_otros",
+    "op_monto_neto", "op_drive_link", "ret_drive_link_1", "ret_drive_link_2", "cobro_ok",
+]
+
+def load_facturas():
+    return _ws("facturas", _H_FAC).get_all_records()
+
+def load_facturas_por_presupuesto(numero):
+    return [f for f in load_facturas() if str(f["presupuesto_numero"]) == str(numero)]
+
+def guardar_factura(presupuesto_numero, fact_numero, fact_fecha, fact_vto_pago, fact_monto, fact_drive_link=""):
+    ws = _ws("facturas", _H_FAC)
+    ws.append_row([
+        presupuesto_numero, fact_numero, fact_fecha, fact_vto_pago, fact_monto,
+        fact_drive_link, "", "", "",
+        "", "", "", "",
+        "", "", "", "", "no",
+    ])
+
+def guardar_cobro(presupuesto_numero, fact_numero, op_numero, op_fecha, op_monto_bruto,
+                  ret_ganancias, ret_iibb, ret_seghigiene, ret_otros,
+                  op_drive_link="", ret_drive_link_1="", ret_drive_link_2=""):
+    ws = _ws("facturas", _H_FAC)
+    op_monto_neto = round(
+        float(op_monto_bruto or 0)
+        - float(ret_ganancias or 0)
+        - float(ret_iibb or 0)
+        - float(ret_seghigiene or 0)
+        - float(ret_otros or 0),
+        2
+    )
+    for i, r in enumerate(ws.get_all_records(), start=2):
+        if (str(r["presupuesto_numero"]) == str(presupuesto_numero)
+                and str(r["fact_numero"]) == str(fact_numero)):
+            col_op = _H_FAC.index("op_numero") + 1
+            ws.update_cell(i, col_op,      op_numero)
+            ws.update_cell(i, col_op + 1,  op_fecha)
+            ws.update_cell(i, col_op + 2,  op_monto_bruto)
+            col_ret = _H_FAC.index("ret_ganancias") + 1
+            ws.update_cell(i, col_ret,     ret_ganancias)
+            ws.update_cell(i, col_ret + 1, ret_iibb)
+            ws.update_cell(i, col_ret + 2, ret_seghigiene)
+            ws.update_cell(i, col_ret + 3, ret_otros)
+            col_neto = _H_FAC.index("op_monto_neto") + 1
+            ws.update_cell(i, col_neto,     op_monto_neto)
+            ws.update_cell(i, col_neto + 1, op_drive_link)
+            ws.update_cell(i, col_neto + 2, ret_drive_link_1)
+            ws.update_cell(i, col_neto + 3, ret_drive_link_2)
+            ws.update_cell(i, _H_FAC.index("cobro_ok") + 1, "si")
+            return True
+    return False
+
+def presupuesto_cobrado_ok(numero):
+    facturas = load_facturas_por_presupuesto(numero)
+    if not facturas:
+        return None  # sin facturas registradas
+    return all(str(f.get("cobro_ok", "no")).lower() == "si" for f in facturas)

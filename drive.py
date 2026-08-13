@@ -56,6 +56,31 @@ def _obtener_o_crear(service, nombre, parent_id):
     return folder_id
 
 
+def subir_documento(pdf_path, nombre_archivo, codigo_cliente, nombre_cliente, subcarpeta="Presupuestos"):
+    """
+    Sube cualquier documento a:
+      Documentos/ → Clientes/ → C-XXXX - Nombre/ → {subcarpeta}/
+    """
+    service = _service()
+    clientes_id = _obtener_o_crear(service, "Clientes", DRIVE_ROOT_ID)
+    nombre_carpeta_cliente = f"C-{int(codigo_cliente):04d} - {nombre_cliente}"
+    cliente_id = _obtener_o_crear(service, nombre_carpeta_cliente, clientes_id)
+    sub_id = _obtener_o_crear(service, subcarpeta, cliente_id)
+
+    media = MediaFileUpload(pdf_path, mimetype="application/pdf", resumable=False)
+    archivo = service.files().create(
+        body={"name": nombre_archivo, "parents": [sub_id]},
+        media_body=media,
+        fields="id",
+    ).execute()
+    file_id = archivo["id"]
+    service.permissions().create(
+        fileId=file_id,
+        body={"role": "reader", "type": "anyone"},
+    ).execute()
+    return f"https://drive.google.com/file/d/{file_id}/view"
+
+
 def subir_presupuesto(pdf_path, nombre_archivo, codigo_cliente, nombre_cliente):
     """
     Sube el PDF a:

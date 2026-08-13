@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gateway — Matrices de Cálculo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy: #0F1F3D; --navy-mid: #162644; --navy-card: #1C3056; --navy-line: #243a66;
+      --accent: #3B82F6; --accent-h: #2563EB; --text: #F0F4FF; --text-dim: #8BA3CC;
+      --font-main: 'Montserrat', sans-serif; --font-num: 'Inter', sans-serif;
+    }
+    body { background: var(--navy); color: var(--text); font-family: var(--font-main); min-height: 100vh; }
+    .topbar {
+      background: var(--navy-mid); border-bottom: 1px solid var(--navy-line);
+      padding: 0 32px; height: 64px; display: flex; align-items: center; gap: 32px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .topbar-logo { height: 36px; }
+    .topbar-sep  { width: 1px; height: 28px; background: var(--navy-line); }
+    .topbar-nav  { display: flex; gap: 4px; flex: 1; }
+    .nav-item {
+      padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 500;
+      color: var(--text-dim); text-decoration: none; transition: background .15s, color .15s;
+    }
+    .nav-item:hover  { background: var(--navy-card); color: var(--text); }
+    .nav-item.active { background: var(--accent); color: #fff; }
+    .page { max-width: 900px; margin: 0 auto; padding: 36px 24px; }
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .section-title { font-size: 16px; font-weight: 600; }
+    .btn-nuevo {
+      background: var(--accent); color: #fff; border: none; border-radius: 8px;
+      padding: 9px 18px; font-family: var(--font-main); font-size: 13px; font-weight: 600;
+      cursor: pointer; text-decoration: none; display: inline-flex; align-items: center;
+      gap: 7px; transition: background .15s;
+    }
+    .btn-nuevo:hover { background: var(--accent-h); }
+    .tabla-wrap {
+      background: var(--navy-card); border: 1px solid var(--navy-line);
+      border-radius: 12px; overflow: hidden;
+    }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      background: var(--navy-mid); padding: 11px 16px; text-align: left;
+      font-size: 11px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: .8px; color: var(--text-dim); border-bottom: 1px solid var(--navy-line);
+    }
+    tbody tr { border-bottom: 1px solid var(--navy-line); transition: background .12s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(59,130,246,.07); cursor: pointer; }
+    tbody td { padding: 13px 16px; font-size: 13px; }
+    .td-id { font-family: var(--font-num); font-weight: 600; color: var(--accent); }
+    .td-fecha { font-family: var(--font-num); font-size: 12px; color: var(--text-dim); }
+    .empty-state { text-align: center; padding: 60px; color: var(--text-dim); font-size: 13px; }
+  </style>
+</head>
+<body>
+<div class="topbar">
+  <img src="/static/logo-gateway.jpeg" alt="Gateway" class="topbar-logo">
+  <div class="topbar-sep"></div>
+  <nav class="topbar-nav">
+    <a class="nav-item" href="/">Presupuestos</a>
+    <a class="nav-item active" href="/matrices">Matrices</a>
+    <a class="nav-item" href="#">Facturación</a>
+    <a class="nav-item" href="#">Agenda</a>
+  </nav>
+</div>
+<div class="page">
+  <div class="section-header">
+    <div class="section-title">Matrices de cálculo</div>
+    <a href="/matriz/nueva" class="btn-nuevo">
+      <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Nueva matriz
+    </a>
+  </div>
+  <div class="tabla-wrap">
+    {% if matrices %}
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th><th>Nombre</th><th>Cliente</th><th>Moneda</th><th>Fecha</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in matrices %}
+        <tr onclick="location.href='/matriz/{{ m.id }}'">
+          <td class="td-id">#{{ m.id }}</td>
+          <td style="font-weight:600">{{ m.nombre or '—' }}</td>
+          <td style="color:var(--text-dim)">{{ m.cliente_nombre or '—' }}</td>
+          <td style="font-family:var(--font-num);font-size:12px">{{ m.moneda }}</td>
+          <td class="td-fecha">{{ m.fecha }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">Todavía no hay matrices guardadas. ¡Creá la primera!</div>
+    {% endif %}
+  </div>
+</div>
+</body>
+</html>

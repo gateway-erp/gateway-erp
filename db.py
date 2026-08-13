@@ -247,6 +247,73 @@ def guardar_cobro(presupuesto_numero, fact_numero, op_numero, op_fecha, op_monto
             return True
     return False
 
+# ── PROVEEDORES ───────────────────────────────────────────────────────────────
+_H_PRV = ["nombre", "entrega"]
+
+def load_proveedores():
+    return _ws("proveedores", _H_PRV).get_all_records()
+
+def guardar_proveedor(nombre, entrega=""):
+    existentes = {r["nombre"].strip().lower() for r in load_proveedores()}
+    if nombre.strip().lower() not in existentes:
+        _ws("proveedores", _H_PRV).append_row([nombre.strip(), entrega.strip()])
+
+
+# ── MATRICES DE CÁLCULO ───────────────────────────────────────────────────────
+_H_MAT = ["id", "nombre", "fecha", "cliente_nombre", "moneda", "datos_json"]
+
+def _next_matriz_id():
+    records = _ws("matrices", _H_MAT).get_all_records()
+    if not records:
+        return 1
+    return max(int(r["id"]) for r in records if str(r["id"]).isdigit()) + 1
+
+def guardar_matriz(nombre, cliente_nombre, moneda, datos_json):
+    import json as _json
+    mid = _next_matriz_id()
+    _ws("matrices", _H_MAT).append_row([
+        mid, nombre, date.today().isoformat(),
+        cliente_nombre, moneda,
+        _json.dumps(datos_json, ensure_ascii=False),
+    ])
+    return mid
+
+def actualizar_matriz(mid, nombre, cliente_nombre, moneda, datos_json):
+    import json as _json
+    ws = _ws("matrices", _H_MAT)
+    for i, r in enumerate(ws.get_all_records(), start=2):
+        if str(r["id"]) == str(mid):
+            ws.update_cell(i, 2, nombre)
+            ws.update_cell(i, 4, cliente_nombre)
+            ws.update_cell(i, 5, moneda)
+            ws.update_cell(i, 6, _json.dumps(datos_json, ensure_ascii=False))
+            return True
+    return False
+
+def load_matrices():
+    import json as _json
+    rows = _ws("matrices", _H_MAT).get_all_records()
+    result = []
+    for r in rows:
+        try:
+            r["datos"] = _json.loads(r["datos_json"]) if r.get("datos_json") else {}
+        except Exception:
+            r["datos"] = {}
+        result.append(r)
+    return result
+
+def load_matriz(mid):
+    import json as _json
+    for r in _ws("matrices", _H_MAT).get_all_records():
+        if str(r["id"]) == str(mid):
+            try:
+                r["datos"] = _json.loads(r["datos_json"]) if r.get("datos_json") else {}
+            except Exception:
+                r["datos"] = {}
+            return r
+    return None
+
+
 def presupuesto_cobrado_ok(numero):
     facturas = load_facturas_por_presupuesto(numero)
     if not facturas:

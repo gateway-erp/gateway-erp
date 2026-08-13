@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gateway — Matriz de Cálculo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy:      #0F1F3D;
+      --navy-mid:  #162644;
+      --navy-card: #1C3056;
+      --navy-line: #243a66;
+      --accent:    #3B82F6;
+      --accent-h:  #2563EB;
+      --green:     #22C55E;
+      --amber:     #F59E0B;
+      --red:       #EF4444;
+      --text:      #F0F4FF;
+      --text-dim:  #8BA3CC;
+      --font-main: 'Montserrat', sans-serif;
+      --font-num:  'Inter', sans-serif;
+      --best:      rgba(34,197,94,.18);
+      --best-b:    rgba(34,197,94,.5);
+    }
+    body { background: var(--navy); color: var(--text); font-family: var(--font-main); min-height: 100vh; }
+
+    /* TOPBAR */
+    .topbar {
+      background: var(--navy-mid); border-bottom: 1px solid var(--navy-line);
+      padding: 0 32px; height: 64px;
+      display: flex; align-items: center; gap: 32px;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .topbar-logo { height: 36px; }
+    .topbar-sep  { width: 1px; height: 28px; background: var(--navy-line); }
+    .topbar-nav  { display: flex; gap: 4px; flex: 1; }
+    .nav-item {
+      padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 500;
+      color: var(--text-dim); text-decoration: none; transition: background .15s, color .15s;
+    }
+    .nav-item:hover  { background: var(--navy-card); color: var(--text); }
+    .nav-item.active { background: var(--accent); color: #fff; }
+    .topbar-actions { display: flex; gap: 8px; }
+    .btn-top {
+      padding: 8px 16px; border-radius: 7px; font-size: 12px; font-weight: 600;
+      font-family: var(--font-main); cursor: pointer; border: none;
+      display: inline-flex; align-items: center; gap: 6px; transition: background .15s;
+    }
+    .btn-save    { background: var(--accent); color: #fff; }
+    .btn-save:hover { background: var(--accent-h); }
+    .btn-presup  { background: rgba(34,197,94,.2); color: #86EFAC; border: 1px solid rgba(34,197,94,.35); }
+    .btn-presup:hover { background: rgba(34,197,94,.3); }
+
+    /* PAGE */
+    .page { max-width: 1400px; margin: 0 auto; padding: 28px 24px; }
+
+    /* META */
+    .meta-row {
+      display: grid; grid-template-columns: 2fr 2fr 1fr 1fr; gap: 12px; margin-bottom: 24px;
+    }
+    .meta-group { display: flex; flex-direction: column; gap: 4px; }
+    .meta-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--text-dim); }
+    .meta-input {
+      background: var(--navy-card); border: 1px solid var(--navy-line); border-radius: 7px;
+      padding: 8px 12px; color: var(--text); font-family: var(--font-main); font-size: 13px;
+      transition: border-color .15s;
+    }
+    .meta-input:focus { outline: none; border-color: var(--accent); }
+    select.meta-input { cursor: pointer; }
+
+    /* TABLA MATRIZ */
+    .matriz-wrap { overflow-x: auto; margin-bottom: 20px; }
+    .matriz-table {
+      border-collapse: separate; border-spacing: 0;
+      min-width: 600px; width: 100%;
+    }
+
+    /* cabecera de productos */
+    .th-prod {
+      background: var(--navy-mid); border: 1px solid var(--navy-line);
+      padding: 0; min-width: 160px; vertical-align: top; position: relative;
+    }
+    .th-prod-inner { padding: 8px 10px 6px; }
+    .th-prod input[type="text"] {
+      width: 100%; background: transparent; border: none;
+      color: var(--text); font-family: var(--font-main); font-size: 12px; font-weight: 600;
+      outline: none;
+    }
+    .th-prod input[type="text"]::placeholder { color: var(--text-dim); font-weight: 400; }
+    .th-prod-params {
+      display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px;
+      padding: 4px 8px 8px; border-top: 1px solid var(--navy-line);
+      background: rgba(0,0,0,.1);
+    }
+    .param-box { display: flex; flex-direction: column; gap: 2px; }
+    .param-label { font-size: 9px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .3px; }
+    .param-input {
+      background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08);
+      border-radius: 4px; padding: 3px 5px; color: var(--text);
+      font-family: var(--font-num); font-size: 11px; width: 100%; outline: none;
+      transition: border-color .15s;
+    }
+    .param-input:focus { border-color: var(--accent); }
+    .btn-del-col {
+      position: absolute; top: 4px; right: 4px;
+      background: none; border: none; color: var(--text-dim); cursor: pointer;
+      font-size: 14px; line-height: 1; padding: 2px; border-radius: 3px;
+      transition: color .15s, background .15s;
+    }
+    .btn-del-col:hover { color: var(--red); background: rgba(239,68,68,.1); }
+
+    /* celda proveedor (row header) */
+    .th-prv {
+      background: var(--navy-mid); border: 1px solid var(--navy-line);
+      min-width: 180px; padding: 0; vertical-align: middle;
+    }
+    .prv-inner { display: flex; align-items: center; gap: 6px; padding: 6px 10px; }
+    .prv-name {
+      flex: 1; background: transparent; border: none;
+      color: var(--text); font-family: var(--font-main); font-size: 12px; font-weight: 600;
+      outline: none;
+    }
+    .prv-name::placeholder { color: var(--text-dim); font-weight: 400; }
+    .prv-entrega {
+      width: 80px; background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.08); border-radius: 4px;
+      padding: 2px 5px; color: var(--text-dim); font-family: var(--font-num); font-size: 10px;
+      outline: none;
+    }
+    .btn-del-row {
+      background: none; border: none; color: var(--text-dim); cursor: pointer;
+      font-size: 14px; padding: 2px 4px; border-radius: 3px; transition: color .15s;
+    }
+    .btn-del-row:hover { color: var(--red); }
+
+    /* celda de precio */
+    .td-precio {
+      border: 1px solid var(--navy-line); padding: 0;
+      background: var(--navy-card); text-align: center; vertical-align: middle;
+    }
+    .td-precio.is-best { background: var(--best); border-color: var(--best-b); }
+    .precio-input {
+      width: 100%; background: transparent; border: none;
+      color: var(--text); font-family: var(--font-num); font-size: 12px;
+      text-align: center; padding: 8px 6px; outline: none;
+    }
+    .precio-input::placeholder { color: rgba(139,163,204,.4); }
+    .precio-input.is-best { color: #86EFAC; font-weight: 700; }
+
+    /* filas calculadas */
+    .tr-calc td, .tr-calc th {
+      border: 1px solid var(--navy-line);
+      padding: 6px 10px; font-size: 12px;
+    }
+    .tr-mejor { background: rgba(34,197,94,.08); }
+    .tr-mejor td { color: #86EFAC; font-family: var(--font-num); font-weight: 600; text-align: center; }
+    .tr-venta  { background: rgba(59,130,246,.08); }
+    .tr-venta td { color: #93C5FD; font-family: var(--font-num); font-weight: 700; text-align: center; font-size: 13px; }
+    .tr-total  { background: rgba(245,158,11,.08); }
+    .tr-total td { color: #FCD34D; font-family: var(--font-num); font-weight: 700; text-align: center; }
+    .tr-label th { background: var(--navy-mid); font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-dim); font-weight: 600; }
+    .tr-label td { background: var(--navy-mid); }
+
+    /* botones agregar */
+    .btn-add {
+      background: none; border: 1px dashed var(--navy-line); border-radius: 7px;
+      color: var(--text-dim); font-family: var(--font-main); font-size: 12px; font-weight: 500;
+      padding: 8px 16px; cursor: pointer; transition: border-color .15s, color .15s;
+      display: inline-flex; align-items: center; gap: 6px;
+    }
+    .btn-add:hover { border-color: var(--accent); color: var(--accent); }
+    .add-row { display: flex; gap: 10px; margin-bottom: 24px; }
+
+    /* RESUMEN */
+    .resumen {
+      background: var(--navy-card); border: 1px solid var(--navy-line);
+      border-radius: 12px; padding: 20px 24px;
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: 20px;
+      margin-bottom: 24px;
+    }
+    .res-item { display: flex; flex-direction: column; gap: 4px; }
+    .res-label { font-size: 10px; text-transform: uppercase; letter-spacing: .8px; color: var(--text-dim); font-weight: 600; }
+    .res-value { font-family: var(--font-num); font-size: 20px; font-weight: 700; }
+    .res-value.green  { color: #86EFAC; }
+    .res-value.blue   { color: #93C5FD; }
+    .res-value.amber  { color: #FCD34D; }
+    .res-value.red    { color: #FCA5A5; }
+
+    /* AUTOCOMPLETE */
+    .ac-wrap { position: relative; display: inline-block; width: 100%; }
+    .ac-list {
+      position: absolute; top: 100%; left: 0; z-index: 200;
+      background: var(--navy-card); border: 1px solid var(--navy-line);
+      border-radius: 6px; width: max-content; min-width: 100%;
+      max-height: 180px; overflow-y: auto; display: none;
+    }
+    .ac-item {
+      padding: 7px 12px; font-size: 12px; cursor: pointer;
+      transition: background .1s;
+    }
+    .ac-item:hover { background: rgba(59,130,246,.15); }
+
+    /* IVA select */
+    .iva-select {
+      background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08);
+      border-radius: 4px; color: var(--text); font-family: var(--font-num);
+      font-size: 11px; padding: 3px 4px; width: 100%; outline: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <img src="/static/logo-gateway.jpeg" alt="Gateway" class="topbar-logo">
+  <div class="topbar-sep"></div>
+  <nav class="topbar-nav">
+    <a class="nav-item" href="/">Presupuestos</a>
+    <a class="nav-item" href="/matrices">Matrices</a>
+    <a class="nav-item" href="#">Facturación</a>
+    <a class="nav-item" href="#">Agenda</a>
+  </nav>
+  <div class="topbar-actions">
+    <button class="btn-top btn-save" onclick="guardarMatriz()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+      Guardar
+    </button>
+    <button class="btn-top btn-presup" onclick="generarPresupuesto()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      → Presupuesto
+    </button>
+  </div>
+</div>
+
+<div class="page">
+
+  <!-- META -->
+  <div class="meta-row">
+    <div class="meta-group">
+      <span class="meta-label">Nombre de la matriz</span>
+      <input class="meta-input" id="meta-nombre" type="text" placeholder="ej. Cámaras Toyota Q3 2026"
+        value="{{ matriz.nombre if matriz else '' }}">
+    </div>
+    <div class="meta-group">
+      <span class="meta-label">Cliente</span>
+      <input class="meta-input" id="meta-cliente" type="text" placeholder="ej. Toyota Boshoku"
+        value="{{ matriz.cliente_nombre if matriz else '' }}">
+    </div>
+    <div class="meta-group">
+      <span class="meta-label">Moneda</span>
+      <select class="meta-input" id="meta-moneda">
+        <option value="USD" {% if not matriz or matriz.moneda == 'USD' %}selected{% endif %}>USD — Dólares</option>
+        <option value="ARS" {% if matriz and matriz.moneda == 'ARS' %}selected{% endif %}>ARS — Pesos</option>
+      </select>
+    </div>
+    <div class="meta-group">
+      <span class="meta-label">ID</span>
+      <input class="meta-input" id="meta-id" type="text" readonly
+        value="{{ matriz.id if matriz else 'Nueva' }}"
+        style="color:var(--text-dim);cursor:default">
+    </div>
+  </div>
+
+  <!-- TABLA -->
+  <div class="matriz-wrap">
+    <table class="matriz-table" id="matriz-table">
+      <thead id="thead-productos">
+        <!-- generado por JS -->
+      </thead>
+      <tbody id="tbody-proveedores">
+        <!-- generado por JS -->
+      </tbody>
+      <tfoot id="tfoot-calc">
+        <!-- generado por JS -->
+      </tfoot>
+    </table>
+  </div>
+
+  <!-- BOTONES AGREGAR -->
+  <div class="add-row">
+    <button class="btn-add" onclick="agregarProducto()">
+      <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Agregar producto
+    </button>
+    <button class="btn-add" onclick="agregarProveedor()">
+      <svg width="12" height="12" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Agregar proveedor
+    </button>
+  </div>
+
+  <!-- RESUMEN -->
+  <div class="resumen" id="resumen">
+    <div class="res-item">
+      <span class="res-label">Costo total</span>
+      <span class="res-value blue" id="res-costo">—</span>
+    </div>
+    <div class="res-item">
+      <span class="res-label">Precio venta (neto)</span>
+      <span class="res-value green" id="res-venta">—</span>
+    </div>
+    <div class="res-item">
+      <span class="res-label">IVA total</span>
+      <span class="res-value amber" id="res-iva">—</span>
+    </div>
+    <div class="res-item">
+      <span class="res-label">Total con IVA</span>
+      <span class="res-value red" id="res-total">—</span>
+    </div>
+    <div class="res-item">
+      <span class="res-label">Margen bruto</span>
+      <span class="res-value" id="res-margen" style="color:var(--text-dim)">—</span>
+    </div>
+  </div>
+
+</div><!-- /page -->
+
+<script>
+// ══════════════════════════════════════════════════════════════════
+// ESTADO REACTIVO
+// ══════════════════════════════════════════════════════════════════
+let state = {
+  productos: [],   // [{nombre, markup, cantidad, iva_pct}]
+  proveedores: [], // [{nombre, entrega}]
+  precios: {},     // "prv_idx,prod_idx" → precio (número o null)
+};
+
+// Cargar datos iniciales si existe una matriz guardada
+const DATOS_INICIALES = {{ (matriz.datos | tojson) if matriz and matriz.datos else 'null' }};
+const MATRIZ_ID       = {{ matriz.id if matriz else 'null' }};
+
+if (DATOS_INICIALES) {
+  state = DATOS_INICIALES;
+} else {
+  // Matriz nueva: 2 productos y 2 proveedores vacíos
+  state.productos   = [{nombre:'', markup:1.5, cantidad:1, iva_pct:21}, {nombre:'', markup:1.5, cantidad:1, iva_pct:21}];
+  state.proveedores = [{nombre:'', entrega:''}, {nombre:'', entrega:''}];
+}
+
+// ══════════════════════════════════════════════════════════════════
+// RENDER
+// ══════════════════════════════════════════════════════════════════
+function render() {
+  renderThead();
+  renderTbody();
+  renderTfoot();
+  recalcular();
+}
+
+function renderThead() {
+  const thead = document.getElementById('thead-productos');
+  let html = '<tr>';
+  html += '<th style="background:var(--navy-mid);border:1px solid var(--navy-line);min-width:180px;padding:8px 10px;font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px">Proveedor / Producto</th>';
+  state.productos.forEach((p, pi) => {
+    html += `<th class="th-prod">
+      <div class="th-prod-inner">
+        <button class="btn-del-col" onclick="eliminarProducto(${pi})" title="Eliminar">×</button>
+        <input type="text" placeholder="Nombre del producto" value="${esc(p.nombre)}"
+          oninput="state.productos[${pi}].nombre=this.value;recalcular()"
+          style="padding-right:18px">
+      </div>
+      <div class="th-prod-params">
+        <div class="param-box">
+          <span class="param-label">Markup</span>
+          <input class="param-input" type="number" step="0.1" min="1" value="${p.markup}"
+            oninput="state.productos[${pi}].markup=parseFloat(this.value)||1;recalcular()">
+        </div>
+        <div class="param-box">
+          <span class="param-label">Cant.</span>
+          <input class="param-input" type="number" min="1" step="1" value="${p.cantidad}"
+            oninput="state.productos[${pi}].cantidad=parseInt(this.value)||1;recalcular()">
+        </div>
+        <div class="param-box">
+          <span class="param-label">IVA %</span>
+          <select class="iva-select"
+            onchange="state.productos[${pi}].iva_pct=parseFloat(this.value);recalcular()">
+            ${[0,10.5,21].map(v=>`<option value="${v}" ${p.iva_pct==v?'selected':''}>${v}%</option>`).join('')}
+          </select>
+        </div>
+      </div>
+    </th>`;
+  });
+  html += '<th style="background:var(--navy-mid);border:1px solid var(--navy-line);width:40px"></th>';
+  html += '</tr>';
+  thead.innerHTML = html;
+}
+
+function renderTbody() {
+  const tbody = document.getElementById('tbody-proveedores');
+  let html = '';
+  state.proveedores.forEach((prv, ri) => {
+    html += `<tr>
+      <th class="th-prv">
+        <div class="prv-inner">
+          <div class="ac-wrap">
+            <input class="prv-name" type="text" placeholder="Proveedor..." value="${esc(prv.nombre)}"
+              oninput="state.proveedores[${ri}].nombre=this.value;acBuscar(this,${ri})"
+              onblur="setTimeout(()=>cerrarAc(${ri}),150)">
+            <div class="ac-list" id="ac-${ri}"></div>
+          </div>
+          <input class="prv-entrega" type="text" placeholder="Entrega" value="${esc(prv.entrega)}"
+            oninput="state.proveedores[${ri}].entrega=this.value">
+          <button class="btn-del-row" onclick="eliminarProveedor(${ri})">×</button>
+        </div>
+      </th>`;
+    state.productos.forEach((p, pi) => {
+      const key = `${ri},${pi}`;
+      const val = state.precios[key];
+      const isBest = esMejor(ri, pi);
+      html += `<td class="td-precio ${isBest?'is-best':''}">
+        <input class="precio-input ${isBest?'is-best':''}" type="number" step="0.01" min="0"
+          placeholder="—" value="${val!=null?val:''}"
+          oninput="state.precios['${key}']=parseFloat(this.value)||null;renderTbody();renderTfoot();recalcular()"
+          onfocus="this.select()">
+      </td>`;
+    });
+    html += '<td style="border:1px solid var(--navy-line)"></td></tr>';
+  });
+  tbody.innerHTML = html;
+}
+
+function renderTfoot() {
+  const tfoot = document.getElementById('tfoot-calc');
+  let html = '';
+
+  // Fila: mejor precio
+  html += '<tr class="tr-calc tr-mejor tr-label"><th style="background:var(--navy-mid);border:1px solid var(--navy-line);font-size:10px;color:var(--text-dim);padding:6px 10px;text-transform:uppercase;letter-spacing:.5px">Mejor precio</th>';
+  state.productos.forEach((p, pi) => {
+    const min = getMejor(pi);
+    html += `<td>${min!=null ? fmt(min) : '—'}</td>`;
+  });
+  html += '<td style="border:1px solid var(--navy-line)"></td></tr>';
+
+  // Fila: precio venta
+  html += '<tr class="tr-calc tr-venta tr-label"><th style="background:var(--navy-mid);border:1px solid var(--navy-line);font-size:10px;color:var(--text-dim);padding:6px 10px;text-transform:uppercase;letter-spacing:.5px">Precio venta (×markup)</th>';
+  state.productos.forEach((p, pi) => {
+    const min = getMejor(pi);
+    const venta = min!=null ? min * p.markup : null;
+    html += `<td>${venta!=null ? fmt(venta) : '—'}</td>`;
+  });
+  html += '<td style="border:1px solid var(--navy-line)"></td></tr>';
+
+  // Fila: subtotal (venta × cant)
+  html += '<tr class="tr-calc tr-total tr-label"><th style="background:var(--navy-mid);border:1px solid var(--navy-line);font-size:10px;color:var(--text-dim);padding:6px 10px;text-transform:uppercase;letter-spacing:.5px">Subtotal (cant. × precio)</th>';
+  state.productos.forEach((p, pi) => {
+    const min = getMejor(pi);
+    const sub = min!=null ? min * p.markup * p.cantidad : null;
+    html += `<td>${sub!=null ? fmt(sub) : '—'}</td>`;
+  });
+  html += '<td style="border:1px solid var(--navy-line)"></td></tr>';
+
+  tfoot.innerHTML = html;
+}
+
+// ══════════════════════════════════════════════════════════════════
+// CÁLCULOS
+// ══════════════════════════════════════════════════════════════════
+function getMejor(pi) {
+  let min = null;
+  state.proveedores.forEach((_, ri) => {
+    const v = state.precios[`${ri},${pi}`];
+    if (v != null && v > 0) {
+      if (min === null || v < min) min = v;
+    }
+  });
+  return min;
+}
+
+function esMejor(ri, pi) {
+  const v = state.precios[`${ri},${pi}`];
+  if (v == null || v <= 0) return false;
+  return v === getMejor(pi);
+}
+
+function recalcular() {
+  let costoTotal = 0, ventaNeto = 0, ivaTotal = 0;
+  state.productos.forEach((p, pi) => {
+    const min = getMejor(pi);
+    if (min != null) {
+      costoTotal += min * p.cantidad;
+      const ventaUnit = min * p.markup;
+      ventaNeto += ventaUnit * p.cantidad;
+      ivaTotal  += ventaUnit * p.cantidad * p.iva_pct / 100;
+    }
+  });
+  const totalConIva = ventaNeto + ivaTotal;
+  const margen      = ventaNeto - costoTotal;
+
+  document.getElementById('res-costo').textContent  = costoTotal  ? fmt(costoTotal)  : '—';
+  document.getElementById('res-venta').textContent  = ventaNeto   ? fmt(ventaNeto)   : '—';
+  document.getElementById('res-iva').textContent    = ivaTotal    ? fmt(ivaTotal)    : '—';
+  document.getElementById('res-total').textContent  = totalConIva ? fmt(totalConIva) : '—';
+  document.getElementById('res-margen').textContent = margen      ? fmt(margen)      : '—';
+}
+
+// ══════════════════════════════════════════════════════════════════
+// ACCIONES
+// ══════════════════════════════════════════════════════════════════
+function agregarProducto() {
+  state.productos.push({nombre:'', markup:1.5, cantidad:1, iva_pct:21});
+  render();
+  // Focus al nuevo
+  const inputs = document.querySelectorAll('.th-prod input[type="text"]');
+  if (inputs.length) inputs[inputs.length-1].focus();
+}
+
+function agregarProveedor() {
+  state.proveedores.push({nombre:'', entrega:''});
+  render();
+  const inputs = document.querySelectorAll('.prv-name');
+  if (inputs.length) inputs[inputs.length-1].focus();
+}
+
+function eliminarProducto(pi) {
+  if (state.productos.length <= 1) return;
+  state.productos.splice(pi, 1);
+  // Reindexar precios
+  const nuevos = {};
+  Object.entries(state.precios).forEach(([k, v]) => {
+    const [ri, oldPi] = k.split(',').map(Number);
+    if (oldPi === pi) return;
+    const newPi = oldPi > pi ? oldPi - 1 : oldPi;
+    nuevos[`${ri},${newPi}`] = v;
+  });
+  state.precios = nuevos;
+  render();
+}
+
+function eliminarProveedor(ri) {
+  if (state.proveedores.length <= 1) return;
+  state.proveedores.splice(ri, 1);
+  const nuevos = {};
+  Object.entries(state.precios).forEach(([k, v]) => {
+    const [oldRi, pi] = k.split(',').map(Number);
+    if (oldRi === ri) return;
+    const newRi = oldRi > ri ? oldRi - 1 : oldRi;
+    nuevos[`${newRi},${pi}`] = v;
+  });
+  state.precios = nuevos;
+  render();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// GUARDAR
+// ══════════════════════════════════════════════════════════════════
+async function guardarMatriz() {
+  const payload = {
+    id:             MATRIZ_ID || null,
+    nombre:         document.getElementById('meta-nombre').value.trim() || 'Sin nombre',
+    cliente_nombre: document.getElementById('meta-cliente').value.trim(),
+    moneda:         document.getElementById('meta-moneda').value,
+    datos:          state,
+    proveedores:    state.proveedores,
+  };
+  try {
+    const r = await fetch('/api/matriz/guardar', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(payload),
+    });
+    const d = await r.json();
+    if (d.ok) {
+      document.getElementById('meta-id').value = d.id;
+      // Actualizar URL sin recargar
+      history.replaceState(null, '', `/matriz/${d.id}`);
+      showToast('Matriz guardada ✓');
+    } else {
+      alert('Error al guardar');
+    }
+  } catch(e) { alert('Error de conexión'); }
+}
+
+// ══════════════════════════════════════════════════════════════════
+// → PRESUPUESTO
+// ══════════════════════════════════════════════════════════════════
+function generarPresupuesto() {
+  const items = [];
+  state.productos.forEach((p, pi) => {
+    const min = getMejor(pi);
+    if (!min || !p.nombre.trim()) return;
+    items.push({
+      desc:   p.nombre,
+      precio: (min * p.markup).toFixed(2),
+      cant:   p.cantidad,
+      iva:    p.iva_pct,
+    });
+  });
+  if (!items.length) {
+    alert('No hay productos con precio para generar el presupuesto.');
+    return;
+  }
+  const cliente = document.getElementById('meta-cliente').value.trim();
+  const moneda  = document.getElementById('meta-moneda').value;
+  // Construir form y hacer POST al formulario de presupuesto
+  const form = document.createElement('form');
+  form.method = 'GET';
+  form.action = '/nuevo';
+  const add = (n, v) => { const i=document.createElement('input'); i.type='hidden'; i.name=n; i.value=v; form.appendChild(i); };
+  add('from_matriz', '1');
+  add('cliente_nombre', cliente);
+  add('moneda', moneda);
+  items.forEach(it => {
+    add('desc[]',  it.desc);
+    add('pu[]',    it.precio);
+    add('cant[]',  it.cant);
+    add('iva[]',   it.iva);
+  });
+  document.body.appendChild(form);
+  form.submit();
+}
+
+// ══════════════════════════════════════════════════════════════════
+// AUTOCOMPLETE PROVEEDORES
+// ══════════════════════════════════════════════════════════════════
+async function acBuscar(input, ri) {
+  state.proveedores[ri].nombre = input.value;
+  const q = input.value.trim();
+  const list = document.getElementById(`ac-${ri}`);
+  if (!q) { list.style.display='none'; return; }
+  try {
+    const r = await fetch(`/api/proveedores?q=${encodeURIComponent(q)}`);
+    const datos = await r.json();
+    if (!datos.length) { list.style.display='none'; return; }
+    list.innerHTML = datos.map(d =>
+      `<div class="ac-item" onmousedown="seleccionarProveedor(${ri},'${esc(d.nombre)}','${esc(d.entrega)}')">${d.nombre}${d.entrega?` <span style='color:var(--text-dim);font-size:10px'>· ${d.entrega}</span>`:''}</div>`
+    ).join('');
+    list.style.display = 'block';
+  } catch {}
+}
+
+function seleccionarProveedor(ri, nombre, entrega) {
+  state.proveedores[ri].nombre  = nombre;
+  state.proveedores[ri].entrega = entrega;
+  cerrarAc(ri);
+  render();
+}
+
+function cerrarAc(ri) {
+  const l = document.getElementById(`ac-${ri}`);
+  if (l) l.style.display = 'none';
+}
+
+// ══════════════════════════════════════════════════════════════════
+// UTILS
+// ══════════════════════════════════════════════════════════════════
+function fmt(n) {
+  return n.toLocaleString('es-AR', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+function esc(s) {
+  return String(s||'').replace(/'/g,"&#39;").replace(/"/g,"&quot;");
+}
+function showToast(msg) {
+  let t = document.getElementById('toast');
+  if (!t) {
+    t = document.createElement('div');
+    t.id = 'toast';
+    t.style.cssText = 'position:fixed;bottom:28px;right:28px;background:#22C55E;color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;font-weight:600;z-index:9999;transition:opacity .3s';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.style.opacity = '1';
+  clearTimeout(t._to);
+  t._to = setTimeout(() => t.style.opacity = '0', 2500);
+}
+
+// ══════════════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════════════
+render();
+</script>
+</body>
+</html>

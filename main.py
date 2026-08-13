@@ -99,11 +99,26 @@ async def form(request: Request):
     hoy     = date.today()
     validez = hoy + timedelta(days=30)
     numero  = db.peek_numero()
+    params  = dict(request.query_params)
+
+    # Pre-carga desde matriz de cálculo
+    items_precargados = []
+    if params.get("from_matriz"):
+        descs    = request.query_params.getlist("desc[]")
+        precios  = request.query_params.getlist("pu[]")
+        cantids  = request.query_params.getlist("cant[]")
+        ivas     = request.query_params.getlist("iva[]")
+        for d, p, c, i in zip(descs, precios, cantids, ivas):
+            items_precargados.append({"desc": d, "pu": p, "cant": c, "iva": i})
+
     return templates.TemplateResponse("nuevo_presupuesto.html", {
-        "request": request,
-        "fecha":   hoy.strftime("%Y-%m-%d"),
-        "validez": validez.strftime("%Y-%m-%d"),
-        "numero":  numero,
+        "request":           request,
+        "fecha":             hoy.strftime("%Y-%m-%d"),
+        "validez":           validez.strftime("%Y-%m-%d"),
+        "numero":            numero,
+        "cliente_nombre":    params.get("cliente_nombre", ""),
+        "moneda_inicial":    params.get("moneda", "USD"),
+        "items_precargados": items_precargados,
     })
 
 @app.get("/pdf/{nombre_archivo:path}")
@@ -359,3 +374,61 @@ async def cobrar(
 @app.get("/api/facturas/{numero}")
 async def get_facturas(numero: str):
     return db.load_facturas_por_presupuesto(numero)
+
+
+# ── MATRICES DE CÁLCULO ───────────────────────────────────────────────────────
+@app.get("/matrices", response_class=HTMLResponse)
+async def lista_matrices(request: Request):
+    matrices = db.load_matrices()
+    return templates.TemplateResponse("matrices.html", {
+        "request": request,
+        "matrices": list(reversed(matrices)),
+    })
+
+@app.get("/matriz/nueva", response_class=HTMLResponse)
+async def nueva_matriz(request: Request):
+    return templates.TemplateResponse("matriz.html", {
+        "request": request,
+        "matriz": None,
+        "proximo_numero": db.peek_numero(),
+    })
+
+@app.get("/matriz/{mid}", response_class=HTMLResponse)
+async def ver_matriz(request: Request, mid: str):
+    matriz = db.load_matriz(mid)
+    if not matriz:
+        return HTMLResponse("<h3>Matriz no encontrada.</h3>", status_code=404)
+    return templates.TemplateResponse("matriz.html", {
+        "request": request,
+        "matriz": matriz,
+        "proximo_numero": db.peek_numero(),
+    })
+
+@app.post("/api/matriz/guardar")
+async def api_guardar_matriz(request: Request):
+    import json as _json
+    body = await request.json()
+    mid = body.get("id")
+    nombre       = body.get("nombre", "Sin nombre")
+    cliente      = body.get("cliente_nombre", "")
+    moneda       = body.get("moneda", "USD")
+    datos        = body.get("datos", {})
+    proveedores  = body.get("proveedores", [])
+
+    # Guardar proveedores nuevos para autocomplete
+    for prv in proveedores:
+        if prv.get("nombre"):
+            db.guardar_proveedor(prv["nombre"], prv.get("entrega", ""))
+
+    if mid:
+        db.actualizar_matriz(mid, nombre, cliente, moneda, datos)
+        return JSONResponse({"ok": True, "id": int(mid)})
+    else:
+        nuevo_id = db.guardar_matriz(nombre, cliente, moneda, datos)
+        return JSONResponse({"ok": True, "id": nuevo_id})
+
+@app.get("/api/proveedores")
+async def api_proveedores(q: str = ""):
+    prvs = db.load_proveedores()
+    q = q.lower()
+    return [p for p in prvs if q in p["nombre"].lower()][:10]

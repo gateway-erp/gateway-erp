@@ -421,7 +421,31 @@ function esc(s) {
   return String(s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
 }
 
-addItem();
+// Pre-carga desde matriz de cálculo
+{% if items_precargados %}
+  {% for it in items_precargados %}
+  addItem({{ it.desc | tojson }}, {{ it.pu | tojson }}, {{ it.cant | tojson }}, {{ it.iva | tojson }});
+  {% endfor %}
+{% else %}
+  addItem();
+{% endif %}
+
+// Pre-carga cliente desde matriz
+{% if cliente_nombre %}
+document.getElementById('cliente-search').value = {{ cliente_nombre | tojson }};
+document.getElementById('cliente_nombre').value = {{ cliente_nombre | tojson }};
+{% endif %}
+
+// Pre-carga moneda desde matriz
+{% if moneda_inicial %}
+(function() {
+  const m = {{ moneda_inicial | tojson }};
+  document.getElementById('moneda-input').value = m;
+  document.querySelectorAll('.tab-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.moneda === m);
+  });
+})();
+{% endif %}
 
 // ── validación antes de generar ───────────────────────────────────────────────
 document.getElementById('form-presupuesto').addEventListener('submit', function(e) {

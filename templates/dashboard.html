@@ -389,12 +389,16 @@
             </div>
             <div class="kcard-cliente">{{ p.cliente_nombre }}</div>
             <div class="kcard-ref">{{ p.ref_cliente or '—' }}</div>
-            {% if p.oc_numero %}
-            <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">
-              OC {{ p.oc_numero }}{% if p.oc_fecha %} · {{ p.oc_fecha }}{% endif %}
-              {% if p.oc_drive_link %}<a href="{{ p.oc_drive_link }}" target="_blank" style="color:var(--accent);margin-left:6px">ver</a>{% endif %}
+            <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              {% if p.oc_numero %}
+              <span>OC {{ p.oc_numero }}{% if p.oc_fecha %} · {{ p.oc_fecha }}{% endif %}</span>
+              {% if p.oc_drive_link %}<a href="{{ p.oc_drive_link }}" target="_blank" style="color:var(--accent)">ver OC</a>{% endif %}
+              {% else %}
+              <span style="color:rgba(252,165,165,.7)">Sin OC cargada</span>
+              {% endif %}
+              <button class="btn-card" style="padding:2px 7px;font-size:10px;background:rgba(139,163,204,.12);color:var(--text-dim);margin-left:auto"
+                onclick="abrirEditarOC('{{ p.numero }}','{{ p.cliente_nombre | e }}','{{ p.oc_numero or '' }}','{{ p.oc_fecha or '' }}','{{ p.oc_monto or '' }}')">✎ editar OC</button>
             </div>
-            {% endif %}
             <div class="kcard-bottom">
               <div>
                 <span class="kcard-monto">{{ p.total_fmt }}</span>
@@ -696,6 +700,20 @@ function abrirAprobar(numero, cliente) {
   document.getElementById('modal-aprobar-sub').textContent = numero + ' — ' + cliente;
   document.getElementById('form-aprobar').reset();
   document.getElementById('aprobar-numero').value = numero;
+  document.querySelector('#modal-aprobar .modal-title').textContent = 'Marcar como Aprobado';
+  abrirModal('modal-aprobar');
+}
+
+function abrirEditarOC(numero, cliente, ocNumero, ocFecha, ocMonto) {
+  document.getElementById('aprobar-numero').value = numero;
+  document.getElementById('modal-aprobar-sub').textContent = numero + ' — ' + cliente;
+  document.getElementById('form-aprobar').reset();
+  document.getElementById('aprobar-numero').value = numero;
+  // Pre-cargar datos existentes
+  document.querySelector('#form-aprobar [name="oc_numero"]').value = ocNumero;
+  document.querySelector('#form-aprobar [name="oc_fecha"]').value  = ocFecha;
+  document.querySelector('#form-aprobar [name="oc_monto"]').value  = ocMonto;
+  document.querySelector('#modal-aprobar .modal-title').textContent = 'Editar datos OC';
   abrirModal('modal-aprobar');
 }
 

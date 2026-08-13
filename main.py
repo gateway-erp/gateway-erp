@@ -63,9 +63,18 @@ async def dashboard(request: Request):
     }
 
     historial_rev = list(reversed(historial))
+    enviados   = [p for p in historial_rev if p.get("estado") in ("enviado", "generado")]
+    aprobados  = [p for p in historial_rev if p.get("estado") == "aprobado"]
+    facturados = [p for p in historial_rev if p.get("estado") == "facturado"]
+    rechazados = [p for p in historial_rev if p.get("estado") == "rechazado"]
+
     return templates.TemplateResponse("dashboard.html", {
         "request":        request,
         "historial":      historial_rev,
+        "enviados":       enviados,
+        "aprobados":      aprobados,
+        "facturados":     facturados,
+        "rechazados":     rechazados,
         "stats":          stats,
         "proximo_numero": db.peek_numero(),
     })

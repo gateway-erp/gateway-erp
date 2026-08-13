@@ -332,10 +332,6 @@
     </a>
   </div>
 
-  {% set enviados   = historial | selectattr("estado", "in", ["enviado","generado"]) | list %}
-  {% set aprobados  = historial | selectattr("estado", "equalto", "aprobado")   | list %}
-  {% set facturados = historial | selectattr("estado", "equalto", "facturado")  | list %}
-  {% set rechazados = historial | selectattr("estado", "equalto", "rechazado")  | list %}
 
   <!-- KANBAN BOARD -->
   <div class="kanban">

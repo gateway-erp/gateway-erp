@@ -279,6 +279,30 @@
       border-radius: 50%; animation: spin .6s linear infinite; margin-right: 6px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── VENCIDOS ── */
+    .kcard.card-vencido {
+      border-color: rgba(239,68,68,.45);
+      background: rgba(239,68,68,.06);
+    }
+    .kcard.card-vencido .kcard-numero { color: var(--red); }
+    .dias-badge {
+      display: inline-flex; align-items: center; gap: 3px;
+      background: rgba(239,68,68,.18); color: #FCA5A5;
+      border-radius: 4px; padding: 1px 6px;
+      font-family: var(--font-num); font-size: 10px; font-weight: 700;
+    }
+    .badge-vencidos {
+      display: none; align-items: center; gap: 5px;
+      background: rgba(239,68,68,.2); color: #FCA5A5;
+      border: 1px solid rgba(239,68,68,.4);
+      border-radius: 20px; padding: 3px 10px;
+      font-size: 11px; font-weight: 700;
+      cursor: pointer; transition: background .15s;
+      white-space: nowrap;
+    }
+    .badge-vencidos:hover { background: rgba(239,68,68,.35); }
+    .badge-vencidos.visible { display: inline-flex; }
   </style>
 </head>
 <body>
@@ -339,12 +363,13 @@
     <div class="kanban-col col-enviado">
       <div class="kanban-col-header">
         <span class="kanban-col-title">Enviados</span>
+        <button class="badge-vencidos" id="btn-vencidos-badge" onclick="dismissVencidos()"></button>
         <span class="kanban-col-count">{{ enviados | length }}</span>
       </div>
-      <div class="kanban-col-body">
+      <div class="kanban-col-body" id="enviados-col-body">
         {% if enviados %}
           {% for p in enviados %}
-          <div class="kcard" onclick="void(0)">
+          <div class="kcard" data-fecha="{{ p.fecha }}" data-numero="{{ p.numero }}" onclick="void(0)">
             <div class="kcard-top">
               <span class="kcard-numero">{{ p.numero }}</span>
               <span class="kcard-fecha">{{ p.fecha }}</span>
@@ -812,6 +837,113 @@ function toggleRechazados(btn) {
   btn.classList.toggle('open');
   document.getElementById('rechazados-body').classList.toggle('open');
 }
+
+// ── VENCIDOS ──────────────────────────────────────────────────────────────────
+const LIMITE_DIAS = 25;
+const HOY_ISO = new Date().toISOString().slice(0, 10);
+
+function parseFechaCard(str) {
+  if (!str) return null;
+  // DD/MM/YYYY
+  const p = str.split('/');
+  if (p.length === 3) return new Date(+p[2], p[1] - 1, +p[0]);
+  return new Date(str);
+}
+
+function diasDesde(fechaStr) {
+  const f = parseFechaCard(fechaStr);
+  if (!f || isNaN(f)) return 0;
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  return Math.floor((hoy - f) / 86400000);
+}
+
+function cargarDismissed() {
+  try {
+    const s = JSON.parse(localStorage.getItem('vencidos_dismissed') || '{}');
+    return s.fecha === HOY_ISO ? (s.ids || []) : [];
+  } catch { return []; }
+}
+
+function guardarDismissed(ids) {
+  localStorage.setItem('vencidos_dismissed', JSON.stringify({ fecha: HOY_ISO, ids }));
+}
+
+function initVencidos() {
+  const colBody = document.getElementById('enviados-col-body');
+  const badge   = document.getElementById('btn-vencidos-badge');
+  if (!colBody || !badge) return;
+
+  const cards = Array.from(colBody.querySelectorAll('.kcard[data-fecha]'));
+  if (!cards.length) return;
+
+  const dismissed = cargarDismissed();
+  const vencActivos = [], normales = [], vencDesc = [];
+
+  cards.forEach(card => {
+    const dias   = diasDesde(card.dataset.fecha);
+    const numero = card.dataset.numero;
+    card.dataset.dias = dias;
+
+    if (dias >= LIMITE_DIAS) {
+      card.classList.add('card-vencido');
+      // Agregar badge de días si no existe
+      if (!card.querySelector('.dias-badge')) {
+        const fechaEl = card.querySelector('.kcard-fecha');
+        if (fechaEl) {
+          const badge = document.createElement('span');
+          badge.className = 'dias-badge';
+          badge.textContent = dias + 'd';
+          fechaEl.after(badge);
+        }
+      }
+      if (dismissed.includes(numero)) vencDesc.push(card);
+      else vencActivos.push(card);
+    } else {
+      normales.push(card);
+    }
+  });
+
+  // Vencidos activos: más viejos primero (más urgentes)
+  vencActivos.sort((a, b) => +b.dataset.dias - +a.dataset.dias);
+
+  // Reordenar DOM
+  [...vencActivos, ...normales, ...vencDesc].forEach(c => colBody.appendChild(c));
+
+  // Badge
+  const totalV = vencActivos.length + vencDesc.length;
+  if (totalV > 0) {
+    badge.classList.add('visible');
+    if (vencActivos.length > 0) {
+      badge.innerHTML = '⚠ ' + vencActivos.length + ' vencido' + (vencActivos.length > 1 ? 's' : '') + ' — ocultar';
+    } else {
+      badge.innerHTML = '⚠ ' + totalV + ' vencido' + (totalV > 1 ? 's' : '') + ' — mostrar';
+      badge.title = 'Click para volver a mostrar arriba';
+    }
+    badge._modo = vencActivos.length > 0 ? 'ocultar' : 'mostrar';
+  }
+}
+
+function dismissVencidos() {
+  const colBody = document.getElementById('enviados-col-body');
+  const badge   = document.getElementById('btn-vencidos-badge');
+  if (!colBody || !badge) return;
+
+  const dismissed = cargarDismissed();
+  const cards = Array.from(colBody.querySelectorAll('.kcard.card-vencido[data-numero]'));
+  const modo  = badge._modo;
+
+  if (modo === 'ocultar') {
+    // Guardar todos los vencidos como dismissed
+    const ids = cards.map(c => c.dataset.numero);
+    guardarDismissed(ids);
+  } else {
+    // Limpiar dismissed → vuelven arriba
+    guardarDismissed([]);
+  }
+  initVencidos();
+}
+
+document.addEventListener('DOMContentLoaded', initVencidos);
 </script>
 </body>
 </html>

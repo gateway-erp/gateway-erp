@@ -38,6 +38,29 @@ async def debug_error():
         return JSONResponse({"ok": False, "error": str(e), "trace": traceback.format_exc()}, status_code=200)
 
 
+@app.get("/debug-drive")
+async def debug_drive():
+    """Diagnostica la conexión con Google Drive."""
+    import traceback
+    try:
+        import drive as drive_mod
+        svc = drive_mod._service()
+        # Verificar que la carpeta raíz existe y es accesible
+        root = svc.files().get(fileId=drive_mod.DRIVE_ROOT_ID, fields="id,name").execute()
+        # Listar carpetas dentro de la raíz
+        q = f"'{drive_mod.DRIVE_ROOT_ID}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false"
+        res = svc.files().list(q=q, fields="files(id,name)").execute()
+        subcarpetas = [f["name"] for f in res.get("files", [])]
+        return JSONResponse({
+            "ok": True,
+            "root_id": drive_mod.DRIVE_ROOT_ID,
+            "root_name": root.get("name"),
+            "subcarpetas": subcarpetas,
+        })
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e), "trace": traceback.format_exc()})
+
+
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request):
     historial  = db.load_historial()
@@ -243,7 +266,8 @@ async def generar(request: Request):
             nombre_cliente = cliente["nombre"],
         )
     except Exception as e:
-        print(f"[Drive] Error al subir PDF: {e}")
+        import traceback
+        print(f"[Drive] Error al subir PDF: {e}\n{traceback.format_exc()}")
 
     db.guardar_historial(datos, nombre_archivo, drive_link=drive_link)
 

@@ -73,7 +73,8 @@ def draw_footer(c, datos):
 
     rows   = [("Base imponible", fmt(base_total))]
     for pct, monto in sorted(iva_totales.items()):
-        rows.append((f"Total IVA {pct}%", fmt(monto)))
+        pct_label = str(int(pct)) if pct == int(pct) else str(pct)
+        rows.append((f"IVA {pct_label}%", fmt(monto)))
     n_rows = len(rows)
 
     # altura fija por fila, la caja firma se ajusta a esto (no al revés)

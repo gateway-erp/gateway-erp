@@ -127,7 +127,7 @@ def generar_presupuesto(datos, output_path):
     elements = []
 
     # ── ENCABEZADO: logo | datos del presupuesto ──────────────────────────────
-    logo = Image(LOGO_PATH, width=50*mm, height=17*mm)
+    logo = Image(LOGO_PATH, width=85*mm, height=28*mm)
 
     ref_data = [
         [Paragraph("<b>Presupuesto</b>", s("ref", fontName="Helvetica-Bold", fontSize=13, textColor=NAVY, alignment=TA_RIGHT))],
@@ -239,7 +239,7 @@ def generar_presupuesto(datos, output_path):
 
     elements.append(Paragraph(
         f"Importes visualizados en {'Dólares USA' if moneda == 'USD' else 'Pesos ARS'}",
-        s("mon", fontName="Helvetica", fontSize=7, textColor=colors.grey, alignment=TA_RIGHT)
+        s("mon", fontName="Helvetica", fontSize=7, textColor=colors.HexColor("#1A1A2E"), alignment=TA_RIGHT)
     ))
     elements.append(Spacer(1, 1*mm))
     elements.append(items_t)
@@ -259,8 +259,8 @@ def generar_presupuesto(datos, output_path):
             colWidths=[W],
         )
         cond_t.setStyle(TableStyle([
-            ("BACKGROUND",    (0,0), (-1,-1), colors.HexColor("#EEF0F4")),
-            ("BOX",           (0,0), (-1,-1), 0.8, colors.HexColor("#B0B8C6")),
+            ("BACKGROUND",    (0,0), (-1,-1), colors.white),
+            ("BOX",           (0,0), (-1,-1), 1.5, colors.HexColor("#5A6272")),
             ("LEFTPADDING",   (0,0), (-1,-1), 8),
             ("RIGHTPADDING",  (0,0), (-1,-1), 8),
             ("TOPPADDING",    (0,0), (-1,-1), 6),

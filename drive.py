@@ -59,12 +59,13 @@ def _obtener_o_crear(service, nombre, parent_id):
 def subir_documento(pdf_path, nombre_archivo, codigo_cliente, nombre_cliente, subcarpeta="Presupuestos"):
     """
     Sube cualquier documento a:
-      Documentos/ → Clientes/ → C-XXXX - Nombre/ → {subcarpeta}/
+      CLIENTES/ → C-XXXX - Nombre/ → {subcarpeta}/
+    DRIVE_ROOT_ID debe ser el ID de la carpeta CLIENTES directamente.
     """
     service = _service()
-    clientes_id = _obtener_o_crear(service, "Clientes", DRIVE_ROOT_ID)
+    # DRIVE_ROOT_ID ya ES la carpeta CLIENTES — no se agrega nivel extra
     nombre_carpeta_cliente = f"C-{int(codigo_cliente):04d} - {nombre_cliente}"
-    cliente_id = _obtener_o_crear(service, nombre_carpeta_cliente, clientes_id)
+    cliente_id = _obtener_o_crear(service, nombre_carpeta_cliente, DRIVE_ROOT_ID)
     sub_id = _obtener_o_crear(service, subcarpeta, cliente_id)
 
     media = MediaFileUpload(pdf_path, mimetype="application/pdf", resumable=False)
@@ -84,18 +85,14 @@ def subir_documento(pdf_path, nombre_archivo, codigo_cliente, nombre_cliente, su
 def subir_presupuesto(pdf_path, nombre_archivo, codigo_cliente, nombre_cliente):
     """
     Sube el PDF a:
-      Documentos/ → Clientes/ → C-XXXX - Nombre/ → Presupuestos/
-
-    Retorna el link directo de Drive para abrir el PDF.
+      CLIENTES/ → C-XXXX - Nombre/ → Presupuestos/
+    DRIVE_ROOT_ID debe ser el ID de la carpeta CLIENTES directamente.
     """
     service = _service()
 
-    # Carpeta Clientes (dentro de la raíz Documentos)
-    clientes_id = _obtener_o_crear(service, "Clientes", DRIVE_ROOT_ID)
-
-    # Carpeta del cliente: "C-0001 - TOYOTA BOSHOKU"
+    # DRIVE_ROOT_ID ya ES la carpeta CLIENTES
     nombre_carpeta_cliente = f"C-{int(codigo_cliente):04d} - {nombre_cliente}"
-    cliente_id = _obtener_o_crear(service, nombre_carpeta_cliente, clientes_id)
+    cliente_id = _obtener_o_crear(service, nombre_carpeta_cliente, DRIVE_ROOT_ID)
 
     # Subcarpeta Presupuestos
     presup_id = _obtener_o_crear(service, "Presupuestos", cliente_id)

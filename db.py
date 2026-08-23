@@ -60,8 +60,19 @@ def _ws(name, headers):
 # ── CLIENTES ──────────────────────────────────────────────────────────────────
 _H_CLI = ["codigo", "nombre", "cuit", "direccion", "ciudad"]
 
+_cache_clientes = {"data": None, "ts": 0}
+
 def load_clientes():
-    return _ws("clientes", _H_CLI).get_all_records()
+    import time
+    if _cache_clientes["data"] is not None and time.time() - _cache_clientes["ts"] < 300:
+        return _cache_clientes["data"]
+    data = _ws("clientes", _H_CLI).get_all_records()
+    _cache_clientes["data"] = data
+    _cache_clientes["ts"]   = time.time()
+    return data
+
+def _invalidar_cache_clientes():
+    _cache_clientes["data"] = None
 
 def buscar_cliente_por_nombre(nombre):
     """Retorna el cliente si ya existe con ese nombre (case-insensitive), o None."""
@@ -80,6 +91,7 @@ def crear_cliente(cliente):
         cliente.get("direccion", ""),
         cliente.get("ciudad", ""),
     ])
+    _invalidar_cache_clientes()
 
 def actualizar_cuit(codigo, cuit):
     ws = _ws("clientes", _H_CLI)

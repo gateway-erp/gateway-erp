@@ -372,7 +372,7 @@
       <div class="kanban-col-body" id="enviados-col-body">
         {% if enviados %}
           {% for p in enviados %}
-          <div class="kcard" data-fecha="{{ p.fecha }}" data-numero="{{ p.numero }}" onclick="void(0)">
+          <div class="kcard" data-fecha="{{ p.fecha }}" data-numero="{{ p.numero }}">
             <div class="kcard-top">
               <a class="kcard-numero" href="/editar/{{ p.numero }}" title="Editar presupuesto">{{ p.numero }}</a>
               <span class="kcard-fecha">{{ p.fecha }}</span>

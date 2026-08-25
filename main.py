@@ -117,6 +117,119 @@ async def dashboard(request: Request):
         "proximo_numero": db.peek_numero(),
     })
 
+@app.get("/editar/{numero}", response_class=HTMLResponse)
+async def editar_form(numero: str, request: Request):
+    import json as _json
+    historial = db.load_historial()
+    row = next((r for r in historial if str(r["numero"]) == numero), None)
+    if not row:
+        return HTMLResponse(f"<h3>Presupuesto {numero} no encontrado.</h3>", status_code=404)
+
+    datos_json = row.get("datos_json", "")
+    if datos_json:
+        try:
+            datos = _json.loads(datos_json)
+        except Exception:
+            datos = {}
+    else:
+        datos = {}
+
+    cliente = datos.get("cliente", {})
+    items   = datos.get("items", [])
+
+    return templates.TemplateResponse("nuevo_presupuesto.html", {
+        "request":                  request,
+        "fecha":                    row.get("fecha", ""),
+        "validez":                  row.get("fecha_validez", ""),
+        "numero":                   numero,
+        "edit_mode":                True,
+        "cliente_id":               str(cliente.get("codigo", "")),
+        "cliente_nombre":           cliente.get("nombre", row.get("cliente_nombre", "")),
+        "cliente_cuit":             cliente.get("cuit", ""),
+        "cliente_direccion":        cliente.get("direccion", ""),
+        "cliente_ciudad":           cliente.get("ciudad", ""),
+        "moneda_inicial":           row.get("moneda", "USD"),
+        "ref_inicial":              row.get("ref_cliente", ""),
+        "condiciones_pago_inicial": row.get("condiciones_pago", ""),
+        "condiciones_presupuesto_inicial": datos.get("condiciones_presupuesto", ""),
+        "items_precargados":        [
+            {"desc": i["descripcion"], "pu": i["precio_unitario"],
+             "cant": i["cantidad"], "iva": i["iva_pct"]}
+            for i in items
+        ],
+    })
+
+@app.post("/editar/{numero}")
+async def editar_generar(numero: str, request: Request):
+    import json as _json
+    form_data = await request.form()
+    clientes  = db.load_clientes()
+
+    cliente_id = form_data.get("cliente_id", "").strip()
+    if cliente_id and cliente_id.isdigit():
+        cliente = next((c for c in clientes if str(c["codigo"]) == cliente_id), None)
+        if not cliente:
+            return HTMLResponse("<h3>Error: cliente no encontrado.</h3>", status_code=400)
+    else:
+        nombre_nuevo = form_data.get("cliente_nombre", "").strip()
+        existente = db.buscar_cliente_por_nombre(nombre_nuevo)
+        if existente:
+            cliente = existente
+        else:
+            return HTMLResponse("<h3>Error: cliente no encontrado.</h3>", status_code=400)
+
+    descripciones = form_data.getlist("desc[]")
+    precios       = form_data.getlist("pu[]")
+    cantidades    = form_data.getlist("cant[]")
+    ivas          = form_data.getlist("iva[]")
+    items = []
+    for desc, pu, cant, iva in zip(descripciones, precios, cantidades, ivas):
+        if not desc.strip():
+            continue
+        items.append({
+            "descripcion":     desc.strip(),
+            "precio_unitario": float(pu or 0),
+            "cantidad":        int(cant or 1),
+            "iva_pct":         float(iva or 21),
+        })
+
+    ref = form_data.get("ref", "").strip()
+    datos = {
+        "numero":                    numero,
+        "ref_cliente":               ref,
+        "fecha":                     form_data.get("fecha", ""),
+        "fecha_validez":             form_data.get("validez", ""),
+        "codigo_cliente":            f"C-{cliente['codigo']:04d}",
+        "moneda":                    form_data.get("moneda", "ARS"),
+        "condiciones_pago":          form_data.get("condiciones_pago", ""),
+        "condiciones_presupuesto":   form_data.get("condiciones_presupuesto", ""),
+        "cliente":                   cliente,
+        "items":                     items,
+    }
+
+    nombre_archivo = f"{numero} - {ref}.pdf" if ref else f"{numero}.pdf"
+    output_path    = os.path.join("presupuestos", "output", nombre_archivo)
+
+    from presupuestos.generar_pdf import generar_presupuesto
+    generar_presupuesto(datos, output_path)
+
+    drive_link = None
+    try:
+        import drive as drive_mod
+        drive_link = drive_mod.subir_presupuesto(
+            pdf_path       = output_path,
+            nombre_archivo = nombre_archivo,
+            codigo_cliente = cliente["codigo"],
+            nombre_cliente = cliente["nombre"],
+        )
+    except Exception as e:
+        import traceback
+        print(f"[Drive] Error al subir PDF (editar): {e}\n{traceback.format_exc()}")
+
+    db.actualizar_historial(numero, datos, nombre_archivo, drive_link=drive_link)
+
+    return FileResponse(output_path, media_type="application/pdf", filename=nombre_archivo)
+
 @app.get("/nuevo", response_class=HTMLResponse)
 async def form(request: Request):
     hoy     = date.today()

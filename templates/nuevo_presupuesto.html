@@ -10,12 +10,12 @@
 
 <div class="topbar">
   <img src="/static/logo.png" alt="Gateway">
-  <h1>Nuevo Presupuesto</h1>
+  <h1>{% if edit_mode %}Editar Presupuesto{% else %}Nuevo Presupuesto{% endif %}</h1>
   <div class="sep"></div>
   <div class="chip" id="chip-numero">{{ numero }}</div>
 </div>
 
-<form method="POST" action="/generar" id="form-presupuesto">
+<form method="POST" action="{% if edit_mode %}/editar/{{ numero }}{% else %}/generar{% endif %}" id="form-presupuesto">
   <div style="margin-bottom:12px">
     <a href="/" style="color:var(--muted);font-size:12px;text-decoration:none">← Volver al dashboard</a>
   </div>
@@ -139,7 +139,7 @@
       <!-- generar PDF -->
       <div class="card">
         <div class="card-title">Generar</div>
-        <button type="submit" class="btn-generar" id="btn-generar">⬇ Generar PDF</button>
+        <button type="submit" class="btn-generar" id="btn-generar">{% if edit_mode %}⬇ Actualizar PDF{% else %}⬇ Generar PDF{% endif %}</button>
       </div>
 
     </div><!-- /sidebar -->
@@ -448,13 +448,34 @@ function esc(s) {
   addItem();
 {% endif %}
 
-// Pre-carga cliente desde matriz
+// Pre-carga cliente
 {% if cliente_nombre %}
 document.getElementById('cliente-search').value = {{ cliente_nombre | tojson }};
 document.getElementById('cliente_nombre').value = {{ cliente_nombre | tojson }};
 {% endif %}
+{% if cliente_id %}
+document.getElementById('cliente_id').value = {{ cliente_id | tojson }};
+{% endif %}
+{% if cliente_cuit %}
+document.getElementById('cliente_cuit').value = {{ cliente_cuit | tojson }};
+{% endif %}
+{% if cliente_direccion %}
+document.getElementById('cliente_direccion') && (document.getElementById('cliente_direccion').value = {{ cliente_direccion | tojson }});
+{% endif %}
+{% if cliente_ciudad %}
+document.getElementById('cliente_ciudad') && (document.getElementById('cliente_ciudad').value = {{ cliente_ciudad | tojson }});
+{% endif %}
+{% if ref_inicial %}
+document.getElementById('ref').value = {{ ref_inicial | tojson }};
+{% endif %}
+{% if condiciones_pago_inicial %}
+document.querySelector('[name="condiciones_pago"]').value = {{ condiciones_pago_inicial | tojson }};
+{% endif %}
+{% if condiciones_presupuesto_inicial %}
+document.querySelector('[name="condiciones_presupuesto"]') && (document.querySelector('[name="condiciones_presupuesto"]').value = {{ condiciones_presupuesto_inicial | tojson }});
+{% endif %}
 
-// Pre-carga moneda desde matriz
+// Pre-carga moneda
 {% if moneda_inicial %}
 (function() {
   const m = {{ moneda_inicial | tojson }};

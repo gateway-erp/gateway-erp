@@ -150,10 +150,11 @@ def next_numero():
 _H_HIS = [
     "numero", "ref_cliente", "fecha", "fecha_validez", "codigo_cliente",
     "moneda", "condiciones_pago", "cliente_nombre", "archivo", "estado", "total", "drive_link",
-    "oc_numero", "oc_fecha", "oc_monto", "oc_drive_link",
+    "oc_numero", "oc_fecha", "oc_monto", "oc_drive_link", "datos_json",
 ]
 
 def guardar_historial(datos, nombre_archivo, drive_link=None):
+    import json as _json
     items = datos.get("items", [])
     base  = sum(i["precio_unitario"] * i["cantidad"] for i in items)
     iva   = sum(i["precio_unitario"] * i["cantidad"] * i["iva_pct"] / 100 for i in items)
@@ -174,7 +175,31 @@ def guardar_historial(datos, nombre_archivo, drive_link=None):
         total,
         drive_link or "",
         "", "", "", "",  # OC columns vacíos
+        _json.dumps(datos, ensure_ascii=False),
     ])
+
+def actualizar_historial(numero, datos, nombre_archivo, drive_link=None):
+    import json as _json
+    items = datos.get("items", [])
+    base  = sum(i["precio_unitario"] * i["cantidad"] for i in items)
+    iva   = sum(i["precio_unitario"] * i["cantidad"] * i["iva_pct"] / 100 for i in items)
+    total = round(base + iva, 2)
+
+    ws = _ws("historial", _H_HIS)
+    for i, r in enumerate(ws.get_all_records(), start=2):
+        if str(r["numero"]) == str(numero):
+            ws.update_cell(i, _H_HIS.index("ref_cliente") + 1,   datos["ref_cliente"])
+            ws.update_cell(i, _H_HIS.index("fecha") + 1,         datos["fecha"])
+            ws.update_cell(i, _H_HIS.index("fecha_validez") + 1, datos["fecha_validez"])
+            ws.update_cell(i, _H_HIS.index("moneda") + 1,        datos["moneda"])
+            ws.update_cell(i, _H_HIS.index("condiciones_pago") + 1, datos["condiciones_pago"])
+            ws.update_cell(i, _H_HIS.index("archivo") + 1,       nombre_archivo)
+            ws.update_cell(i, _H_HIS.index("total") + 1,         total)
+            ws.update_cell(i, _H_HIS.index("datos_json") + 1,    _json.dumps(datos, ensure_ascii=False))
+            if drive_link:
+                ws.update_cell(i, _H_HIS.index("drive_link") + 1, drive_link)
+            return True
+    return False
 
 def load_historial():
     return _ws("historial", _H_HIS).get_all_records()

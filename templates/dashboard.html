@@ -143,7 +143,9 @@
     .kcard-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
     .kcard-numero {
       font-family: var(--font-num); font-size: 12px; font-weight: 600; color: var(--accent);
+      text-decoration: none;
     }
+    a.kcard-numero:hover { text-decoration: underline; }
     .kcard-fecha { font-family: var(--font-num); font-size: 11px; color: var(--text-dim); }
     .kcard-cliente { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
     .kcard-ref { font-size: 11px; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 8px; }
@@ -371,7 +373,7 @@
           {% for p in enviados %}
           <div class="kcard" data-fecha="{{ p.fecha }}" data-numero="{{ p.numero }}" onclick="void(0)">
             <div class="kcard-top">
-              <span class="kcard-numero">{{ p.numero }}</span>
+              <a class="kcard-numero" href="/editar/{{ p.numero }}" title="Editar presupuesto">{{ p.numero }}</a>
               <span class="kcard-fecha">{{ p.fecha }}</span>
             </div>
             <div class="kcard-cliente">{{ p.cliente_nombre }}</div>

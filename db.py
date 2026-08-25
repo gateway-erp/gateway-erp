@@ -100,6 +100,18 @@ def actualizar_cuit(codigo, cuit):
             ws.update_cell(i, _H_CLI.index("cuit") + 1, cuit)
             break
 
+def actualizar_cliente(codigo, nombre, cuit, direccion, ciudad):
+    ws = _ws("clientes", _H_CLI)
+    for i, r in enumerate(ws.get_all_records(), start=2):
+        if str(r["codigo"]) == str(codigo):
+            ws.update_cell(i, _H_CLI.index("nombre") + 1,    nombre)
+            ws.update_cell(i, _H_CLI.index("cuit") + 1,      cuit)
+            ws.update_cell(i, _H_CLI.index("direccion") + 1, direccion)
+            ws.update_cell(i, _H_CLI.index("ciudad") + 1,    ciudad)
+            _invalidar_cache_clientes()
+            return True
+    return False
+
 def next_codigo_cliente():
     records = load_clientes()
     if not records:

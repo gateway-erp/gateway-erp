@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clientes — Gateway</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy:      #0F1F3D;
+      --navy-mid:  #162644;
+      --navy-card: #1C3056;
+      --navy-line: #243a66;
+      --accent:    #3B82F6;
+      --accent-h:  #2563EB;
+      --green:     #22C55E;
+      --red:       #EF4444;
+      --text:      #F0F4FF;
+      --text-dim:  #8BA3CC;
+      --font-main: 'Montserrat', sans-serif;
+      --font-num:  'Inter', sans-serif;
+    }
+    body { background: var(--navy); color: var(--text); font-family: var(--font-main); min-height: 100vh; }
+
+    /* topbar */
+    .topbar { background: var(--navy-mid); border-bottom: 1px solid var(--navy-line); display: flex; align-items: center; gap: 14px; padding: 0 24px; height: 56px; }
+    .topbar-logo { height: 36px; width: auto; }
+    .topbar-sep  { width: 1px; height: 28px; background: var(--navy-line); }
+    .topbar-nav  { display: flex; gap: 4px; flex: 1; }
+    .nav-item { padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; color: var(--text-dim); text-decoration: none; transition: background .15s; }
+    .nav-item:hover  { background: var(--navy-card); color: var(--text); }
+    .nav-item.active { background: var(--accent); color: #fff; }
+
+    /* contenido */
+    .container { max-width: 900px; margin: 32px auto; padding: 0 20px; }
+    h2 { font-size: 20px; font-weight: 700; margin-bottom: 20px; }
+
+    /* buscador */
+    .search-wrap { position: relative; margin-bottom: 20px; }
+    .search-wrap input {
+      width: 100%; padding: 10px 14px 10px 38px;
+      background: var(--navy-card); border: 1px solid var(--navy-line);
+      border-radius: 8px; color: var(--text); font-size: 14px; font-family: var(--font-main);
+      outline: none;
+    }
+    .search-wrap input:focus { border-color: var(--accent); }
+    .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-dim); pointer-events: none; }
+
+    /* tabla */
+    .tabla { width: 100%; border-collapse: collapse; }
+    .tabla thead th {
+      background: var(--navy-mid); border-bottom: 1px solid var(--navy-line);
+      padding: 10px 14px; text-align: left; font-size: 11px; font-weight: 600;
+      color: var(--text-dim); text-transform: uppercase; letter-spacing: .5px;
+    }
+    .tabla tbody tr { border-bottom: 1px solid var(--navy-line); transition: background .1s; }
+    .tabla tbody tr:hover { background: var(--navy-card); }
+    .tabla tbody td { padding: 10px 14px; font-size: 13px; vertical-align: middle; }
+    .cod { font-family: var(--font-num); color: var(--text-dim); font-size: 12px; }
+
+    /* botón editar */
+    .btn-edit {
+      background: none; border: 1px solid var(--navy-line); color: var(--text-dim);
+      padding: 4px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;
+      font-family: var(--font-main); transition: all .15s;
+    }
+    .btn-edit:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* modal */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.6); z-index: 100;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--navy-card); border: 1px solid var(--navy-line);
+      border-radius: 12px; padding: 28px; width: 100%; max-width: 480px;
+    }
+    .modal h3 { font-size: 16px; font-weight: 700; margin-bottom: 20px; }
+    .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+    .field label { font-size: 11px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: .5px; }
+    .field input {
+      background: var(--navy-mid); border: 1px solid var(--navy-line);
+      border-radius: 7px; padding: 8px 12px; color: var(--text);
+      font-size: 13px; font-family: var(--font-main); outline: none;
+    }
+    .field input:focus { border-color: var(--accent); }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+    .btn-cancel { background: none; border: 1px solid var(--navy-line); color: var(--text-dim); padding: 8px 18px; border-radius: 7px; cursor: pointer; font-family: var(--font-main); font-size: 13px; }
+    .btn-save { background: var(--accent); border: none; color: #fff; padding: 8px 20px; border-radius: 7px; cursor: pointer; font-family: var(--font-main); font-size: 13px; font-weight: 600; }
+    .btn-save:hover { background: var(--accent-h); }
+    .msg-ok  { color: var(--green); font-size: 12px; text-align: center; margin-top: 8px; display: none; }
+    .msg-err { color: var(--red);   font-size: 12px; text-align: center; margin-top: 8px; display: none; }
+
+    .empty { color: var(--text-dim); font-size: 13px; padding: 20px 0; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <img src="/static/logo.png" alt="Gateway" class="topbar-logo">
+  <div class="topbar-sep"></div>
+  <nav class="topbar-nav">
+    <a class="nav-item" href="/">Presupuestos</a>
+    <a class="nav-item" href="/matrices">Matrices</a>
+    <a class="nav-item active" href="/clientes">Clientes</a>
+    <a class="nav-item" href="#">Facturación</a>
+    <a class="nav-item" href="#">Agenda</a>
+  </nav>
+</div>
+
+<div class="container">
+  <h2>Clientes</h2>
+
+  <div class="search-wrap">
+    <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" id="buscar" placeholder="Buscar por nombre o código…" oninput="filtrar()">
+  </div>
+
+  <table class="tabla">
+    <thead>
+      <tr>
+        <th>Código</th>
+        <th>Nombre</th>
+        <th>CUIT</th>
+        <th>Dirección</th>
+        <th>Ciudad</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="tbody">
+      {% for c in clientes %}
+      <tr data-nombre="{{ c.nombre | lower }}" data-codigo="{{ c.codigo }}">
+        <td class="cod">C-{{ '%04d' % c.codigo }}</td>
+        <td>{{ c.nombre }}</td>
+        <td>{{ c.cuit or '—' }}</td>
+        <td>{{ c.direccion or '—' }}</td>
+        <td>{{ c.ciudad or '—' }}</td>
+        <td>
+          <button class="btn-edit" onclick="abrirModal({{ c.codigo }}, {{ c.nombre | tojson }}, {{ (c.cuit or '') | tojson }}, {{ (c.direccion or '') | tojson }}, {{ (c.ciudad or '') | tojson }})">
+            Editar
+          </button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="empty" id="empty" style="display:none">No se encontraron clientes.</p>
+</div>
+
+<!-- Modal edición -->
+<div class="modal-overlay" id="modal-overlay" onclick="cerrarModal(event)">
+  <div class="modal">
+    <h3>Editar cliente</h3>
+    <input type="hidden" id="edit-codigo">
+    <div class="field"><label>Nombre / Razón social</label><input type="text" id="edit-nombre"></div>
+    <div class="field"><label>CUIT</label><input type="text" id="edit-cuit" placeholder="XX-XXXXXXXX-X"></div>
+    <div class="field"><label>Dirección</label><input type="text" id="edit-direccion"></div>
+    <div class="field"><label>Ciudad / CP</label><input type="text" id="edit-ciudad"></div>
+    <p class="msg-ok" id="msg-ok">✓ Guardado correctamente</p>
+    <p class="msg-err" id="msg-err">Error al guardar. Intentá de nuevo.</p>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn-save" onclick="guardar()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function filtrar() {
+  const q = document.getElementById('buscar').value.toLowerCase();
+  let visible = 0;
+  document.querySelectorAll('#tbody tr').forEach(tr => {
+    const match = tr.dataset.nombre.includes(q) || tr.dataset.codigo.includes(q);
+    tr.style.display = match ? '' : 'none';
+    if (match) visible++;
+  });
+  document.getElementById('empty').style.display = visible === 0 ? '' : 'none';
+}
+
+function abrirModal(codigo, nombre, cuit, direccion, ciudad) {
+  document.getElementById('edit-codigo').value    = codigo;
+  document.getElementById('edit-nombre').value    = nombre;
+  document.getElementById('edit-cuit').value      = cuit;
+  document.getElementById('edit-direccion').value = direccion;
+  document.getElementById('edit-ciudad').value    = ciudad;
+  document.getElementById('msg-ok').style.display  = 'none';
+  document.getElementById('msg-err').style.display = 'none';
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+function cerrarModal(e) {
+  if (e && e.target !== document.getElementById('modal-overlay')) return;
+  document.getElementById('modal-overlay').classList.remove('open');
+}
+
+async function guardar() {
+  const codigo    = document.getElementById('edit-codigo').value;
+  const nombre    = document.getElementById('edit-nombre').value.trim();
+  const cuit      = document.getElementById('edit-cuit').value.trim();
+  const direccion = document.getElementById('edit-direccion').value.trim();
+  const ciudad    = document.getElementById('edit-ciudad').value.trim();
+
+  const btn = document.querySelector('.btn-save');
+  btn.disabled = true;
+  btn.textContent = 'Guardando…';
+
+  try {
+    const res = await fetch(`/api/clientes/${codigo}/editar`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({nombre, cuit, direccion, ciudad}),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      document.getElementById('msg-ok').style.display = '';
+      // Actualizar la fila en la tabla
+      const tr = document.querySelector(`#tbody tr[data-codigo="${codigo}"]`);
+      if (tr) {
+        tr.cells[1].textContent = nombre;
+        tr.cells[2].textContent = cuit || '—';
+        tr.cells[3].textContent = direccion || '—';
+        tr.cells[4].textContent = ciudad || '—';
+        tr.dataset.nombre = nombre.toLowerCase();
+      }
+      setTimeout(() => document.getElementById('modal-overlay').classList.remove('open'), 1200);
+    } else {
+      document.getElementById('msg-err').style.display = '';
+    }
+  } catch {
+    document.getElementById('msg-err').style.display = '';
+  }
+  btn.disabled = false;
+  btn.textContent = 'Guardar';
+}
+</script>
+</body>
+</html>

@@ -628,6 +628,23 @@ async def api_guardar_matriz(request: Request):
         nuevo_id = db.guardar_matriz(nombre, cliente, moneda, datos)
         return JSONResponse({"ok": True, "id": nuevo_id})
 
+@app.get("/clientes", response_class=HTMLResponse)
+async def lista_clientes(request: Request):
+    clientes = sorted(db.load_clientes(), key=lambda c: str(c.get("nombre", "")).lower())
+    return templates.TemplateResponse("clientes.html", {"request": request, "clientes": clientes})
+
+@app.post("/api/clientes/{codigo}/editar")
+async def editar_cliente(codigo: str, request: Request):
+    data = await request.json()
+    ok = db.actualizar_cliente(
+        codigo,
+        data.get("nombre", ""),
+        data.get("cuit", ""),
+        data.get("direccion", ""),
+        data.get("ciudad", ""),
+    )
+    return JSONResponse({"ok": ok})
+
 @app.get("/api/proveedores")
 async def api_proveedores(q: str = ""):
     prvs = db.load_proveedores()

@@ -230,6 +230,49 @@ async def editar_generar(numero: str, request: Request):
 
     return FileResponse(output_path, media_type="application/pdf", filename=nombre_archivo)
 
+@app.get("/reutilizar/{numero}", response_class=HTMLResponse)
+async def reutilizar_form(numero: str, request: Request):
+    import json as _json
+    historial = db.load_historial()
+    row = next((r for r in historial if str(r["numero"]) == numero), None)
+    if not row:
+        return HTMLResponse(f"<h3>Presupuesto {numero} no encontrado.</h3>", status_code=404)
+
+    datos_json = row.get("datos_json", "")
+    datos = {}
+    if datos_json:
+        try:
+            datos = _json.loads(datos_json)
+        except Exception:
+            pass
+
+    cliente = datos.get("cliente", {})
+    items   = datos.get("items", [])
+    hoy     = date.today()
+    validez = hoy + timedelta(days=30)
+
+    return templates.TemplateResponse("nuevo_presupuesto.html", {
+        "request":                  request,
+        "fecha":                    hoy.strftime("%Y-%m-%d"),
+        "validez":                  validez.strftime("%Y-%m-%d"),
+        "numero":                   db.peek_numero(),
+        "edit_mode":                False,
+        "cliente_id":               str(cliente.get("codigo", "")),
+        "cliente_nombre":           cliente.get("nombre", row.get("cliente_nombre", "")),
+        "cliente_cuit":             cliente.get("cuit", ""),
+        "cliente_direccion":        cliente.get("direccion", ""),
+        "cliente_ciudad":           cliente.get("ciudad", ""),
+        "moneda_inicial":           row.get("moneda", "USD"),
+        "ref_inicial":              row.get("ref_cliente", ""),
+        "condiciones_pago_inicial": row.get("condiciones_pago", ""),
+        "condiciones_presupuesto_inicial": datos.get("condiciones_presupuesto", ""),
+        "items_precargados":        [
+            {"desc": i["descripcion"], "pu": i["precio_unitario"],
+             "cant": i["cantidad"], "iva": i["iva_pct"]}
+            for i in items
+        ],
+    })
+
 @app.get("/nuevo", response_class=HTMLResponse)
 async def form(request: Request):
     hoy     = date.today()

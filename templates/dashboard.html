@@ -528,7 +528,7 @@
         {% for p in rechazados %}
         <div class="kcard kcard-rechazado">
           <div class="kcard-top">
-            <span class="kcard-numero">{{ p.numero }}</span>
+            <a class="kcard-numero" href="/reutilizar/{{ p.numero }}" title="Reutilizar como nuevo presupuesto">{{ p.numero }}</a>
             <span class="kcard-fecha">{{ p.fecha }}</span>
           </div>
           <div class="kcard-cliente">{{ p.cliente_nombre }}</div>

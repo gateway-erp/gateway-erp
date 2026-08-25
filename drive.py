@@ -116,6 +116,45 @@ def subir_presupuesto(pdf_path, nombre_archivo, codigo_cliente, nombre_cliente):
     return f"https://drive.google.com/file/d/{file_id}/view"
 
 
+def mover_a_rechazados(nombre_archivo, codigo_cliente, nombre_cliente):
+    """
+    Mueve el PDF de Presupuestos/ a Presupuestos/Rechazados/ dentro de la carpeta del cliente.
+    Retorna True si lo encontró y movió, False si no encontró el archivo.
+    """
+    service = _service()
+    clientes_id = _buscar_carpeta(service, "Clientes", DRIVE_ROOT_ID)
+    if not clientes_id:
+        return False
+    nombre_carpeta_cliente = f"C-{int(codigo_cliente):04d} - {nombre_cliente}"
+    cliente_id = _buscar_carpeta(service, nombre_carpeta_cliente, clientes_id)
+    if not cliente_id:
+        return False
+    presup_id = _buscar_carpeta(service, "Presupuestos", cliente_id)
+    if not presup_id:
+        return False
+
+    # Buscar el archivo por nombre en Presupuestos/
+    nombre_esc = nombre_archivo.replace("'", "\\'")
+    q = f"name='{nombre_esc}' and '{presup_id}' in parents and trashed=false"
+    res = service.files().list(q=q, fields="files(id)").execute()
+    archivos = res.get("files", [])
+    if not archivos:
+        return False
+    file_id = archivos[0]["id"]
+
+    # Obtener o crear subcarpeta Rechazados/
+    rechazados_id = _obtener_o_crear(service, "Rechazados", presup_id)
+
+    # Mover el archivo (addParents + removeParents)
+    service.files().update(
+        fileId=file_id,
+        addParents=rechazados_id,
+        removeParents=presup_id,
+        fields="id",
+    ).execute()
+    return True
+
+
 def subir_documento(pdf_path, nombre_archivo, codigo_cliente, nombre_cliente, subcarpeta="Presupuestos"):
     """Sube cualquier documento a la estructura de Drive."""
     svc_bot = _service()

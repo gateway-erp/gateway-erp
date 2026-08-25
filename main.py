@@ -434,6 +434,27 @@ async def generar(request: Request):
 @app.post("/api/rechazar/{numero}")
 async def rechazar(numero: str):
     ok = db.actualizar_estado(numero, "rechazado")
+    if ok:
+        historial = db.load_historial()
+        row = next((r for r in historial if str(r["numero"]) == numero), None)
+        if row and row.get("archivo"):
+            try:
+                import drive as drive_mod, json as _json
+                clientes = db.load_clientes()
+                datos_json = row.get("datos_json", "")
+                codigo = None
+                nombre = row.get("cliente_nombre", "")
+                if datos_json:
+                    datos = _json.loads(datos_json)
+                    codigo = datos.get("cliente", {}).get("codigo")
+                if not codigo:
+                    cod_str = row.get("codigo_cliente", "").replace("C-", "")
+                    codigo = int(cod_str) if cod_str.isdigit() else None
+                if codigo:
+                    drive_mod.mover_a_rechazados(row["archivo"], codigo, nombre)
+            except Exception as e:
+                import traceback
+                print(f"[Drive] Error al mover a Rechazados: {e}\n{traceback.format_exc()}")
     return JSONResponse({"ok": ok})
 
 

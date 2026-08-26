@@ -210,10 +210,38 @@
 
     /* IVA select */
     .iva-select {
-      background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08);
+      background: var(--navy-mid); border: 1px solid rgba(255,255,255,.12);
       border-radius: 4px; color: var(--text); font-family: var(--font-num);
       font-size: 11px; padding: 3px 4px; width: 100%; outline: none;
     }
+    .iva-select option { background: var(--navy-mid); color: var(--text); }
+
+    /* Envío */
+    .envio-row {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 24px;
+      background: var(--navy-card); border: 1px solid var(--navy-line);
+      border-radius: 9px; padding: 12px 18px;
+    }
+    .envio-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--text-dim); white-space: nowrap; }
+    .envio-input {
+      background: var(--navy-mid); border: 1px solid var(--navy-line);
+      border-radius: 6px; padding: 6px 10px; color: var(--text);
+      font-family: var(--font-num); font-size: 13px; width: 140px; outline: none;
+      transition: border-color .15s;
+    }
+    .envio-input:focus { border-color: var(--accent); }
+    .envio-hint { font-size: 11px; color: var(--text-dim); }
+
+    /* Observaciones */
+    .obs-wrap { margin-bottom: 28px; }
+    .obs-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: var(--text-dim); margin-bottom: 6px; display: block; }
+    .obs-textarea {
+      width: 100%; background: var(--navy-card); border: 1px solid var(--navy-line);
+      border-radius: 9px; padding: 12px 16px; color: var(--text);
+      font-family: var(--font-main); font-size: 13px; resize: vertical;
+      min-height: 90px; outline: none; transition: border-color .15s;
+    }
+    .obs-textarea:focus { border-color: var(--accent); }
   </style>
 </head>
 <body>
@@ -295,9 +323,24 @@
     </button>
   </div>
 
+  <!-- ENVÍO -->
+  <div class="envio-row">
+    <span class="envio-label">Envío (total)</span>
+    <input class="envio-input" id="envio-input" type="number" step="0.01" min="0" placeholder="0,00"
+      oninput="state.envio=parseFloat(this.value)||0;recalcular()">
+    <span class="envio-hint" id="envio-hint"></span>
+  </div>
+
   <!-- RESUMEN -->
   <div class="resumen-section" id="resumen-section">
     <!-- generado por recalcular() -->
+  </div>
+
+  <!-- OBSERVACIONES -->
+  <div class="obs-wrap">
+    <span class="obs-label">Observaciones</span>
+    <textarea class="obs-textarea" id="obs-textarea" placeholder="Notas internas, condiciones especiales, aclaraciones…"
+      oninput="state.observaciones=this.value"></textarea>
   </div>
 
 </div><!-- /page -->
@@ -307,19 +350,21 @@
 // ESTADO REACTIVO
 // ══════════════════════════════════════════════════════════════════
 let state = {
-  productos: [],   // [{nombre, markup, cantidad, iva_pct}]
-  proveedores: [], // [{nombre, entrega}]
-  precios: {},     // "prv_idx,prod_idx" → precio (número o null)
+  productos: [],
+  proveedores: [],
+  precios: {},
+  envio: 0,
+  observaciones: '',
 };
 
-// Cargar datos iniciales si existe una matriz guardada
 const DATOS_INICIALES = {{ (matriz.datos | tojson) if matriz and matriz.datos else 'null' }};
 const MATRIZ_ID       = {{ matriz.id if matriz else 'null' }};
 
 if (DATOS_INICIALES) {
   state = DATOS_INICIALES;
+  if (state.envio == null) state.envio = 0;
+  if (state.observaciones == null) state.observaciones = '';
 } else {
-  // Matriz nueva: 2 productos y 2 proveedores vacíos
   state.productos   = [{nombre:'', markup:1.5, cantidad:1, iva_pct:21}, {nombre:'', markup:1.5, cantidad:1, iva_pct:21}];
   state.proveedores = [{nombre:'', entrega:''}, {nombre:'', entrega:''}];
 }
@@ -332,6 +377,11 @@ function render() {
   renderTbody();
   renderTfoot();
   recalcular();
+  // Sincronizar campos fuera de la tabla
+  const envioEl = document.getElementById('envio-input');
+  if (envioEl && state.envio) envioEl.value = state.envio;
+  const obsEl = document.getElementById('obs-textarea');
+  if (obsEl && state.observaciones) obsEl.value = state.observaciones;
 }
 
 function renderThead() {
@@ -394,11 +444,11 @@ function renderTbody() {
       const key = `${ri},${pi}`;
       const val = state.precios[key];
       const isBest = esMejor(ri, pi);
-      html += `<td class="td-precio ${isBest?'is-best':''}">
+      html += `<td class="td-precio ${isBest?'is-best':''}" data-key="${key}">
         <input class="precio-input ${isBest?'is-best':''}" type="number" step="0.01" min="0"
           placeholder="—" value="${val!=null?val:''}"
-          oninput="state.precios['${key}']=parseFloat(this.value)||null;renderTbody();renderTfoot();recalcular()"
-          onfocus="this.select()">
+          oninput="state.precios['${key}']=parseFloat(this.value)||null;actualizarBest();renderTfoot();recalcular()"
+          onfocus="this.select()" data-key="${key}">
       </td>`;
     });
     html += '<td style="border:1px solid var(--navy-line)"></td></tr>';
@@ -419,7 +469,7 @@ function renderTfoot() {
   html += '<td style="border:1px solid var(--navy-line)"></td></tr>';
 
   // Fila: precio venta
-  html += '<tr class="tr-calc tr-venta tr-label"><th style="background:var(--navy-mid);border:1px solid var(--navy-line);font-size:10px;color:var(--text-dim);padding:6px 10px;text-transform:uppercase;letter-spacing:.5px">Precio venta (×markup)</th>';
+  html += '<tr class="tr-calc tr-venta tr-label"><th style="background:var(--navy-mid);border:1px solid var(--navy-line);font-size:10px;color:var(--text-dim);padding:6px 10px;text-transform:uppercase;letter-spacing:.5px">Precio venta (+markup)</th>';
   state.productos.forEach((p, pi) => {
     const min = getMejor(pi);
     const venta = min!=null ? min * p.markup : null;
@@ -464,35 +514,50 @@ function recalcular() {
   let html = '';
   let gtCosto = 0, gtVenta = 0, gtIva = 0;
 
+  const envio = state.envio || 0;
+  const prodConDatos = state.productos.filter((_, pi) => getMejor(pi) != null).length;
+  const envioXprod = prodConDatos > 0 ? envio / prodConDatos : 0;
+
+  // Hint de reparto de envío
+  const hintEl = document.getElementById('envio-hint');
+  if (hintEl) {
+    hintEl.textContent = envio > 0 && prodConDatos > 1
+      ? `Se reparte ${fmt(envioXprod)} por producto (${prodConDatos} productos)`
+      : '';
+  }
+
   state.productos.forEach((p, pi) => {
     const min = getMejor(pi);
     if (min == null) return;
-    const costo    = min * p.cantidad;
-    const ventaUnit = min * p.markup;
-    const venta    = ventaUnit * p.cantidad;
-    const iva      = venta * p.iva_pct / 100;
-    const total    = venta + iva;
-    const margen   = venta - costo;
+    const costoBase  = min * p.cantidad;
+    const ventaBase  = min * p.markup * p.cantidad;
+    const costo      = costoBase + envioXprod;
+    const venta      = ventaBase + envioXprod;   // envío sin markup
+    const iva        = venta * p.iva_pct / 100;
+    const total      = venta + iva;
+    const margen     = venta - costo;
     gtCosto += costo; gtVenta += venta; gtIva += iva;
 
     const nombre = p.nombre.trim() || `Producto ${pi + 1}`;
+    const envioLine = envioXprod > 0
+      ? `<div class="res-item"><span class="res-label">Envío incluido</span><span class="res-value" style="color:var(--text-dim);font-size:14px">${fmt(envioXprod)}</span></div>`
+      : '';
     html += `
       <div>
         <div class="resumen-label-row" style="margin-bottom:6px">
           <span class="resumen-prod-name">${escHtml(nombre)}</span>
         </div>
         <div class="resumen">
-          <div class="res-item"><span class="res-label">Costo total</span><span class="res-value blue">${fmt(costo)}</span></div>
-          <div class="res-item"><span class="res-label">Precio venta (neto)</span><span class="res-value green">${fmt(venta)}</span></div>
-          <div class="res-item"><span class="res-label">IVA total</span><span class="res-value amber">${fmt(iva)}</span></div>
-          <div class="res-item"><span class="res-label">Total con IVA</span><span class="res-value red">${fmt(total)}</span></div>
-          <div class="res-item"><span class="res-label">Margen bruto</span><span class="res-value" style="color:var(--text-dim)">${fmt(margen)}</span></div>
+          <div class="res-item"><span class="res-label">Costo total</span><span class="res-value" style="color:#86EFAC">${fmt(costo)}</span></div>
+          <div class="res-item"><span class="res-label">Precio venta (neto)</span><span class="res-value blue">${fmt(venta)}</span></div>
+          <div class="res-item"><span class="res-label">IVA total</span><span class="res-value" style="color:#FCA5A5">${fmt(iva)}</span></div>
+          <div class="res-item"><span class="res-label">Total con IVA</span><span class="res-value amber">${fmt(total)}</span></div>
+          ${envioLine}
+          <div class="res-item"><span class="res-label">Margen bruto</span><span class="res-value" style="color:#4ADE80">${fmt(margen)}</span></div>
         </div>
       </div>`;
   });
 
-  // Total general (solo si hay más de 1 producto con datos)
-  const prodConDatos = state.productos.filter((_, pi) => getMejor(pi) != null).length;
   if (prodConDatos > 1) {
     const gtTotal  = gtVenta + gtIva;
     const gtMargen = gtVenta - gtCosto;
@@ -502,16 +567,31 @@ function recalcular() {
           <span class="resumen-prod-name" style="color:var(--accent)">Total general</span>
         </div>
         <div class="resumen total-card">
-          <div class="res-item"><span class="res-label">Costo total</span><span class="res-value blue">${fmt(gtCosto)}</span></div>
-          <div class="res-item"><span class="res-label">Precio venta (neto)</span><span class="res-value green">${fmt(gtVenta)}</span></div>
-          <div class="res-item"><span class="res-label">IVA total</span><span class="res-value amber">${fmt(gtIva)}</span></div>
-          <div class="res-item"><span class="res-label">Total con IVA</span><span class="res-value red">${fmt(gtTotal)}</span></div>
-          <div class="res-item"><span class="res-label">Margen bruto</span><span class="res-value" style="color:var(--text-dim)">${fmt(gtMargen)}</span></div>
+          <div class="res-item"><span class="res-label">Costo total</span><span class="res-value" style="color:#86EFAC">${fmt(gtCosto)}</span></div>
+          <div class="res-item"><span class="res-label">Precio venta (neto)</span><span class="res-value blue">${fmt(gtVenta)}</span></div>
+          <div class="res-item"><span class="res-label">IVA total</span><span class="res-value" style="color:#FCA5A5">${fmt(gtIva)}</span></div>
+          <div class="res-item"><span class="res-label">Total con IVA</span><span class="res-value amber">${fmt(gtTotal)}</span></div>
+          <div class="res-item"><span class="res-label">Margen bruto</span><span class="res-value" style="color:#4ADE80">${fmt(gtMargen)}</span></div>
         </div>
       </div>`;
   }
 
   section.innerHTML = html;
+}
+
+function actualizarBest() {
+  state.productos.forEach((_, pi) => {
+    const best = getMejor(pi);
+    state.proveedores.forEach((__, ri) => {
+      const key = `${ri},${pi}`;
+      const v   = state.precios[key];
+      const isBest = v != null && v > 0 && v === best;
+      const td    = document.querySelector(`td.td-precio[data-key="${key}"]`);
+      const input = document.querySelector(`input.precio-input[data-key="${key}"]`);
+      if (td)    td.classList.toggle('is-best', isBest);
+      if (input) input.classList.toggle('is-best', isBest);
+    });
+  });
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -565,6 +645,8 @@ function eliminarProveedor(ri) {
 // GUARDAR
 // ══════════════════════════════════════════════════════════════════
 async function guardarMatriz() {
+  state.envio         = parseFloat(document.getElementById('envio-input').value) || 0;
+  state.observaciones = document.getElementById('obs-textarea').value;
   const payload = {
     id:             MATRIZ_ID || null,
     nombre:         document.getElementById('meta-nombre').value.trim() || 'Sin nombre',

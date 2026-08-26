@@ -633,6 +633,15 @@ async def lista_clientes(request: Request):
     clientes = sorted(db.load_clientes(), key=lambda c: str(c.get("nombre", "")).lower())
     return templates.TemplateResponse("clientes.html", {"request": request, "clientes": clientes})
 
+@app.post("/api/clientes/crear")
+async def crear_cliente_api(request: Request):
+    data = await request.json()
+    nombre = data.get("nombre", "").strip()
+    if not nombre:
+        return JSONResponse({"ok": False, "error": "nombre requerido"})
+    codigo = db.crear_cliente_nuevo(nombre, data.get("cuit",""), data.get("direccion",""), data.get("ciudad",""))
+    return JSONResponse({"ok": True, "codigo": codigo})
+
 @app.post("/api/clientes/{codigo}/editar")
 async def editar_cliente(codigo: str, request: Request):
     data = await request.json()

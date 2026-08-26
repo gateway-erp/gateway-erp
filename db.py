@@ -93,6 +93,14 @@ def crear_cliente(cliente):
     ])
     _invalidar_cache_clientes()
 
+def crear_cliente_nuevo(nombre, cuit="", direccion="", ciudad=""):
+    """Crea un cliente auto-asignando el próximo código. Retorna el código asignado."""
+    clientes = load_clientes()
+    codigos = [int(c.get("codigo", 0)) for c in clientes if str(c.get("codigo","")).isdigit()]
+    nuevo_codigo = max(codigos, default=0) + 1
+    crear_cliente({"codigo": nuevo_codigo, "nombre": nombre, "cuit": cuit, "direccion": direccion, "ciudad": ciudad})
+    return nuevo_codigo
+
 def actualizar_cuit(codigo, cuit):
     ws = _ws("clientes", _H_CLI)
     for i, r in enumerate(ws.get_all_records(), start=2):

@@ -107,13 +107,14 @@
     <a class="nav-item" href="/">Presupuestos</a>
     <a class="nav-item" href="/matrices">Matrices</a>
     <a class="nav-item active" href="/clientes">Clientes</a>
-    <a class="nav-item" href="#">Facturación</a>
-    <a class="nav-item" href="#">Agenda</a>
   </nav>
 </div>
 
 <div class="container">
-  <h2>Clientes</h2>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+    <h2 style="margin-bottom:0">Clientes</h2>
+    <button class="btn-save" onclick="abrirNuevo()">+ Nuevo cliente</button>
+  </div>
 
   <div class="search-wrap">
     <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
@@ -151,10 +152,10 @@
   <p class="empty" id="empty" style="display:none">No se encontraron clientes.</p>
 </div>
 
-<!-- Modal edición -->
+<!-- Modal nuevo/edición -->
 <div class="modal-overlay" id="modal-overlay" onclick="cerrarModal(event)">
   <div class="modal">
-    <h3>Editar cliente</h3>
+    <h3 id="modal-titulo">Editar cliente</h3>
     <input type="hidden" id="edit-codigo">
     <div class="field"><label>Nombre / Razón social</label><input type="text" id="edit-nombre"></div>
     <div class="field"><label>CUIT</label><input type="text" id="edit-cuit" placeholder="XX-XXXXXXXX-X"></div>
@@ -181,7 +182,21 @@ function filtrar() {
   document.getElementById('empty').style.display = visible === 0 ? '' : 'none';
 }
 
+function abrirNuevo() {
+  document.getElementById('modal-titulo').textContent = 'Nuevo cliente';
+  document.getElementById('edit-codigo').value    = '';
+  document.getElementById('edit-nombre').value    = '';
+  document.getElementById('edit-cuit').value      = '';
+  document.getElementById('edit-direccion').value = '';
+  document.getElementById('edit-ciudad').value    = '';
+  document.getElementById('msg-ok').style.display  = 'none';
+  document.getElementById('msg-err').style.display = 'none';
+  document.getElementById('modal-overlay').classList.add('open');
+  setTimeout(() => document.getElementById('edit-nombre').focus(), 80);
+}
+
 function abrirModal(codigo, nombre, cuit, direccion, ciudad) {
+  document.getElementById('modal-titulo').textContent = 'Editar cliente';
   document.getElementById('edit-codigo').value    = codigo;
   document.getElementById('edit-nombre').value    = nombre;
   document.getElementById('edit-cuit').value      = cuit;
@@ -203,38 +218,52 @@ async function guardar() {
   const cuit      = document.getElementById('edit-cuit').value.trim();
   const direccion = document.getElementById('edit-direccion').value.trim();
   const ciudad    = document.getElementById('edit-ciudad').value.trim();
+  if (!nombre) return;
 
-  const btn = document.querySelector('.btn-save');
-  btn.disabled = true;
-  btn.textContent = 'Guardando…';
+  const btn = document.querySelector('#modal-overlay .btn-save');
+  btn.disabled = true; btn.textContent = 'Guardando…';
+
+  const esNuevo = !codigo;
+  const url = esNuevo ? '/api/clientes/crear' : `/api/clientes/${codigo}/editar`;
 
   try {
-    const res = await fetch(`/api/clientes/${codigo}/editar`, {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+    const res  = await fetch(url, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({nombre, cuit, direccion, ciudad}),
     });
     const data = await res.json();
     if (data.ok) {
       document.getElementById('msg-ok').style.display = '';
-      // Actualizar la fila en la tabla
-      const tr = document.querySelector(`#tbody tr[data-codigo="${codigo}"]`);
-      if (tr) {
-        tr.cells[1].textContent = nombre;
-        tr.cells[2].textContent = cuit || '—';
-        tr.cells[3].textContent = direccion || '—';
-        tr.cells[4].textContent = ciudad || '—';
+      if (esNuevo) {
+        // Agregar fila a la tabla
+        const cod = data.codigo;
+        const tbody = document.getElementById('tbody');
+        const tr = document.createElement('tr');
         tr.dataset.nombre = nombre.toLowerCase();
+        tr.dataset.codigo = cod;
+        tr.innerHTML = `<td class="cod">C-${String(cod).padStart(4,'0')}</td>
+          <td>${nombre}</td><td>${cuit||'—'}</td>
+          <td>${direccion||'—'}</td><td>${ciudad||'—'}</td>
+          <td><button class="btn-edit" onclick="abrirModal(${cod},${JSON.stringify(nombre)},${JSON.stringify(cuit)},${JSON.stringify(direccion)},${JSON.stringify(ciudad)})">Editar</button></td>`;
+        tbody.appendChild(tr);
+      } else {
+        const tr = document.querySelector(`#tbody tr[data-codigo="${codigo}"]`);
+        if (tr) {
+          tr.cells[1].textContent = nombre;
+          tr.cells[2].textContent = cuit || '—';
+          tr.cells[3].textContent = direccion || '—';
+          tr.cells[4].textContent = ciudad || '—';
+          tr.dataset.nombre = nombre.toLowerCase();
+        }
       }
-      setTimeout(() => document.getElementById('modal-overlay').classList.remove('open'), 1200);
+      setTimeout(() => document.getElementById('modal-overlay').classList.remove('open'), 1000);
     } else {
       document.getElementById('msg-err').style.display = '';
     }
   } catch {
     document.getElementById('msg-err').style.display = '';
   }
-  btn.disabled = false;
-  btn.textContent = 'Guardar';
+  btn.disabled = false; btn.textContent = 'Guardar';
 }
 </script>
 </body>

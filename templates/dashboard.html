@@ -117,10 +117,12 @@
     .td-turno-lbl { background:var(--navy-mid); border:1px solid var(--navy-line); font-size:8px; font-weight:700; text-transform:uppercase; letter-spacing:.2px; color:var(--text-dim); text-align:center; vertical-align:middle; width:24px; padding:2px 1px; }
     .agenda-cell { border:1px solid var(--navy-line); padding:0; vertical-align:top; min-height:46px; height:46px; position:relative; cursor:text; transition:border-color .1s; }
     .agenda-cell:focus-within { border-color:rgba(59,130,246,.7); z-index:2; }
-    .agenda-cell.feriado-cell { background:rgba(239,68,68,.08); }
-    .agenda-cell.wknd-cell { opacity:.55; }
+    .agenda-cell.feriado-cell { background:rgba(239,68,68,.18); border-color:rgba(239,68,68,.35); }
+    .agenda-cell.wknd-cell { background:rgba(255,255,255,.04); }
+    .agenda-cell.today-cell { background:rgba(34,197,94,.13); border-color:rgba(34,197,94,.5); }
     .cell-date { font-size:9px; font-weight:600; font-family:var(--font-num); color:rgba(139,163,204,.55); position:absolute; top:2px; right:3px; pointer-events:none; line-height:1; }
     .cell-date.fer-date { color:#fca5a5; }
+    .cell-date.today-date { color:#4ade80; font-weight:800; }
     .cell-inner { min-height:42px; padding:2px 20px 2px 4px; font-size:11px; line-height:1.3; outline:none; word-break:break-word; }
     /* cell colors */
     .c-verde    { background:#14532d!important; color:#bbf7d0; }
@@ -1180,14 +1182,18 @@ function celHtml(dia, turno, esWknd, semana) {
   const fStr  = `${aAño}-${String(aMes).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
   const feNom = FERIADOS_AR[fStr];
 
+  const hoy = new Date();
+  const esHoy = dia === hoy.getDate() && aMes === hoy.getMonth()+1 && aAño === hoy.getFullYear();
+
   let cls = 'agenda-cell';
   if (color) cls += ` c-${color}`;
   if (esWknd) cls += ' wknd-cell';
-  if (feNom && !color) cls += ' feriado-cell';
+  if (feNom && !color && !esHoy) cls += ' feriado-cell';
+  if (esHoy && !color) cls += ' today-cell';
 
   let dateLabel = '';
   if (turno === 'manana') {
-    const dc = feNom ? ' fer-date' : '';
+    const dc = esHoy ? ' today-date' : (feNom ? ' fer-date' : '');
     const dt = feNom ? ` title="${aEsc(feNom)}"` : '';
     dateLabel = `<span class="cell-date${dc}"${dt}>${dia}</span>`;
   }

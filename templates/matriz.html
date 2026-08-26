@@ -174,11 +174,17 @@
     .add-row { display: flex; gap: 10px; margin-bottom: 24px; }
 
     /* RESUMEN */
+    .resumen-section { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+    .resumen-label-row { display: flex; align-items: center; gap: 10px; }
+    .resumen-prod-name { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--text-dim); }
     .resumen {
       background: var(--navy-card); border: 1px solid var(--navy-line);
       border-radius: 12px; padding: 20px 24px;
       display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: 20px;
-      margin-bottom: 24px;
+    }
+    .resumen.total-card {
+      border-color: rgba(59,130,246,.4);
+      background: rgba(59,130,246,.07);
     }
     .res-item { display: flex; flex-direction: column; gap: 4px; }
     .res-label { font-size: 10px; text-transform: uppercase; letter-spacing: .8px; color: var(--text-dim); font-weight: 600; }
@@ -290,27 +296,8 @@
   </div>
 
   <!-- RESUMEN -->
-  <div class="resumen" id="resumen">
-    <div class="res-item">
-      <span class="res-label">Costo total</span>
-      <span class="res-value blue" id="res-costo">—</span>
-    </div>
-    <div class="res-item">
-      <span class="res-label">Precio venta (neto)</span>
-      <span class="res-value green" id="res-venta">—</span>
-    </div>
-    <div class="res-item">
-      <span class="res-label">IVA total</span>
-      <span class="res-value amber" id="res-iva">—</span>
-    </div>
-    <div class="res-item">
-      <span class="res-label">Total con IVA</span>
-      <span class="res-value red" id="res-total">—</span>
-    </div>
-    <div class="res-item">
-      <span class="res-label">Margen bruto</span>
-      <span class="res-value" id="res-margen" style="color:var(--text-dim)">—</span>
-    </div>
+  <div class="resumen-section" id="resumen-section">
+    <!-- generado por recalcular() -->
   </div>
 
 </div><!-- /page -->
@@ -473,24 +460,58 @@ function esMejor(ri, pi) {
 }
 
 function recalcular() {
-  let costoTotal = 0, ventaNeto = 0, ivaTotal = 0;
+  const section = document.getElementById('resumen-section');
+  let html = '';
+  let gtCosto = 0, gtVenta = 0, gtIva = 0;
+
   state.productos.forEach((p, pi) => {
     const min = getMejor(pi);
-    if (min != null) {
-      costoTotal += min * p.cantidad;
-      const ventaUnit = min * p.markup;
-      ventaNeto += ventaUnit * p.cantidad;
-      ivaTotal  += ventaUnit * p.cantidad * p.iva_pct / 100;
-    }
-  });
-  const totalConIva = ventaNeto + ivaTotal;
-  const margen      = ventaNeto - costoTotal;
+    if (min == null) return;
+    const costo    = min * p.cantidad;
+    const ventaUnit = min * p.markup;
+    const venta    = ventaUnit * p.cantidad;
+    const iva      = venta * p.iva_pct / 100;
+    const total    = venta + iva;
+    const margen   = venta - costo;
+    gtCosto += costo; gtVenta += venta; gtIva += iva;
 
-  document.getElementById('res-costo').textContent  = costoTotal  ? fmt(costoTotal)  : '—';
-  document.getElementById('res-venta').textContent  = ventaNeto   ? fmt(ventaNeto)   : '—';
-  document.getElementById('res-iva').textContent    = ivaTotal    ? fmt(ivaTotal)    : '—';
-  document.getElementById('res-total').textContent  = totalConIva ? fmt(totalConIva) : '—';
-  document.getElementById('res-margen').textContent = margen      ? fmt(margen)      : '—';
+    const nombre = p.nombre.trim() || `Producto ${pi + 1}`;
+    html += `
+      <div>
+        <div class="resumen-label-row" style="margin-bottom:6px">
+          <span class="resumen-prod-name">${escHtml(nombre)}</span>
+        </div>
+        <div class="resumen">
+          <div class="res-item"><span class="res-label">Costo total</span><span class="res-value blue">${fmt(costo)}</span></div>
+          <div class="res-item"><span class="res-label">Precio venta (neto)</span><span class="res-value green">${fmt(venta)}</span></div>
+          <div class="res-item"><span class="res-label">IVA total</span><span class="res-value amber">${fmt(iva)}</span></div>
+          <div class="res-item"><span class="res-label">Total con IVA</span><span class="res-value red">${fmt(total)}</span></div>
+          <div class="res-item"><span class="res-label">Margen bruto</span><span class="res-value" style="color:var(--text-dim)">${fmt(margen)}</span></div>
+        </div>
+      </div>`;
+  });
+
+  // Total general (solo si hay más de 1 producto con datos)
+  const prodConDatos = state.productos.filter((_, pi) => getMejor(pi) != null).length;
+  if (prodConDatos > 1) {
+    const gtTotal  = gtVenta + gtIva;
+    const gtMargen = gtVenta - gtCosto;
+    html += `
+      <div>
+        <div class="resumen-label-row" style="margin-bottom:6px">
+          <span class="resumen-prod-name" style="color:var(--accent)">Total general</span>
+        </div>
+        <div class="resumen total-card">
+          <div class="res-item"><span class="res-label">Costo total</span><span class="res-value blue">${fmt(gtCosto)}</span></div>
+          <div class="res-item"><span class="res-label">Precio venta (neto)</span><span class="res-value green">${fmt(gtVenta)}</span></div>
+          <div class="res-item"><span class="res-label">IVA total</span><span class="res-value amber">${fmt(gtIva)}</span></div>
+          <div class="res-item"><span class="res-label">Total con IVA</span><span class="res-value red">${fmt(gtTotal)}</span></div>
+          <div class="res-item"><span class="res-label">Margen bruto</span><span class="res-value" style="color:var(--text-dim)">${fmt(gtMargen)}</span></div>
+        </div>
+      </div>`;
+  }
+
+  section.innerHTML = html;
 }
 
 // ══════════════════════════════════════════════════════════════════
@@ -648,6 +669,9 @@ function fmt(n) {
 }
 function esc(s) {
   return String(s||'').replace(/'/g,"&#39;").replace(/"/g,"&quot;");
+}
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 function showToast(msg) {
   let t = document.getElementById('toast');

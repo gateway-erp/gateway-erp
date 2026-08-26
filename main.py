@@ -645,6 +645,37 @@ async def editar_cliente(codigo: str, request: Request):
     )
     return JSONResponse({"ok": ok})
 
+@app.get("/api/agenda/{año}/{mes}")
+async def get_agenda(año: int, mes: int):
+    import traceback
+    try:
+        db.crear_mantenimiento_if_missing()
+        celdas  = db.load_agenda_celdas(año, mes)
+        mants   = db.load_mantenimientos()
+        visitas = db.load_visitas_mes(año, mes)
+        return JSONResponse({"ok": True, "celdas": celdas, "mantenimientos": mants, "visitas": visitas})
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e), "trace": traceback.format_exc()})
+
+@app.post("/api/agenda/celda")
+async def save_celda_agenda(request: Request):
+    data = await request.json()
+    db.guardar_celda_agenda(
+        data["año"], data["mes"], data["dia"], data["turno"],
+        data.get("texto", ""), data.get("color", ""), data.get("negrita", False),
+    )
+    return JSONResponse({"ok": True})
+
+@app.post("/api/agenda/visita")
+async def save_visita_agenda(request: Request):
+    data = await request.json()
+    db.guardar_visita(
+        data["mant_id"], data["año"], data["mes"], data["semana"],
+        data.get("fecha_real", ""), data.get("estado", "pendiente"),
+    )
+    return JSONResponse({"ok": True})
+
+
 @app.get("/api/proveedores")
 async def api_proveedores(q: str = ""):
     prvs = db.load_proveedores()

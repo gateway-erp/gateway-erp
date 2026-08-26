@@ -363,6 +363,63 @@ def load_matriz(mid):
     return None
 
 
+# ── AGENDA ────────────────────────────────────────────────────────────────────
+_H_AGENDA_CEL = ["año", "mes", "dia", "turno", "texto", "color", "negrita"]
+
+def load_agenda_celdas(año, mes):
+    ws = _ws("agenda_celdas", _H_AGENDA_CEL)
+    return [r for r in ws.get_all_records()
+            if str(r.get("año")) == str(año) and str(r.get("mes")) == str(mes)]
+
+def guardar_celda_agenda(año, mes, dia, turno, texto, color, negrita):
+    ws = _ws("agenda_celdas", _H_AGENDA_CEL)
+    records = ws.get_all_records()
+    for i, r in enumerate(records, start=2):
+        if (str(r.get("año")) == str(año) and str(r.get("mes")) == str(mes)
+                and str(r.get("dia")) == str(dia) and str(r.get("turno")) == turno):
+            ws.update_cell(i, _H_AGENDA_CEL.index("texto") + 1, texto)
+            ws.update_cell(i, _H_AGENDA_CEL.index("color") + 1, color)
+            ws.update_cell(i, _H_AGENDA_CEL.index("negrita") + 1, "si" if negrita else "no")
+            return
+    ws.append_row([año, mes, dia, turno, texto, color, "si" if negrita else "no"])
+
+
+_H_MANT = ["id", "nombre", "cliente", "horas_plan", "semanas_mes"]
+_mant_seeded = False
+
+def load_mantenimientos():
+    return _ws("mantenimientos", _H_MANT).get_all_records()
+
+def crear_mantenimiento_if_missing():
+    global _mant_seeded
+    if _mant_seeded:
+        return
+    ws = _ws("mantenimientos", _H_MANT)
+    records = ws.get_all_records()
+    if not any(str(r.get("nombre")) == "TBAR CCTV" for r in records):
+        ws.append_row([1, "TBAR CCTV", "Toyota Boshoku", 8, 4])
+    _mant_seeded = True
+
+
+_H_MVIS = ["mant_id", "año", "mes", "semana", "fecha_real", "estado"]
+
+def load_visitas_mes(año, mes):
+    ws = _ws("mant_visitas", _H_MVIS)
+    return [r for r in ws.get_all_records()
+            if str(r.get("año")) == str(año) and str(r.get("mes")) == str(mes)]
+
+def guardar_visita(mant_id, año, mes, semana, fecha_real, estado):
+    ws = _ws("mant_visitas", _H_MVIS)
+    records = ws.get_all_records()
+    for i, r in enumerate(records, start=2):
+        if (str(r.get("mant_id")) == str(mant_id) and str(r.get("año")) == str(año)
+                and str(r.get("mes")) == str(mes) and str(r.get("semana")) == str(semana)):
+            ws.update_cell(i, _H_MVIS.index("fecha_real") + 1, fecha_real)
+            ws.update_cell(i, _H_MVIS.index("estado") + 1, estado)
+            return
+    ws.append_row([mant_id, año, mes, semana, fecha_real, estado])
+
+
 def presupuesto_cobrado_ok(numero):
     facturas = load_facturas_por_presupuesto(numero)
     if not facturas:

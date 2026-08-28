@@ -9,21 +9,22 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --navy:      #0F1F3D;
+      --navy:      #1B2A4A;
       --navy-mid:  #162644;
       --navy-card: #1C3056;
       --navy-line: #243a66;
       --accent:    #3B82F6;
       --accent-h:  #2563EB;
-      --green:     #22C55E;
-      --red:       #EF4444;
       --text:      #F0F4FF;
       --text-dim:  #8BA3CC;
       --font-main: 'Montserrat', sans-serif;
       --font-num:  'Inter', sans-serif;
+      --doc-navy:  #1B2A4A;
+      --doc-gray:  #E4E8EE;
     }
-    body { background: var(--navy); color: var(--text); font-family: var(--font-main); min-height: 100vh; }
+    body { background: #2a3550; color: var(--text); font-family: var(--font-main); min-height: 100vh; }
 
+    /* ── Topbar ── */
     .topbar { background: var(--navy-mid); border-bottom: 1px solid var(--navy-line); display: flex; align-items: center; gap: 14px; padding: 0 24px; height: 56px; }
     .topbar-logo { height: 36px; width: auto; }
     .topbar-sep  { width: 1px; height: 28px; background: var(--navy-line); }
@@ -32,79 +33,121 @@
     .nav-item:hover  { background: var(--navy-card); color: var(--text); }
     .nav-item.active { background: var(--accent); color: #fff; }
 
-    .page { max-width: 860px; margin: 28px auto; padding: 0 20px; }
-    .back { color: var(--text-dim); font-size: 12px; text-decoration: none; display: inline-block; margin-bottom: 16px; }
+    /* ── Página ── */
+    .page { max-width: 820px; margin: 28px auto; padding: 0 16px 40px; }
+    .back { color: var(--text-dim); font-size: 12px; text-decoration: none; display: inline-block; margin-bottom: 14px; }
     .back:hover { color: var(--text); }
 
-    .card { background: var(--navy-card); border: 1px solid var(--navy-line); border-radius: 10px; padding: 20px; margin-bottom: 16px; }
-    .card-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--text-dim); margin-bottom: 14px; }
-
-    .row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
-    .field { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 140px; }
-    .field label { font-size: 11px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: .4px; }
-    .field input {
-      background: var(--navy-mid); border: 1px solid var(--navy-line);
-      border-radius: 7px; padding: 8px 12px; color: var(--text);
-      font-size: 13px; font-family: var(--font-main); outline: none;
-    }
-    .field input:focus { border-color: var(--accent); }
-
-    .chip-numero {
-      background: var(--navy-mid); border: 1px solid var(--navy-line);
-      border-radius: 7px; padding: 8px 14px; font-family: var(--font-num);
-      font-size: 14px; font-weight: 700; color: var(--accent); letter-spacing: .5px;
+    /* ── Documento ── */
+    .doc {
+      background: #fff;
+      color: #111;
+      border-radius: 4px;
+      box-shadow: 0 4px 24px rgba(0,0,0,.45);
+      padding: 22px 28px 28px;
+      font-family: Helvetica, Arial, sans-serif;
+      font-size: 12px;
     }
 
-    /* autocomplete cliente */
+    /* encabezado del doc */
+    .doc-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
+    .doc-logo { height: 48px; width: auto; }
+    .doc-emisor { text-align: center; flex: 1; padding: 0 16px; }
+    .doc-emisor .name { font-weight: 700; font-size: 11px; color: var(--doc-navy); text-transform: uppercase; }
+    .doc-emisor .sub  { font-size: 9px; color: #444; margin-top: 2px; }
+    .doc-num { text-align: right; min-width: 160px; }
+    .doc-num .remito-title { font-weight: 700; font-size: 11px; color: var(--doc-navy); text-transform: uppercase; letter-spacing: .5px; }
+    .doc-num .num-chip {
+      display: inline-block; background: var(--doc-navy); color: #fff;
+      font-size: 13px; font-weight: 700; font-family: var(--font-num);
+      padding: 2px 10px; border-radius: 3px; letter-spacing: .5px; margin-top: 4px;
+    }
+
+    .doc-divider { border: none; border-top: 1.5px solid var(--doc-navy); margin: 10px 0 8px; }
+    .doc-divider-light { border: none; border-top: 0.5px solid var(--doc-gray); margin: 6px 0; }
+
+    /* bloque destinatario */
+    .dest-grid { display: grid; grid-template-columns: auto 1fr auto auto; gap: 4px 8px; align-items: baseline; margin-bottom: 4px; }
+    .dest-label { font-weight: 700; font-size: 9px; color: var(--doc-navy); text-transform: uppercase; white-space: nowrap; }
+    .dest-val { font-size: 11px; border-bottom: 1px dashed #ccc; padding-bottom: 1px; }
+    .dest-val input {
+      width: 100%; border: none; outline: none; font-size: 11px;
+      font-family: Helvetica, Arial, sans-serif; background: transparent;
+      color: #111; padding: 0;
+    }
+    .dest-val input::placeholder { color: #bbb; }
+
+    /* autocomplete */
     .autocomplete-wrap { position: relative; }
     .autocomplete-list {
-      position: absolute; top: calc(100% + 3px); left: 0; right: 0; z-index: 50;
-      background: var(--navy-card); border: 1px solid var(--navy-line);
-      border-radius: 7px; max-height: 220px; overflow-y: auto; display: none;
+      position: absolute; top: calc(100% + 2px); left: 0; right: 0; z-index: 50;
+      background: #fff; border: 1px solid #ccc; border-radius: 5px;
+      box-shadow: 0 4px 12px rgba(0,0,0,.15);
+      max-height: 200px; overflow-y: auto; display: none;
     }
     .autocomplete-list.open { display: block; }
-    .autocomplete-item { padding: 8px 12px; font-size: 13px; cursor: pointer; }
-    .autocomplete-item:hover { background: var(--navy-mid); }
-    .autocomplete-item .ac-cuit { font-size: 11px; color: var(--text-dim); margin-left: 8px; }
+    .autocomplete-item { padding: 7px 10px; font-size: 12px; cursor: pointer; color: #222; font-family: Helvetica, Arial, sans-serif; }
+    .autocomplete-item:hover { background: var(--doc-gray); }
+    .ac-cuit { font-size: 10px; color: #777; margin-left: 8px; }
+
+    /* fecha del doc */
+    .fecha-row { display: flex; align-items: baseline; gap: 6px; }
+    .fecha-row label { font-weight: 700; font-size: 9px; color: var(--doc-navy); text-transform: uppercase; }
+    .fecha-row input[type="date"] {
+      border: none; outline: none; border-bottom: 1px dashed #ccc;
+      font-size: 11px; font-family: Helvetica, Arial, sans-serif;
+      background: transparent; color: #111; cursor: pointer;
+    }
 
     /* tabla ítems */
-    .items-table { width: 100%; border-collapse: collapse; margin-top: 4px; }
-    .items-table thead th {
-      background: var(--navy-mid); border-bottom: 1px solid var(--navy-line);
-      padding: 8px 10px; text-align: left; font-size: 11px; font-weight: 600;
-      color: var(--text-dim); text-transform: uppercase; letter-spacing: .5px;
+    .items-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    .items-table thead tr th {
+      background: var(--doc-navy); color: #fff;
+      padding: 5px 8px; font-size: 9px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .6px; text-align: left;
     }
-    .items-table tbody tr:nth-child(even) { background: rgba(255,255,255,.025); }
-    .items-table tbody td { padding: 4px 6px; vertical-align: top; }
-    .td-cant { width: 80px; }
-    .td-det  { }
-    .td-del  { width: 36px; text-align: center; }
+    .items-table thead tr th.th-cant { text-align: center; width: 72px; }
+    .items-table tbody tr:nth-child(even) { background: var(--doc-gray); }
+    .items-table tbody td { border: 0.3px solid #d0d0d0; padding: 3px 6px; vertical-align: top; }
+    .items-table tbody td.td-cant { text-align: center; width: 72px; }
+    .items-table tbody td.td-del { width: 28px; text-align: center; border: none; background: transparent !important; }
 
     .items-table input[name="cant[]"] {
-      width: 100%; padding: 6px 8px; font-size: 13px; text-align: center;
-      background: var(--navy-mid); border: 1px solid var(--navy-line);
-      border-radius: 6px; color: var(--text); font-family: var(--font-num); outline: none;
+      width: 100%; border: none; outline: none; text-align: center;
+      font-size: 12px; font-family: var(--font-num); background: transparent; color: #111;
     }
-    .items-table input[name="cant[]"]:focus { border-color: var(--accent); }
     .items-table textarea[name="det[]"] {
-      width: 100%; padding: 6px 8px; font-size: 13px;
-      background: var(--navy-mid); border: 1px solid var(--navy-line);
-      border-radius: 6px; color: var(--text); font-family: var(--font-main);
-      outline: none; resize: none; overflow: hidden; min-height: 34px; line-height: 1.45;
+      width: 100%; border: none; outline: none; resize: none; overflow: hidden;
+      min-height: 22px; font-size: 11px; font-family: Helvetica, Arial, sans-serif;
+      background: transparent; color: #111; line-height: 1.4;
     }
-    .items-table textarea[name="det[]"]:focus { border-color: var(--accent); }
+    .items-table textarea[name="det[]"]::placeholder { color: #bbb; }
 
-    .btn-del { background: none; border: 1px solid var(--navy-line); color: var(--text-dim); border-radius: 5px; padding: 3px 8px; cursor: pointer; font-size: 14px; transition: all .15s; }
-    .btn-del:hover { border-color: var(--red); color: var(--red); }
+    .btn-del { background: none; border: none; color: #bbb; cursor: pointer; font-size: 15px; line-height: 1; padding: 0 2px; }
+    .btn-del:hover { color: #e44; }
 
-    .btn-add { background: none; border: 1px dashed var(--navy-line); color: var(--text-dim); border-radius: 7px; padding: 8px 16px; font-size: 12px; font-family: var(--font-main); cursor: pointer; width: 100%; margin-top: 8px; transition: all .15s; }
-    .btn-add:hover { border-color: var(--accent); color: var(--accent); }
+    /* botón agregar ítem */
+    .btn-add-row {
+      width: 100%; margin-top: 6px; padding: 6px;
+      background: none; border: 1px dashed #ccc; border-radius: 4px;
+      font-size: 11px; color: #999; cursor: pointer; font-family: Helvetica, Arial, sans-serif;
+      transition: all .15s;
+    }
+    .btn-add-row:hover { border-color: var(--doc-navy); color: var(--doc-navy); }
 
+    /* pie del documento */
+    .doc-footer { margin-top: 28px; }
+    .footer-label { font-weight: 700; font-size: 9px; color: var(--doc-navy); text-transform: uppercase; margin-bottom: 6px; }
+    .footer-boxes { display: flex; gap: 24px; }
+    .footer-box { flex: 1; border: 0.5px solid #ccc; border-radius: 2px; height: 56px; position: relative; }
+    .footer-box-label { position: absolute; top: 4px; left: 6px; font-size: 7px; color: #999; text-transform: uppercase; letter-spacing: .5px; }
+
+    /* botón generar (fuera del doc) */
     .btn-generar {
+      margin-top: 16px; width: 100%;
       background: var(--accent); border: none; color: #fff;
-      padding: 11px 28px; border-radius: 8px; font-size: 14px; font-weight: 700;
-      font-family: var(--font-main); cursor: pointer; margin-top: 8px;
-      transition: background .15s;
+      padding: 13px; border-radius: 8px; font-size: 14px; font-weight: 700;
+      font-family: var(--font-main); cursor: pointer; transition: background .15s;
     }
     .btn-generar:hover { background: var(--accent-h); }
     .btn-generar:disabled { opacity: .5; cursor: default; }
@@ -128,62 +171,79 @@
   <a class="back" href="/">← Volver al dashboard</a>
 
   <form method="POST" action="/remito/generar" id="form-remito">
+    <input type="hidden" name="numero" value="{{ numero }}">
+    <input type="hidden" name="entrega" id="entrega-val">
 
-    <!-- Encabezado -->
-    <div class="card">
-      <div class="card-title">Datos del remito</div>
-      <div class="row">
-        <div class="field" style="flex:0 0 auto">
-          <label>Número</label>
-          <div class="chip-numero">{{ numero }}</div>
-          <input type="hidden" name="numero" value="{{ numero }}">
+    <div class="doc">
+
+      <!-- Encabezado -->
+      <div class="doc-header">
+        <img src="/static/logo-gateway.jpeg" alt="Gateway" class="doc-logo"
+             onerror="this.src='/static/logo.png'">
+        <div class="doc-emisor">
+          <div class="name">SANTIAGO FEDERICO PIUSSAN</div>
+          <div class="sub">C.U.I.T.: 20-28714251-0 &nbsp;–&nbsp; I.B.: 20-28714251-0</div>
         </div>
-        <div class="field" style="max-width:180px">
-          <label>Fecha</label>
-          <input type="date" name="fecha" value="{{ fecha }}" required>
+        <div class="doc-num">
+          <div class="remito-title">Remito</div>
+          <div class="num-chip">{{ numero }}</div>
+          <div style="margin-top:6px">
+            <div class="fecha-row">
+              <label>Fecha</label>
+              <input type="date" name="fecha" value="{{ fecha }}" required>
+            </div>
+          </div>
         </div>
       </div>
-    </div>
 
-    <!-- Destinatario -->
-    <div class="card">
-      <div class="card-title">Destinatario</div>
-      <div class="field" style="margin-bottom:12px">
-        <label>Entrega (cliente)</label>
-        <div class="autocomplete-wrap">
-          <input type="text" id="cli-search" placeholder="Buscar cliente o escribir nombre…"
-                 autocomplete="off" oninput="buscarCli(this.value)">
-          <div class="autocomplete-list" id="cli-list"></div>
+      <hr class="doc-divider">
+
+      <!-- Destinatario -->
+      <div class="dest-grid">
+        <span class="dest-label">Entrega</span>
+        <div class="dest-val" style="grid-column: 2 / 5">
+          <div class="autocomplete-wrap">
+            <input type="text" id="cli-search" placeholder="Cliente o nombre de entrega…"
+                   autocomplete="off" oninput="buscarCli(this.value)">
+            <div class="autocomplete-list" id="cli-list"></div>
+          </div>
         </div>
-        <input type="hidden" name="entrega" id="entrega-val">
-      </div>
-      <div class="row">
-        <div class="field">
-          <label>C.U.I.T.</label>
+
+        <span class="dest-label">C.U.I.T.</span>
+        <div class="dest-val">
           <input type="text" name="cuit_dest" id="cuit-dest" placeholder="XX-XXXXXXXX-X">
         </div>
-        <div class="field" style="flex:2">
-          <label>Domicilio de entrega</label>
-          <input type="text" name="domicilio" id="domicilio" placeholder="Dirección">
+        <span class="dest-label" style="padding-left:12px">Domicilio</span>
+        <div class="dest-val" style="grid-column: 4">
+          <input type="text" name="domicilio" id="domicilio" placeholder="Dirección de entrega">
         </div>
       </div>
-    </div>
 
-    <!-- Ítems -->
-    <div class="card">
-      <div class="card-title">Detalle</div>
+      <hr class="doc-divider-light">
+
+      <!-- Tabla ítems -->
       <table class="items-table">
         <thead>
           <tr>
-            <th class="td-cant">Cantidad</th>
-            <th class="td-det">Detalle</th>
-            <th class="td-del"></th>
+            <th class="th-cant">Cantidad</th>
+            <th>D E T A L L E</th>
+            <th style="width:28px"></th>
           </tr>
         </thead>
         <tbody id="items-body"></tbody>
       </table>
-      <button type="button" class="btn-add" onclick="addItem()">+ Agregar ítem</button>
-    </div>
+      <button type="button" class="btn-add-row" onclick="addItem()">+ Agregar ítem</button>
+
+      <!-- Pie -->
+      <div class="doc-footer">
+        <div class="footer-label">Recibió conforme</div>
+        <div class="footer-boxes">
+          <div class="footer-box"><span class="footer-box-label">Firma</span></div>
+          <div class="footer-box"><span class="footer-box-label">Aclaración</span></div>
+        </div>
+      </div>
+
+    </div><!-- /.doc -->
 
     <button type="submit" class="btn-generar" id="btn-gen">Generar Remito PDF</button>
 
@@ -199,15 +259,15 @@ function autoResize(el) {
 }
 
 function addItem(cant='', det='') {
-  const id  = itemCount++;
-  const tr  = document.createElement('tr');
-  tr.id     = `item-${id}`;
+  const id = itemCount++;
+  const tr = document.createElement('tr');
+  tr.id = `item-${id}`;
   tr.innerHTML = `
     <td class="td-cant">
       <input type="number" name="cant[]" value="${cant||1}" min="1" step="1">
     </td>
-    <td class="td-det">
-      <textarea name="det[]" rows="1" placeholder="Descripción del servicio…"
+    <td>
+      <textarea name="det[]" rows="1" placeholder="Descripción del servicio o producto…"
         oninput="autoResize(this)">${det}</textarea>
     </td>
     <td class="td-del">
@@ -273,8 +333,7 @@ document.addEventListener('click', e => {
   if (!e.target.closest('.autocomplete-wrap')) cerrarLista();
 });
 
-// Sync entrega-val al hacer submit
-document.getElementById('form-remito').addEventListener('submit', function(e) {
+document.getElementById('form-remito').addEventListener('submit', function() {
   const q = document.getElementById('cli-search').value.trim();
   if (!document.getElementById('entrega-val').value && q)
     document.getElementById('entrega-val').value = q;

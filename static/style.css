@@ -165,6 +165,14 @@ input[readonly] { background: var(--gray-bg); color: var(--muted); }
 .items-table tbody tr:nth-child(even) { background: var(--gray-bg); }
 .items-table tbody td { padding: 6px 6px; vertical-align: top; }
 .items-table input  { padding: 6px 8px; font-size: 13px; }
+.items-table textarea[name="desc[]"] {
+  padding: 6px 8px; font-size: 13px; width: 100%;
+  background: transparent; border: none; outline: none;
+  color: inherit; font-family: inherit;
+  resize: none; overflow: hidden; min-height: 32px;
+  line-height: 1.45; box-sizing: border-box;
+}
+.items-table textarea[name="desc[]"]:focus { outline: none; }
 
 .td-desc  { width: 45%; }
 .td-pu    { width: 16%; }

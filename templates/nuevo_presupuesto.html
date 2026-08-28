@@ -328,8 +328,8 @@ function addItem(desc='', pu='', cant=1, iva=21) {
   row.id    = `item-${id}`;
   row.innerHTML = `
     <td class="td-desc" style="position:relative">
-      <input type="text" name="desc[]" value="${esc(desc)}" placeholder="Descripción del ítem…"
-             autocomplete="off" oninput="buscarSug(this,${id})" onblur="hideSug(${id})">
+      <textarea name="desc[]" rows="1" placeholder="Descripción del ítem…"
+             autocomplete="off" oninput="buscarSug(this,${id});autoResize(this)" onblur="hideSug(${id})">${esc(desc)}</textarea>
       <div class="sug-list" id="sug-${id}"></div>
     </td>
     <td class="td-pu">
@@ -351,6 +351,8 @@ function addItem(desc='', pu='', cant=1, iva=21) {
     <td class="td-del"><button type="button" class="btn-del" onclick="delItem(${id})">×</button></td>
   `;
   document.getElementById('items-body').appendChild(row);
+  const ta = row.querySelector('textarea[name="desc[]"]');
+  if (ta && desc) autoResize(ta);
   if (pu) recalc(id);
 }
 
@@ -423,9 +425,16 @@ async function buscarSug(input, id) {
 function hideSug(id) {
   setTimeout(() => document.getElementById(`sug-${id}`)?.classList.remove('open'), 200);
 }
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
 function elegirSug(id, desc, pu, iva) {
   const row = document.getElementById(`item-${id}`);
-  row.querySelector('[name="desc[]"]').value = desc;
+  const ta = row.querySelector('[name="desc[]"]');
+  ta.value = desc;
+  autoResize(ta);
   row.querySelector('[name="pu[]"]').value   = pu;
   row.querySelector('[name="iva[]"]').value  = iva;
   document.getElementById(`sug-${id}`).classList.remove('open');

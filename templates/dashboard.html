@@ -48,6 +48,21 @@
     .topbar-logo { height: 36px; width: auto; }
     .topbar-sep  { width: 1px; height: 28px; background: var(--navy-line); }
     .topbar-nav  { display: flex; gap: 4px; flex: 1; }
+
+    /* ── VIEW TOGGLE ── */
+    .view-toggle { display: flex; gap: 3px; padding: 4px; background: var(--navy); border-radius: 8px; border: 1px solid var(--navy-line); }
+    .vbtn { background: none; border: none; color: var(--text-dim); padding: 4px 7px; border-radius: 5px; cursor: pointer; display: flex; align-items: center; transition: background .15s, color .15s; }
+    .vbtn:hover { background: var(--navy-card); color: var(--text); }
+    .vbtn.active { background: var(--accent); color: #fff; }
+
+    /* ── VISTAS ── */
+    /* Vista 1: default (agenda arriba, pres abajo) — nada que hacer */
+    #page-root.vista-2 { display: flex; gap: 20px; align-items: flex-start; }
+    #page-root.vista-2 #agenda-section { flex: 0 0 52%; min-width: 0; margin-bottom: 0; position: sticky; top: 72px; }
+    #page-root.vista-2 #pres-section { flex: 1; min-width: 0; }
+    #page-root.vista-3 { display: flex; flex-direction: column; }
+    #page-root.vista-3 #agenda-section { order: 2; margin-bottom: 0; margin-top: 24px; }
+    #page-root.vista-3 #pres-section { order: 1; }
     .nav-item {
       padding: 6px 14px; border-radius: 6px;
       font-size: 13px; font-weight: 500;
@@ -394,10 +409,21 @@
     <a class="nav-item" href="/matrices">Matrices</a>
     <a class="nav-item" href="/clientes">Clientes</a>
   </nav>
+  <div class="view-toggle" id="view-toggle">
+    <button class="vbtn active" id="vbtn-1" onclick="setVista(1)" title="Agenda arriba">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="1" width="16" height="5" rx="1.5" fill="currentColor" opacity=".9"/><rect x="1" y="8" width="16" height="9" rx="1.5" fill="currentColor" opacity=".45"/></svg>
+    </button>
+    <button class="vbtn" id="vbtn-2" onclick="setVista(2)" title="Pantalla dividida">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="1" width="7.5" height="16" rx="1.5" fill="currentColor" opacity=".9"/><rect x="9.5" y="1" width="7.5" height="16" rx="1.5" fill="currentColor" opacity=".45"/></svg>
+    </button>
+    <button class="vbtn" id="vbtn-3" onclick="setVista(3)" title="Presupuestos arriba">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="1" width="16" height="9" rx="1.5" fill="currentColor" opacity=".9"/><rect x="1" y="12" width="16" height="5" rx="1.5" fill="currentColor" opacity=".45"/></svg>
+    </button>
+  </div>
 </div>
 
 <!-- CONTENIDO -->
-<div class="page">
+<div class="page" id="page-root">
 
   <!-- AGENDA -->
   <div class="agenda-section" id="agenda-section">
@@ -429,6 +455,8 @@
     </div>
   </div>
 
+  <!-- PRESUPUESTOS (stats + kanban + rechazados) -->
+  <div id="pres-section">
   <!-- STATS -->
   <div class="stats-row">
     <div class="stat-card">
@@ -658,6 +686,8 @@
     </div>
   </div>
   {% endif %}
+
+  </div><!-- /pres-section -->
 
 </div><!-- /page -->
 
@@ -1363,6 +1393,22 @@ function aEsc(s) {
 }
 
 agendaCargar();
+
+// ── VISTAS ───────────────────────────────────────────────────────────────────
+function setVista(n) {
+  const page = document.getElementById('page-root');
+  page.classList.remove('vista-2', 'vista-3');
+  if (n === 2) page.classList.add('vista-2');
+  if (n === 3) page.classList.add('vista-3');
+  document.querySelectorAll('.vbtn').forEach((b, i) => b.classList.toggle('active', i + 1 === n));
+  try { localStorage.setItem('gw-vista', n); } catch(e) {}
+}
+(function() {
+  try {
+    const v = parseInt(localStorage.getItem('gw-vista') || '1');
+    if (v >= 2) setVista(v);
+  } catch(e) {}
+})();
 </script>
 </body>
 </html>

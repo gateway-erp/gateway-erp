@@ -224,6 +224,7 @@ addItem();
 // ── Autocomplete clientes ────────────────────────────────────────────────────
 let _cliTimer = null;
 let _clientes = [];
+let _matches  = [];
 
 async function buscarCli(q) {
   document.getElementById('entrega-val').value = q;
@@ -235,26 +236,27 @@ async function buscarCli(q) {
       _clientes = await r.json();
     }
     const ql = q.toLowerCase();
-    const matches = _clientes.filter(c =>
+    _matches = _clientes.filter(c =>
       String(c.nombre||'').toLowerCase().includes(ql) ||
       String(c.codigo||'').includes(q)
     ).slice(0, 8);
-    renderLista(matches, q);
+    renderLista(_matches);
   }, 180);
 }
 
-function renderLista(items, q) {
+function renderLista(items) {
   const list = document.getElementById('cli-list');
   if (!items.length) { cerrarLista(); return; }
-  list.innerHTML = items.map(c =>
-    `<div class="autocomplete-item" onmousedown="elegirCli(${JSON.stringify(c)})">
+  list.innerHTML = items.map((c, i) =>
+    `<div class="autocomplete-item" onmousedown="elegirCli(${i})">
       ${c.nombre}<span class="ac-cuit">${c.cuit||''}</span>
     </div>`
   ).join('');
   list.classList.add('open');
 }
 
-function elegirCli(c) {
+function elegirCli(i) {
+  const c = _matches[i];
   document.getElementById('cli-search').value  = c.nombre;
   document.getElementById('entrega-val').value = c.nombre;
   document.getElementById('cuit-dest').value   = c.cuit || '';

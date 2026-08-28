@@ -417,6 +417,44 @@ def crear_mantenimiento_if_missing():
     _mant_seeded = True
 
 
+# ── REMITOS ───────────────────────────────────────────────────────────────────
+_H_REM = ["numero", "fecha", "entrega", "cuit_dest", "domicilio", "items_json", "archivo", "drive_link"]
+
+def _next_remito_numero():
+    from datetime import date as _date
+    prefix = f"REM{str(_date.today().year)[2:]}{_date.today().month:02d}"
+    ws = _ws("remitos", _H_REM)
+    records = ws.get_all_records()
+    maxn = 0
+    for r in records:
+        n = str(r.get("numero", ""))
+        if n.startswith(prefix):
+            try:
+                maxn = max(maxn, int(n.split("-")[-1]))
+            except ValueError:
+                pass
+    return f"{prefix}-{maxn+1:04d}"
+
+def guardar_remito(numero, fecha, entrega, cuit_dest, domicilio, items, archivo, drive_link=""):
+    import json as _json
+    _ws("remitos", _H_REM).append_row([
+        numero, fecha, entrega, cuit_dest, domicilio,
+        _json.dumps(items, ensure_ascii=False), archivo, drive_link,
+    ])
+
+def load_remitos():
+    import json as _json
+    rows = _ws("remitos", _H_REM).get_all_records()
+    result = []
+    for r in rows:
+        try:
+            r["items"] = _json.loads(r.get("items_json") or "[]")
+        except Exception:
+            r["items"] = []
+        result.append(r)
+    return result
+
+
 _H_MVIS = ["mant_id", "año", "mes", "semana", "fecha_real", "estado"]
 
 def load_visitas_mes(año, mes):

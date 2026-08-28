@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nuevo Remito — Gateway</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --navy:      #0F1F3D;
+      --navy-mid:  #162644;
+      --navy-card: #1C3056;
+      --navy-line: #243a66;
+      --accent:    #3B82F6;
+      --accent-h:  #2563EB;
+      --green:     #22C55E;
+      --red:       #EF4444;
+      --text:      #F0F4FF;
+      --text-dim:  #8BA3CC;
+      --font-main: 'Montserrat', sans-serif;
+      --font-num:  'Inter', sans-serif;
+    }
+    body { background: var(--navy); color: var(--text); font-family: var(--font-main); min-height: 100vh; }
+
+    .topbar { background: var(--navy-mid); border-bottom: 1px solid var(--navy-line); display: flex; align-items: center; gap: 14px; padding: 0 24px; height: 56px; }
+    .topbar-logo { height: 36px; width: auto; }
+    .topbar-sep  { width: 1px; height: 28px; background: var(--navy-line); }
+    .topbar-nav  { display: flex; gap: 4px; flex: 1; }
+    .nav-item { padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; color: var(--text-dim); text-decoration: none; transition: background .15s; }
+    .nav-item:hover  { background: var(--navy-card); color: var(--text); }
+    .nav-item.active { background: var(--accent); color: #fff; }
+
+    .page { max-width: 860px; margin: 28px auto; padding: 0 20px; }
+    .back { color: var(--text-dim); font-size: 12px; text-decoration: none; display: inline-block; margin-bottom: 16px; }
+    .back:hover { color: var(--text); }
+
+    .card { background: var(--navy-card); border: 1px solid var(--navy-line); border-radius: 10px; padding: 20px; margin-bottom: 16px; }
+    .card-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--text-dim); margin-bottom: 14px; }
+
+    .row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 10px; }
+    .field { display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 140px; }
+    .field label { font-size: 11px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: .4px; }
+    .field input {
+      background: var(--navy-mid); border: 1px solid var(--navy-line);
+      border-radius: 7px; padding: 8px 12px; color: var(--text);
+      font-size: 13px; font-family: var(--font-main); outline: none;
+    }
+    .field input:focus { border-color: var(--accent); }
+
+    .chip-numero {
+      background: var(--navy-mid); border: 1px solid var(--navy-line);
+      border-radius: 7px; padding: 8px 14px; font-family: var(--font-num);
+      font-size: 14px; font-weight: 700; color: var(--accent); letter-spacing: .5px;
+    }
+
+    /* autocomplete cliente */
+    .autocomplete-wrap { position: relative; }
+    .autocomplete-list {
+      position: absolute; top: calc(100% + 3px); left: 0; right: 0; z-index: 50;
+      background: var(--navy-card); border: 1px solid var(--navy-line);
+      border-radius: 7px; max-height: 220px; overflow-y: auto; display: none;
+    }
+    .autocomplete-list.open { display: block; }
+    .autocomplete-item { padding: 8px 12px; font-size: 13px; cursor: pointer; }
+    .autocomplete-item:hover { background: var(--navy-mid); }
+    .autocomplete-item .ac-cuit { font-size: 11px; color: var(--text-dim); margin-left: 8px; }
+
+    /* tabla ítems */
+    .items-table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+    .items-table thead th {
+      background: var(--navy-mid); border-bottom: 1px solid var(--navy-line);
+      padding: 8px 10px; text-align: left; font-size: 11px; font-weight: 600;
+      color: var(--text-dim); text-transform: uppercase; letter-spacing: .5px;
+    }
+    .items-table tbody tr:nth-child(even) { background: rgba(255,255,255,.025); }
+    .items-table tbody td { padding: 4px 6px; vertical-align: top; }
+    .td-cant { width: 80px; }
+    .td-det  { }
+    .td-del  { width: 36px; text-align: center; }
+
+    .items-table input[name="cant[]"] {
+      width: 100%; padding: 6px 8px; font-size: 13px; text-align: center;
+      background: var(--navy-mid); border: 1px solid var(--navy-line);
+      border-radius: 6px; color: var(--text); font-family: var(--font-num); outline: none;
+    }
+    .items-table input[name="cant[]"]:focus { border-color: var(--accent); }
+    .items-table textarea[name="det[]"] {
+      width: 100%; padding: 6px 8px; font-size: 13px;
+      background: var(--navy-mid); border: 1px solid var(--navy-line);
+      border-radius: 6px; color: var(--text); font-family: var(--font-main);
+      outline: none; resize: none; overflow: hidden; min-height: 34px; line-height: 1.45;
+    }
+    .items-table textarea[name="det[]"]:focus { border-color: var(--accent); }
+
+    .btn-del { background: none; border: 1px solid var(--navy-line); color: var(--text-dim); border-radius: 5px; padding: 3px 8px; cursor: pointer; font-size: 14px; transition: all .15s; }
+    .btn-del:hover { border-color: var(--red); color: var(--red); }
+
+    .btn-add { background: none; border: 1px dashed var(--navy-line); color: var(--text-dim); border-radius: 7px; padding: 8px 16px; font-size: 12px; font-family: var(--font-main); cursor: pointer; width: 100%; margin-top: 8px; transition: all .15s; }
+    .btn-add:hover { border-color: var(--accent); color: var(--accent); }
+
+    .btn-generar {
+      background: var(--accent); border: none; color: #fff;
+      padding: 11px 28px; border-radius: 8px; font-size: 14px; font-weight: 700;
+      font-family: var(--font-main); cursor: pointer; margin-top: 8px;
+      transition: background .15s;
+    }
+    .btn-generar:hover { background: var(--accent-h); }
+    .btn-generar:disabled { opacity: .5; cursor: default; }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <img src="/static/logo-gateway.jpeg" alt="Gateway" class="topbar-logo"
+       onerror="this.src='/static/logo.png'">
+  <div class="topbar-sep"></div>
+  <nav class="topbar-nav">
+    <a class="nav-item" href="/">Presupuestos</a>
+    <a class="nav-item" href="/matrices">Matrices</a>
+    <a class="nav-item" href="/clientes">Clientes</a>
+    <a class="nav-item active" href="/remito">Remitos</a>
+  </nav>
+</div>
+
+<div class="page">
+  <a class="back" href="/">← Volver al dashboard</a>
+
+  <form method="POST" action="/remito/generar" id="form-remito">
+
+    <!-- Encabezado -->
+    <div class="card">
+      <div class="card-title">Datos del remito</div>
+      <div class="row">
+        <div class="field" style="flex:0 0 auto">
+          <label>Número</label>
+          <div class="chip-numero">{{ numero }}</div>
+          <input type="hidden" name="numero" value="{{ numero }}">
+        </div>
+        <div class="field" style="max-width:180px">
+          <label>Fecha</label>
+          <input type="date" name="fecha" value="{{ fecha }}" required>
+        </div>
+      </div>
+    </div>
+
+    <!-- Destinatario -->
+    <div class="card">
+      <div class="card-title">Destinatario</div>
+      <div class="field" style="margin-bottom:12px">
+        <label>Entrega (cliente)</label>
+        <div class="autocomplete-wrap">
+          <input type="text" id="cli-search" placeholder="Buscar cliente o escribir nombre…"
+                 autocomplete="off" oninput="buscarCli(this.value)">
+          <div class="autocomplete-list" id="cli-list"></div>
+        </div>
+        <input type="hidden" name="entrega" id="entrega-val">
+      </div>
+      <div class="row">
+        <div class="field">
+          <label>C.U.I.T.</label>
+          <input type="text" name="cuit_dest" id="cuit-dest" placeholder="XX-XXXXXXXX-X">
+        </div>
+        <div class="field" style="flex:2">
+          <label>Domicilio de entrega</label>
+          <input type="text" name="domicilio" id="domicilio" placeholder="Dirección">
+        </div>
+      </div>
+    </div>
+
+    <!-- Ítems -->
+    <div class="card">
+      <div class="card-title">Detalle</div>
+      <table class="items-table">
+        <thead>
+          <tr>
+            <th class="td-cant">Cantidad</th>
+            <th class="td-det">Detalle</th>
+            <th class="td-del"></th>
+          </tr>
+        </thead>
+        <tbody id="items-body"></tbody>
+      </table>
+      <button type="button" class="btn-add" onclick="addItem()">+ Agregar ítem</button>
+    </div>
+
+    <button type="submit" class="btn-generar" id="btn-gen">Generar Remito PDF</button>
+
+  </form>
+</div>
+
+<script>
+let itemCount = 0;
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
+function addItem(cant='', det='') {
+  const id  = itemCount++;
+  const tr  = document.createElement('tr');
+  tr.id     = `item-${id}`;
+  tr.innerHTML = `
+    <td class="td-cant">
+      <input type="number" name="cant[]" value="${cant||1}" min="1" step="1">
+    </td>
+    <td class="td-det">
+      <textarea name="det[]" rows="1" placeholder="Descripción del servicio…"
+        oninput="autoResize(this)">${det}</textarea>
+    </td>
+    <td class="td-del">
+      <button type="button" class="btn-del" onclick="this.closest('tr').remove()">×</button>
+    </td>`;
+  document.getElementById('items-body').appendChild(tr);
+  const ta = tr.querySelector('textarea');
+  if (det) autoResize(ta);
+  ta.focus();
+}
+
+addItem();
+
+// ── Autocomplete clientes ────────────────────────────────────────────────────
+let _cliTimer = null;
+let _clientes = [];
+
+async function buscarCli(q) {
+  document.getElementById('entrega-val').value = q;
+  clearTimeout(_cliTimer);
+  if (q.length < 1) { cerrarLista(); return; }
+  _cliTimer = setTimeout(async () => {
+    if (!_clientes.length) {
+      const r = await fetch('/api/clientes');
+      _clientes = await r.json();
+    }
+    const ql = q.toLowerCase();
+    const matches = _clientes.filter(c =>
+      String(c.nombre||'').toLowerCase().includes(ql) ||
+      String(c.codigo||'').includes(q)
+    ).slice(0, 8);
+    renderLista(matches, q);
+  }, 180);
+}
+
+function renderLista(items, q) {
+  const list = document.getElementById('cli-list');
+  if (!items.length) { cerrarLista(); return; }
+  list.innerHTML = items.map(c =>
+    `<div class="autocomplete-item" onmousedown="elegirCli(${JSON.stringify(c)})">
+      ${c.nombre}<span class="ac-cuit">${c.cuit||''}</span>
+    </div>`
+  ).join('');
+  list.classList.add('open');
+}
+
+function elegirCli(c) {
+  document.getElementById('cli-search').value  = c.nombre;
+  document.getElementById('entrega-val').value = c.nombre;
+  document.getElementById('cuit-dest').value   = c.cuit || '';
+  const dom = (c.direccion||'') + (c.ciudad ? ', ' + c.ciudad : '');
+  document.getElementById('domicilio').value   = dom;
+  cerrarLista();
+}
+
+function cerrarLista() {
+  document.getElementById('cli-list').classList.remove('open');
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.autocomplete-wrap')) cerrarLista();
+});
+
+// Sync entrega-val al hacer submit
+document.getElementById('form-remito').addEventListener('submit', function(e) {
+  const q = document.getElementById('cli-search').value.trim();
+  if (!document.getElementById('entrega-val').value && q)
+    document.getElementById('entrega-val').value = q;
+  document.getElementById('btn-gen').disabled = true;
+  document.getElementById('btn-gen').textContent = 'Generando…';
+});
+</script>
+</body>
+</html>

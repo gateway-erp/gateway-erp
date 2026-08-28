@@ -633,6 +633,64 @@ async def api_guardar_matriz(request: Request):
         nuevo_id = db.guardar_matriz(nombre, cliente, moneda, datos)
         return JSONResponse({"ok": True, "id": nuevo_id})
 
+@app.get("/remito", response_class=HTMLResponse)
+async def remito_form(request: Request):
+    from datetime import date as _date
+    numero = db._next_remito_numero()
+    return templates.TemplateResponse("remito.html", {
+        "request": request,
+        "numero": numero,
+        "fecha": _date.today().strftime("%Y-%m-%d"),
+    })
+
+@app.post("/remito/generar")
+async def remito_generar(request: Request):
+    import json as _json
+    form = await request.form()
+    numero   = form.get("numero", "").strip()
+    fecha    = form.get("fecha", "")
+    entrega  = form.get("entrega", "").strip()
+    cuit_d   = form.get("cuit_dest", "").strip()
+    domicilio= form.get("domicilio", "").strip()
+
+    cantidades = form.getlist("cant[]")
+    detalles   = form.getlist("det[]")
+    items = [
+        {"cantidad": cantidades[i], "detalle": detalles[i]}
+        for i in range(len(cantidades))
+        if detalles[i].strip()
+    ]
+
+    nombre_archivo = f"{numero}.pdf"
+    output_path    = os.path.join("presupuestos", "output", nombre_archivo)
+    os.makedirs(os.path.join("presupuestos", "output"), exist_ok=True)
+
+    from presupuestos.generar_remito import generar_remito
+    generar_remito({
+        "numero": numero, "fecha": fecha,
+        "entrega": entrega, "cuit_dest": cuit_d,
+        "domicilio": domicilio, "items": items,
+    }, output_path)
+
+    drive_link = ""
+    try:
+        import drive as drive_mod
+        clientes = db.load_clientes()
+        cli = next((c for c in clientes if entrega and
+                    entrega.lower() in str(c.get("nombre","")).lower()), None)
+        if cli:
+            drive_link = drive_mod.subir_documento(
+                output_path, nombre_archivo,
+                cli["codigo"], cli["nombre"], subcarpeta="Remitos"
+            )
+    except Exception as e:
+        print(f"[Drive] Remito: {e}")
+
+    db.guardar_remito(numero, fecha, entrega, cuit_d, domicilio, items,
+                      nombre_archivo, drive_link)
+
+    return FileResponse(output_path, media_type="application/pdf", filename=nombre_archivo)
+
 @app.get("/clientes", response_class=HTMLResponse)
 async def lista_clientes(request: Request):
     clientes = sorted(db.load_clientes(), key=lambda c: str(c.get("nombre", "")).lower())

@@ -408,6 +408,7 @@
     <a class="nav-item active" href="/">Presupuestos</a>
     <a class="nav-item" href="/matrices">Matrices</a>
     <a class="nav-item" href="/clientes">Clientes</a>
+    <a class="nav-item" href="/remito">Remitos</a>
   </nav>
   <div class="view-toggle" id="view-toggle">
     <button class="vbtn active" id="vbtn-1" onclick="setVista(1)" title="Agenda arriba">
@@ -484,10 +485,16 @@
   <!-- KANBAN HEADER -->
   <div class="section-header">
     <div class="section-title">Pipeline de presupuestos</div>
-    <a href="/nuevo" class="btn-nuevo">
-      <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      Nuevo presupuesto
-    </a>
+    <div style="display:flex;gap:8px">
+      <a href="/nuevo" class="btn-nuevo">
+        <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Nuevo presupuesto
+      </a>
+      <a href="/remito" class="btn-nuevo" style="background:rgba(34,197,94,.15);color:#86EFAC;border-color:rgba(34,197,94,.3)">
+        <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Nuevo remito
+      </a>
+    </div>
   </div>
 
 

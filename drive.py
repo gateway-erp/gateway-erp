@@ -101,17 +101,36 @@ def subir_presupuesto(pdf_path, nombre_archivo, codigo_cliente, nombre_cliente):
     # Subida del PDF con cuenta del usuario (tiene cuota)
     svc_user = _user_service()
     media = MediaFileUpload(pdf_path, mimetype="application/pdf", resumable=False)
-    archivo = svc_user.files().create(
-        body={"name": nombre_archivo, "parents": [presup_id]},
-        media_body=media,
-        fields="id",
-    ).execute()
 
-    file_id = archivo["id"]
-    svc_user.permissions().create(
-        fileId=file_id,
-        body={"role": "reader", "type": "anyone"},
-    ).execute()
+    # Buscar si ya existe un archivo con el mismo nombre en la carpeta
+    q = (f"name='{nombre_archivo.replace(\"'\", \"\\'\")}'  "
+         f"and '{presup_id}' in parents and trashed=false")
+    existentes = svc_user.files().list(q=q, fields="files(id)", pageSize=5).execute().get("files", [])
+
+    if existentes:
+        # Pisa el contenido del archivo existente (mismo fileId, sin duplicado)
+        file_id = existentes[0]["id"]
+        svc_user.files().update(
+            fileId=file_id,
+            media_body=media,
+        ).execute()
+        # Eliminar duplicados si hubiera más de uno
+        for dup in existentes[1:]:
+            try:
+                svc_user.files().delete(fileId=dup["id"]).execute()
+            except Exception:
+                pass
+    else:
+        archivo = svc_user.files().create(
+            body={"name": nombre_archivo, "parents": [presup_id]},
+            media_body=media,
+            fields="id",
+        ).execute()
+        file_id = archivo["id"]
+        svc_user.permissions().create(
+            fileId=file_id,
+            body={"role": "reader", "type": "anyone"},
+        ).execute()
 
     return f"https://drive.google.com/file/d/{file_id}/view"
 
@@ -165,16 +184,29 @@ def subir_documento(pdf_path, nombre_archivo, codigo_cliente, nombre_cliente, su
 
     svc_user = _user_service()
     media = MediaFileUpload(pdf_path, mimetype="application/pdf", resumable=False)
-    archivo = svc_user.files().create(
-        body={"name": nombre_archivo, "parents": [sub_id]},
-        media_body=media,
-        fields="id",
-    ).execute()
 
-    file_id = archivo["id"]
-    svc_user.permissions().create(
-        fileId=file_id,
-        body={"role": "reader", "type": "anyone"},
-    ).execute()
+    q = (f"name='{nombre_archivo.replace(\"'\", \"\\'\")}' "
+         f"and '{sub_id}' in parents and trashed=false")
+    existentes = svc_user.files().list(q=q, fields="files(id)", pageSize=5).execute().get("files", [])
+
+    if existentes:
+        file_id = existentes[0]["id"]
+        svc_user.files().update(fileId=file_id, media_body=media).execute()
+        for dup in existentes[1:]:
+            try:
+                svc_user.files().delete(fileId=dup["id"]).execute()
+            except Exception:
+                pass
+    else:
+        archivo = svc_user.files().create(
+            body={"name": nombre_archivo, "parents": [sub_id]},
+            media_body=media,
+            fields="id",
+        ).execute()
+        file_id = archivo["id"]
+        svc_user.permissions().create(
+            fileId=file_id,
+            body={"role": "reader", "type": "anyone"},
+        ).execute()
 
     return f"https://drive.google.com/file/d/{file_id}/view"

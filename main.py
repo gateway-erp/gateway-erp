@@ -458,6 +458,11 @@ async def rechazar(numero: str):
     return JSONResponse({"ok": ok})
 
 
+@app.post("/api/eliminar/{numero}")
+async def eliminar_presupuesto(numero: str):
+    ok = db.eliminar_presupuesto(numero)
+    return JSONResponse({"ok": ok})
+
 @app.post("/api/aprobar/{numero}")
 async def aprobar(
     numero: str,

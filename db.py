@@ -221,6 +221,14 @@ def actualizar_historial(numero, datos, nombre_archivo, drive_link=None):
             return True
     return False
 
+def eliminar_presupuesto(numero):
+    ws = _ws("historial", _H_HIS)
+    for i, r in enumerate(ws.get_all_records(), start=2):
+        if str(r["numero"]) == str(numero):
+            ws.delete_rows(i)
+            return True
+    return False
+
 def load_historial():
     return _ws("historial", _H_HIS).get_all_records()
 

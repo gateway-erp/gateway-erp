@@ -239,6 +239,8 @@
     .btn-facturar  { background: rgba(59,130,246,.18); color: #93C5FD; }
     .btn-cobrar    { background: rgba(245,158,11,.18); color: #FCD34D; }
     .btn-rechazar  { background: rgba(239,68,68,.12);  color: #FCA5A5; }
+    .btn-eliminar  { background: rgba(239,68,68,.08);  color: rgba(239,68,68,.6); padding: 3px 7px; font-size: 13px; line-height: 1; }
+    .btn-eliminar:hover { background: rgba(239,68,68,.25); color: #ef4444; }
     .btn-pdf-card  {
       font-size: 11px; font-weight: 600;
       color: #93C5FD; background: rgba(59,130,246,.12);
@@ -493,7 +495,8 @@
                 <a href="/pdf/{{ p.archivo }}" target="_blank" class="btn-pdf-card">PDF</a>
                 {% endif %}
                 <button class="btn-card btn-aprobar" onclick="abrirAprobar('{{ p.numero }}','{{ p.cliente_nombre | e }}')">Aprobar</button>
-                <button class="btn-card btn-rechazar" onclick="rechazar('{{ p.numero }}',this)">✕</button>
+                <button class="btn-card btn-rechazar" onclick="rechazar('{{ p.numero }}',this)">Rechazado</button>
+                <button class="btn-card btn-eliminar" onclick="eliminarPresupuesto('{{ p.numero }}',this)">✕</button>
               </div>
             </div>
           </div>
@@ -867,7 +870,21 @@ function abrirCobrar(numero, factNumero, cliente) {
   abrirModal('modal-cobrar');
 }
 
-// ── RECHAZAR ─────────────────────────────────────────────────────────────────
+// ── RECHAZAR / ELIMINAR ───────────────────────────────────────────────────────
+function eliminarPresupuesto(numero, btn) {
+  if (!confirm('¿Eliminar definitivamente el presupuesto ' + numero + '? Esta acción no se puede deshacer.')) return;
+  btn.disabled = true;
+  fetch('/api/eliminar/' + encodeURIComponent(numero), { method: 'POST' })
+    .then(r => r.json())
+    .then(d => {
+      if (d.ok) {
+        const card = btn.closest('.kcard');
+        if (card) card.remove();
+      } else { alert('Error al eliminar'); btn.disabled = false; }
+    })
+    .catch(() => { alert('Error de conexión'); btn.disabled = false; });
+}
+
 function rechazar(numero, btn) {
   if (!confirm('¿Marcar como rechazado el presupuesto ' + numero + '?')) return;
   btn.disabled = true;

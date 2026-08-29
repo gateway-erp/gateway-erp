@@ -50,17 +50,17 @@
     }
 
     /* encabezado del doc */
-    .doc-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
-    .doc-logo { height: 48px; width: auto; }
-    .doc-emisor { text-align: center; flex: 1; padding: 0 16px; }
-    .doc-emisor .name { font-weight: 700; font-size: 11px; color: var(--doc-navy); text-transform: uppercase; }
-    .doc-emisor .sub  { font-size: 9px; color: #444; margin-top: 2px; }
-    .doc-num { text-align: right; min-width: 160px; }
-    .doc-num .remito-title { font-weight: 700; font-size: 11px; color: var(--doc-navy); text-transform: uppercase; letter-spacing: .5px; }
-    .doc-num .num-chip {
+    .doc-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; gap: 12px; }
+    .doc-left  { flex: 1; }
+    .doc-right { display: flex; align-items: center; justify-content: flex-end; }
+    .doc-logo-vertical { height: 120px; width: auto; object-fit: contain; }
+    .doc-emisor-left .name { font-weight: 700; font-size: 10px; color: var(--doc-navy); text-transform: uppercase; }
+    .doc-emisor-left .sub  { font-size: 9px; color: #444; margin-top: 1px; }
+    .remito-title { font-weight: 700; font-size: 13px; color: var(--doc-navy); text-transform: uppercase; letter-spacing: .5px; }
+    .num-chip {
       display: inline-block; background: var(--doc-navy); color: #fff;
       font-size: 13px; font-weight: 700; font-family: var(--font-num);
-      padding: 2px 10px; border-radius: 3px; letter-spacing: .5px; margin-top: 4px;
+      padding: 2px 10px; border-radius: 3px; letter-spacing: .5px; margin-left: 6px;
     }
 
     .doc-divider { border: none; border-top: 1.5px solid var(--doc-navy); margin: 10px 0 8px; }
@@ -178,21 +178,24 @@
 
       <!-- Encabezado -->
       <div class="doc-header">
-        <img src="/static/logo-gateway.jpeg" alt="Gateway" class="doc-logo"
-             onerror="this.src='/static/logo.png'">
-        <div class="doc-emisor">
-          <div class="name">SANTIAGO FEDERICO PIUSSAN</div>
-          <div class="sub">C.U.I.T.: 20-28714251-0 &nbsp;–&nbsp; I.B.: 20-28714251-0</div>
-        </div>
-        <div class="doc-num">
-          <div class="remito-title">Remito</div>
-          <div class="num-chip">{{ numero }}</div>
-          <div style="margin-top:6px">
-            <div class="fecha-row">
+        <!-- Columna izquierda: número, fecha, emisor -->
+        <div class="doc-left">
+          <div style="margin-bottom:8px">
+            <div class="remito-title">Remito <span class="num-chip">{{ numero }}</span></div>
+            <div class="fecha-row" style="margin-top:6px">
               <label>Fecha</label>
               <input type="date" name="fecha" value="{{ fecha }}" required>
             </div>
           </div>
+          <div class="doc-emisor-left">
+            <div class="name">SANTIAGO FEDERICO PIUSSAN</div>
+            <div class="sub">C.U.I.T.: 20-28714251-0</div>
+            <div class="sub">I.B.: 20-28714251-0</div>
+          </div>
+        </div>
+        <!-- Columna derecha: logos -->
+        <div class="doc-right">
+          <img src="/static/logo-gateway-vertical.png" alt="Gateway" class="doc-logo-vertical">
         </div>
       </div>
 

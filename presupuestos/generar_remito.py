@@ -7,9 +7,10 @@ from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
 from reportlab.pdfgen import canvas as pdfcanvas
 import os
 
-_NEW_LOGO = os.path.join(os.path.dirname(__file__), "..", "Logo-Gateway.jpeg")
-_OLD_LOGO = os.path.join(os.path.dirname(__file__), "..", "assets", "logo_gateway_0.png")
-LOGO_PATH = _NEW_LOGO if os.path.exists(_NEW_LOGO) else _OLD_LOGO
+LOGO_VERTICAL = os.path.join(os.path.dirname(__file__), "..", "static", "logo-gateway-vertical.png")
+LOGO_ICONO    = os.path.join(os.path.dirname(__file__), "..", "static", "logo-gateway-icono.png")
+_FALLBACK     = os.path.join(os.path.dirname(__file__), "..", "Logo-Gateway.jpeg")
+LOGO_PATH = LOGO_VERTICAL if os.path.exists(LOGO_VERTICAL) else _FALLBACK
 
 NAVY       = colors.HexColor("#1B2A4A")
 LIGHT_GRAY = colors.HexColor("#E4E8EE")
@@ -69,63 +70,68 @@ def draw_footer(c):
 def draw_header(c, datos):
     y = PAGE_H - MARGIN_T
 
-    # Logo
+    # ── Columna izquierda: número, fecha, emisor ──────────────────────────────
+    lx = MARGIN_L
+
+    c.setFont("Helvetica-Bold", 13)
+    c.setFillColor(NAVY)
+    c.drawString(lx, y - 8*mm, f"Remito # {datos['numero']}")
+
+    c.setFont("Helvetica", 10)
+    c.setFillColor(colors.black)
+    c.drawString(lx, y - 14*mm, f"Fecha: {datos['fecha']}")
+
+    c.setFont("Helvetica-Bold", 9)
+    c.setFillColor(NAVY)
+    c.drawString(lx, y - 22*mm, EMISOR_NOMBRE)
+    c.setFont("Helvetica", 8)
+    c.setFillColor(colors.black)
+    c.drawString(lx, y - 27*mm, f"C.U.I.T.: {EMISOR_CUIT}")
+    c.drawString(lx, y - 31*mm, f"I.B.: {EMISOR_IB}")
+
+    # ── Columna derecha: logo vertical ───────────────────────────────────────
+    logo_h = 36*mm
+    logo_w = logo_h * 0.72   # Sin fondo.png es aprox cuadrado
+    logo_x = MARGIN_L + W - logo_w
     if os.path.exists(LOGO_PATH):
-        logo_h = 18*mm
-        logo_w = logo_h * 3.2
-        c.drawImage(LOGO_PATH, MARGIN_L, y - logo_h, width=logo_w, height=logo_h,
+        c.drawImage(LOGO_PATH, logo_x, y - logo_h, width=logo_w, height=logo_h,
                     preserveAspectRatio=True, mask="auto")
 
-    # Datos emisor (centro)
-    cx = MARGIN_L + W / 2
-    c.setFont("Helvetica-Bold", 10)
-    c.setFillColor(NAVY)
-    c.drawCentredString(cx, y - 7*mm, EMISOR_NOMBRE)
-    c.setFont("Helvetica", 8)
-    c.setFillColor(colors.black)
-    c.drawCentredString(cx, y - 12*mm, f"C.U.I.T.: {EMISOR_CUIT}   –   I.B.: {EMISOR_IB}")
-
-    # Bloque REMITO (derecha)
-    rx = MARGIN_L + W
-    c.setFont("Helvetica-Bold", 10)
-    c.setFillColor(NAVY)
-    c.drawRightString(rx, y - 6*mm, f"Remito # {datos['numero']}")
-    c.setFont("Helvetica", 9)
-    c.setFillColor(colors.black)
-    c.drawRightString(rx, y - 12*mm, f"Fecha: {datos['fecha']}")
-
-    # Línea separadora
+    # ── Línea separadora ─────────────────────────────────────────────────────
     c.setStrokeColor(NAVY)
     c.setLineWidth(1)
-    c.line(MARGIN_L, y - 16*mm, MARGIN_L + W, y - 16*mm)
+    c.line(lx, y - 36*mm, MARGIN_L + W, y - 36*mm)
 
-    # Destinatario
-    c.setFont("Helvetica-Bold", 8)
-    c.setFillColor(NAVY)
-    c.drawString(MARGIN_L, y - 22*mm, "Entrega:")
-    c.setFont("Helvetica", 8)
-    c.setFillColor(colors.black)
-    c.drawString(MARGIN_L + 22*mm, y - 22*mm, datos.get("entrega", ""))
+    # ── Destinatario ─────────────────────────────────────────────────────────
+    dy = y - 42*mm
+    label_w = 22*mm
 
     c.setFont("Helvetica-Bold", 8)
     c.setFillColor(NAVY)
-    c.drawString(MARGIN_L, y - 27*mm, "C.U.I.T.:")
+    c.drawString(lx, dy, "Entrega:")
     c.setFont("Helvetica", 8)
     c.setFillColor(colors.black)
-    c.drawString(MARGIN_L + 22*mm, y - 27*mm, datos.get("cuit_dest", ""))
+    c.drawString(lx + label_w, dy, datos.get("entrega", ""))
 
     c.setFont("Helvetica-Bold", 8)
     c.setFillColor(NAVY)
-    c.drawString(MARGIN_L, y - 32*mm, "Domicilio:")
+    c.drawString(lx, dy - 6*mm, "C.U.I.T.:")
     c.setFont("Helvetica", 8)
     c.setFillColor(colors.black)
-    c.drawString(MARGIN_L + 22*mm, y - 32*mm, datos.get("domicilio", ""))
+    c.drawString(lx + label_w, dy - 6*mm, datos.get("cuit_dest", ""))
+
+    c.setFont("Helvetica-Bold", 8)
+    c.setFillColor(NAVY)
+    c.drawString(lx, dy - 12*mm, "Domicilio:")
+    c.setFont("Helvetica", 8)
+    c.setFillColor(colors.black)
+    c.drawString(lx + label_w, dy - 12*mm, datos.get("domicilio", ""))
 
     c.setStrokeColor(LIGHT_GRAY)
     c.setLineWidth(0.5)
-    c.line(MARGIN_L, y - 35*mm, MARGIN_L + W, y - 35*mm)
+    c.line(lx, dy - 16*mm, MARGIN_L + W, dy - 16*mm)
 
-    return y - 38*mm   # top disponible para el contenido
+    return dy - 20*mm   # top disponible para el contenido
 
 
 def generar_remito(datos, output_path):

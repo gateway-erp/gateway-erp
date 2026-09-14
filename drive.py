@@ -103,8 +103,8 @@ def subir_presupuesto(pdf_path, nombre_archivo, codigo_cliente, nombre_cliente):
     media = MediaFileUpload(pdf_path, mimetype="application/pdf", resumable=False)
 
     # Buscar si ya existe un archivo con el mismo nombre en la carpeta
-    q = (f"name='{nombre_archivo.replace(\"'\", \"\\'\")}'  "
-         f"and '{presup_id}' in parents and trashed=false")
+    nombre_esc = nombre_archivo.replace("'", "\\'")
+    q = f"name='{nombre_esc}' and '{presup_id}' in parents and trashed=false"
     existentes = svc_user.files().list(q=q, fields="files(id)", pageSize=5).execute().get("files", [])
 
     if existentes:
@@ -185,8 +185,8 @@ def subir_documento(pdf_path, nombre_archivo, codigo_cliente, nombre_cliente, su
     svc_user = _user_service()
     media = MediaFileUpload(pdf_path, mimetype="application/pdf", resumable=False)
 
-    q = (f"name='{nombre_archivo.replace(\"'\", \"\\'\")}' "
-         f"and '{sub_id}' in parents and trashed=false")
+    nombre_esc = nombre_archivo.replace("'", "\\'")
+    q = f"name='{nombre_esc}' and '{sub_id}' in parents and trashed=false"
     existentes = svc_user.files().list(q=q, fields="files(id)", pageSize=5).execute().get("files", [])
 
     if existentes:

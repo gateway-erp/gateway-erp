@@ -142,7 +142,13 @@
         <td>{{ c.direccion or '—' }}</td>
         <td>{{ c.ciudad or '—' }}</td>
         <td>
-          <button class="btn-edit" onclick="abrirModal({{ c.codigo }}, {{ c.nombre | tojson }}, {{ (c.cuit or '') | tojson }}, {{ (c.direccion or '') | tojson }}, {{ (c.ciudad or '') | tojson }})">
+          <button class="btn-edit"
+            data-codigo="{{ c.codigo }}"
+            data-nombre="{{ c.nombre | e }}"
+            data-cuit="{{ (c.cuit or '') | e }}"
+            data-direccion="{{ (c.direccion or '') | e }}"
+            data-ciudad="{{ (c.ciudad or '') | e }}"
+            onclick="abrirModalBtn(this)">
             Editar
           </button>
         </td>
@@ -196,6 +202,16 @@ function abrirNuevo() {
   setTimeout(() => document.getElementById('edit-nombre').focus(), 80);
 }
 
+function abrirModalBtn(btn) {
+  abrirModal(
+    btn.dataset.codigo,
+    btn.dataset.nombre,
+    btn.dataset.cuit,
+    btn.dataset.direccion,
+    btn.dataset.ciudad,
+  );
+}
+
 function abrirModal(codigo, nombre, cuit, direccion, ciudad) {
   document.getElementById('modal-titulo').textContent = 'Editar cliente';
   document.getElementById('edit-codigo').value    = codigo;
@@ -245,7 +261,7 @@ async function guardar() {
         tr.innerHTML = `<td class="cod">C-${String(cod).padStart(4,'0')}</td>
           <td>${nombre}</td><td>${cuit||'—'}</td>
           <td>${direccion||'—'}</td><td>${ciudad||'—'}</td>
-          <td><button class="btn-edit" onclick="abrirModal(${cod},${JSON.stringify(nombre)},${JSON.stringify(cuit)},${JSON.stringify(direccion)},${JSON.stringify(ciudad)})">Editar</button></td>`;
+          <td><button class="btn-edit" data-codigo="${cod}" data-nombre="${nombre.replace(/"/g,'&quot;')}" data-cuit="${(cuit||'').replace(/"/g,'&quot;')}" data-direccion="${(direccion||'').replace(/"/g,'&quot;')}" data-ciudad="${(ciudad||'').replace(/"/g,'&quot;')}" onclick="abrirModalBtn(this)">Editar</button></td>`;
         tbody.appendChild(tr);
       } else {
         const tr = document.querySelector(`#tbody tr[data-codigo="${codigo}"]`);

@@ -165,7 +165,7 @@
     <h3 id="modal-titulo">Editar cliente</h3>
     <input type="hidden" id="edit-codigo">
     <div class="field"><label>Nombre / Razón social</label><input type="text" id="edit-nombre"></div>
-    <div class="field"><label>CUIT</label><input type="text" id="edit-cuit" placeholder="XX-XXXXXXXX-X"></div>
+    <div class="field"><label>CUIT</label><input type="text" id="edit-cuit" placeholder="XX-XXXXXXXX-X" oninput="formatCuit(this)" onblur="formatCuit(this)"></div>
     <div class="field"><label>Dirección</label><input type="text" id="edit-direccion"></div>
     <div class="field"><label>Ciudad / CP</label><input type="text" id="edit-ciudad"></div>
     <p class="msg-ok" id="msg-ok">✓ Guardado correctamente</p>
@@ -178,6 +178,13 @@
 </div>
 
 <script>
+function formatCuit(el) {
+  const digits = el.value.replace(/\D/g, '');
+  if (digits.length === 11) {
+    el.value = `${digits.slice(0,2)}-${digits.slice(2,10)}-${digits.slice(10)}`;
+  }
+}
+
 function filtrar() {
   const q = document.getElementById('buscar').value.toLowerCase();
   let visible = 0;

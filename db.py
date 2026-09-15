@@ -127,6 +127,30 @@ def next_codigo_cliente():
     return max(r["codigo"] for r in records) + 1
 
 
+# ── NOTAS / POST-ITS ─────────────────────────────────────────────────────────
+_H_NOT = ["id", "texto", "fecha_hora"]
+
+def load_notas():
+    return _ws("notas", _H_NOT).get_all_records()
+
+def crear_nota(texto):
+    from datetime import datetime
+    ws = _ws("notas", _H_NOT)
+    nota_id = str(int(datetime.now().timestamp() * 1000))
+    fecha = datetime.now().strftime("%d/%m/%Y %H:%M")
+    ws.append_row([nota_id, texto, fecha])
+    return nota_id
+
+def eliminar_nota(nota_id):
+    ws = _ws("notas", _H_NOT)
+    records = ws.get_all_records()
+    for i, r in enumerate(records, start=2):
+        if str(r["id"]) == str(nota_id):
+            ws.delete_rows(i)
+            return True
+    return False
+
+
 # ── ÍTEMS SUGERIDOS ───────────────────────────────────────────────────────────
 _H_ITE = ["descripcion", "precio_unitario", "iva_pct"]
 

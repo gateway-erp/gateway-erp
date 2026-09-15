@@ -312,6 +312,25 @@ async def ver_pdf(nombre_archivo: str):
 async def api_cotizacion():
     return cotizacion.get_cotizacion()
 
+@app.get("/api/notas")
+async def get_notas():
+    return JSONResponse(db.load_notas())
+
+@app.post("/api/notas")
+async def crear_nota(request: Request):
+    data = await request.json()
+    texto = data.get("texto", "").strip()
+    if not texto:
+        return JSONResponse({"ok": False, "error": "texto vacío"})
+    nota_id = db.crear_nota(texto)
+    return JSONResponse({"ok": True, "id": nota_id})
+
+@app.delete("/api/notas/{nota_id}")
+async def eliminar_nota(nota_id: str):
+    ok = db.eliminar_nota(nota_id)
+    return JSONResponse({"ok": ok})
+
+
 @app.get("/api/clientes")
 async def buscar_clientes(q: str = ""):
     clientes = db.load_clientes()

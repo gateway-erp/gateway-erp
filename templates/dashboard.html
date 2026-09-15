@@ -396,6 +396,60 @@
     }
     .badge-vencidos:hover { background: rgba(239,68,68,.35); }
     .badge-vencidos.visible { display: inline-flex; }
+
+    /* ── POST-ITS CARRUSEL ── */
+    #notas-bar {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 24px 0;
+    }
+    #notas-bar.visible { display: flex; }
+    .notas-carousel-wrap {
+      flex: 1; overflow: hidden; position: relative;
+    }
+    .notas-carousel {
+      display: flex; gap: 12px;
+      transition: transform .3s ease;
+    }
+    .nota-card {
+      flex: 0 0 260px;
+      background: #FEF08A; color: #1a1a1a;
+      border-radius: 8px; padding: 10px 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,.25);
+      position: relative; font-family: var(--font-main);
+    }
+    .nota-fecha {
+      font-size: 10px; font-weight: 600; color: #78716c;
+      margin-bottom: 5px; letter-spacing: .3px;
+    }
+    .nota-texto {
+      font-size: 12px; line-height: 1.45; color: #1c1917;
+      word-break: break-word; max-height: 72px;
+      overflow: hidden; display: -webkit-box;
+      -webkit-line-clamp: 4; -webkit-box-orient: vertical;
+    }
+    .nota-close {
+      position: absolute; top: 6px; right: 8px;
+      background: none; border: none; color: #78716c;
+      font-size: 14px; cursor: pointer; line-height: 1;
+      padding: 0 2px;
+    }
+    .nota-close:hover { color: #ef4444; }
+    .notas-nav {
+      background: var(--navy-card); border: 1px solid var(--navy-line);
+      color: var(--text); border-radius: 6px; width: 28px; height: 28px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-size: 14px; flex-shrink: 0;
+    }
+    .notas-nav:disabled { opacity: .3; cursor: default; }
+    .btn-hide-notas {
+      background: none; border: 1px solid var(--navy-line);
+      color: var(--text-dim); border-radius: 6px; padding: 4px 10px;
+      font-size: 11px; cursor: pointer; white-space: nowrap; flex-shrink: 0;
+      font-family: var(--font-main);
+    }
+    .btn-hide-notas:hover { color: var(--text); border-color: var(--accent); }
   </style>
 </head>
 <body>
@@ -421,6 +475,16 @@
       <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="1" width="16" height="9" rx="1.5" fill="currentColor" opacity=".9"/><rect x="1" y="12" width="16" height="5" rx="1.5" fill="currentColor" opacity=".45"/></svg>
     </button>
   </div>
+</div>
+
+<!-- POST-ITS -->
+<div id="notas-bar">
+  <button class="notas-nav" id="notas-prev" onclick="notasPrev()">‹</button>
+  <div class="notas-carousel-wrap">
+    <div class="notas-carousel" id="notas-carousel"></div>
+  </div>
+  <button class="notas-nav" id="notas-next" onclick="notasNext()">›</button>
+  <button class="btn-hide-notas" onclick="ocultarNotas()">Ocultar todas</button>
 </div>
 
 <!-- CONTENIDO -->
@@ -1103,6 +1167,60 @@ function dismissVencidos() {
 }
 
 document.addEventListener('DOMContentLoaded', initVencidos);
+
+// ══════════════════════════════════════════════════════════════════
+// NOTAS / POST-ITS
+// ══════════════════════════════════════════════════════════════════
+let _notas = [];
+let _notasOffset = 0;
+const NOTAS_VISIBLES = 4;
+
+async function cargarNotas() {
+  try {
+    const res = await fetch('/api/notas');
+    _notas = await res.json();
+    renderNotas();
+  } catch(e) { console.error('Error cargando notas', e); }
+}
+
+function renderNotas() {
+  const bar = document.getElementById('notas-bar');
+  const carousel = document.getElementById('notas-carousel');
+  if (!_notas.length) { bar.classList.remove('visible'); return; }
+  bar.classList.add('visible');
+  carousel.innerHTML = _notas.map(n => `
+    <div class="nota-card" data-id="${n.id}">
+      <div class="nota-fecha">${n.fecha_hora}</div>
+      <div class="nota-texto">${n.texto.replace(/</g,'&lt;')}</div>
+      <button class="nota-close" onclick="borrarNota('${n.id}')" title="Cerrar">✕</button>
+    </div>
+  `).join('');
+  _notasOffset = Math.min(_notasOffset, Math.max(0, _notas.length - NOTAS_VISIBLES));
+  aplicarOffset();
+}
+
+function aplicarOffset() {
+  const carousel = document.getElementById('notas-carousel');
+  const cardW = 260 + 12;
+  carousel.style.transform = `translateX(-${_notasOffset * cardW}px)`;
+  document.getElementById('notas-prev').disabled = _notasOffset === 0;
+  document.getElementById('notas-next').disabled = _notasOffset >= _notas.length - NOTAS_VISIBLES;
+}
+
+function notasPrev() { if (_notasOffset > 0) { _notasOffset--; aplicarOffset(); } }
+function notasNext() { if (_notasOffset < _notas.length - NOTAS_VISIBLES) { _notasOffset++; aplicarOffset(); } }
+
+function ocultarNotas() {
+  document.getElementById('notas-bar').classList.remove('visible');
+}
+
+async function borrarNota(id) {
+  await fetch(`/api/notas/${id}`, { method: 'DELETE' });
+  _notas = _notas.filter(n => String(n.id) !== String(id));
+  renderNotas();
+}
+
+document.addEventListener('DOMContentLoaded', cargarNotas);
 
 // ══════════════════════════════════════════════════════════════════
 // AGENDA

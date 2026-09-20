@@ -134,10 +134,12 @@ def load_notas():
     return _ws("notas", _H_NOT).get_all_records()
 
 def crear_nota(texto):
-    from datetime import datetime
+    from datetime import datetime, timezone, timedelta
+    AR = timezone(timedelta(hours=-3))
     ws = _ws("notas", _H_NOT)
-    nota_id = str(int(datetime.now().timestamp() * 1000))
-    fecha = datetime.now().strftime("%d/%m/%Y %H:%M")
+    ahora = datetime.now(AR)
+    nota_id = str(int(ahora.timestamp() * 1000))
+    fecha = ahora.strftime("%d/%m/%Y %H:%M")
     ws.append_row([nota_id, texto, fecha])
     return nota_id
 

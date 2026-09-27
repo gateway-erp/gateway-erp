@@ -35,6 +35,9 @@
 - [ ] Evaluar si conviene integrar la vista de mantenimientos dentro del dashboard principal (agenda actual del dashboard es un calendario de texto libre aparte) en vez de página separada `/agenda`.
 - [x] **Dos UIs de mantenimientos en paralelo — resuelto (paso 1/2)**: se decidió que `/agenda` es el único lugar para editar. Paso 1 hecho: el widget del dashboard (`#agenda-mant`) perdió toda capacidad de edición (se sacó el modal, `aClickVisita`/`mmSetTurno`/`mmCerrar`/`mmAccion` y el onclick de las cards) — ahora es solo informativo (nombre, cliente, estado por color).
 - [ ] **Paso 2 pendiente**: el widget del dashboard debería linkear a `/agenda` (el título "Agenda Operativa" o un botón) en vez de no hacer nada al click.
+- [x] Cards del dashboard mostraban "Sem 1..4" fijas aunque el mantenimiento tenga menos visitas reales, y MCCAIN perdía una por colisión de índice — ahora muestran "Visita 1..N" según el patrón real (`aVisitasEsperadas`)
+- [x] Colores de estado (verde/ámbar/rojo) no coincidían entre dashboard y `/agenda` — unificados con una sola regla en ambos lugares
+- [x] Generador de WhatsApp rediseñado: soporta 2+ equipos el mismo día, cada uno con técnicos elegidos a mano y tareas desde pendientes (con un click) o texto libre
 - [ ] No usar tildes/ñ en nombres de parámetros de ruta de FastAPI (`{año}` nunca matcheaba en runtime aunque aparecía en el schema — usar `{anio}`, `{numero}`, etc.)
 - [ ] No usar comas dentro de strings guardados en Sheets vía `USER_ENTERED` si el valor podría parecer numérico (Sheets locale es-AR las interpreta como separador de miles) — usar `;` o forzar texto con comilla inicial.
 

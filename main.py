@@ -777,6 +777,17 @@ async def save_visita_agenda(request: Request):
     )
     return JSONResponse({"ok": True})
 
+@app.post("/api/admin/limpiar-visitas/{anio}/{mes}")
+async def limpiar_visitas_mes(anio: int, mes: int):
+    """Endpoint temporal: borra registros de mant_visitas de un mes (uso único, datos de prueba)."""
+    ws = db._ws("mant_visitas", db._H_MVIS)
+    records = ws.get_all_records()
+    filas = [i for i, r in enumerate(records, start=2)
+             if str(r.get("año")) == str(anio) and str(r.get("mes")) == str(mes)]
+    for i in sorted(filas, reverse=True):
+        ws.delete_rows(i)
+    return JSONResponse({"ok": True, "borradas": len(filas)})
+
 @app.post("/api/agenda/auto-fill/{anio}/{mes}")
 async def auto_fill_agenda(anio: int, mes: int, asignar_fecha: bool = True):
     import traceback

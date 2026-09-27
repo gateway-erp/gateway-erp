@@ -23,6 +23,8 @@ SCOPES = [
 SPREADSHEET_ID = "1dGgARZE2Ow-4yibOX6IM1mNd6VOLSmrPS1F4SceYrYI"
 
 _gc = None
+_sh = None            # spreadsheet cacheado — evita reabrir con open_by_key en cada llamada
+_headers_ok = set()   # nombres de hoja cuyo encabezado ya fue verificado en este proceso
 
 def _client():
     global _gc
@@ -37,10 +39,23 @@ def _client():
         _gc = gspread.authorize(creds)
     return _gc
 
+def _spreadsheet():
+    global _sh
+    if _sh is None:
+        _sh = _client().open_by_key(SPREADSHEET_ID)
+    return _sh
+
 def _ws(name, headers):
-    sh = _client().open_by_key(SPREADSHEET_ID)
+    sh = _spreadsheet()
     try:
         ws = sh.worksheet(name)
+    except gspread.WorksheetNotFound:
+        ws = sh.add_worksheet(title=name, rows=1000, cols=len(headers))
+        ws.append_row(headers)
+        _headers_ok.add(name)
+        return ws
+
+    if name not in _headers_ok:
         current = ws.row_values(1)
         nuevas = [h for h in headers if h not in current]
         if nuevas:
@@ -51,9 +66,7 @@ def _ws(name, headers):
             for i, h in enumerate(headers):
                 if h not in current:
                     ws.update_cell(1, i + 1, h)
-    except gspread.WorksheetNotFound:
-        ws = sh.add_worksheet(title=name, rows=1000, cols=len(headers))
-        ws.append_row(headers)
+        _headers_ok.add(name)
     return ws
 
 
@@ -534,8 +547,14 @@ def guardar_visita(mant_id, año, mes, semana, visita_num=1, fecha_real="", esta
             return
     ws.append_row([mant_id, año, mes, semana, visita_num, fecha_real, estado, turno])
 
-def auto_fill_mes(año, mes):
-    """Genera registros de visita para el mes según el patrón de cada mantenimiento."""
+def auto_fill_mes(año, mes, asignar_fecha=True):
+    """Genera registros de visita para el mes según el patrón de cada mantenimiento.
+
+    asignar_fecha=True  (modo Automático): calcula y asigna la fecha del lunes
+                         de cada semana correspondiente.
+    asignar_fecha=False (modo Manual): crea los registros SIN fecha, para que
+                         el operador los ubique a mano desde "Pendientes".
+    """
     crear_mantenimiento_if_missing()
     mants   = load_mantenimientos()
     visitas = load_visitas_mes(año, mes)
@@ -557,16 +576,18 @@ def auto_fill_mes(año, mes):
                     for r in visitas
                 )
                 if not already:
-                    # Calcular fecha del lunes de esa semana del mes
-                    from datetime import date as _date, timedelta as _td
-                    lunes_sem = _date(int(año), int(mes), 1)
-                    while lunes_sem.weekday() != 0:
-                        lunes_sem += _td(days=1)
-                    lunes_sem += _td(weeks=semana - 1)
-                    # Asegurarse que siga dentro del mes
-                    if lunes_sem.month != int(mes):
+                    fecha_str = ""
+                    if asignar_fecha:
+                        # Calcular fecha del lunes de esa semana del mes
+                        from datetime import date as _date, timedelta as _td
                         lunes_sem = _date(int(año), int(mes), 1)
-                    fecha_str = (lunes_sem + _td(days=vnum - 1)).isoformat()
+                        while lunes_sem.weekday() != 0:
+                            lunes_sem += _td(days=1)
+                        lunes_sem += _td(weeks=semana - 1)
+                        # Asegurarse que siga dentro del mes
+                        if lunes_sem.month != int(mes):
+                            lunes_sem = _date(int(año), int(mes), 1)
+                        fecha_str = (lunes_sem + _td(days=vnum - 1)).isoformat()
                     guardar_visita(m["id"], año, mes, semana, vnum, fecha_str, "pendiente", "mañana")
                     visitas.append({"mant_id": str(m["id"]), "año": str(año), "mes": str(mes),
                                     "semana": str(semana), "visita_num": str(vnum),

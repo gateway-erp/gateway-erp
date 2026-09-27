@@ -789,11 +789,11 @@ async def save_visita_agenda(request: Request):
     return JSONResponse({"ok": True})
 
 @app.post("/api/agenda/auto-fill/{anio}/{mes}")
-async def auto_fill_agenda(anio: int, mes: int):
+async def auto_fill_agenda(anio: int, mes: int, asignar_fecha: bool = True):
     import traceback
     try:
         año = anio
-        db.auto_fill_mes(año, mes)
+        db.auto_fill_mes(año, mes, asignar_fecha=asignar_fecha)
         visitas = db.load_visitas_mes(año, mes)
         return JSONResponse({"ok": True, "visitas": visitas})
     except Exception as e:

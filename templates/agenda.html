@@ -360,9 +360,12 @@ async function cargar() {
     celdas      = d.celdas         || [];
     arrastrados = d.arrastrados    || [];
     render();
-    // En modo auto, si el mes no tiene visitas: ofrecer auto-fill
-    if (modo === "auto" && visitas.length === 0) {
-      if (confirm(`No hay mantenimientos cargados para ${MESES[mes-1]} ${año}.\n¿Completar el mes automáticamente?`)) {
+    // Si el mes no tiene ningún mantenimiento cargado, ofrecer generarlos
+    if (visitas.length === 0 && mants.length > 0) {
+      const msg = modo === "auto"
+        ? `No hay mantenimientos cargados para ${MESES[mes-1]} ${año}.\n¿Completar el mes automáticamente (con fecha asignada)?`
+        : `No hay mantenimientos cargados para ${MESES[mes-1]} ${año}.\n¿Generar la lista de pendientes para ubicarlos a mano?`;
+      if (confirm(msg)) {
         await doAutoFill(false);
       }
     }
@@ -370,12 +373,18 @@ async function cargar() {
 }
 
 async function doAutoFill(confirmar = true) {
-  if (confirmar && !confirm(`Completar mantenimientos de ${MESES[mes-1]} ${año}?\n\nSolo agrega los que faltan.`)) return;
+  const asignarFecha = modo === "auto";
+  if (confirmar) {
+    const msg = asignarFecha
+      ? `Completar mantenimientos de ${MESES[mes-1]} ${año} con fecha automática?\n\nSolo agrega los que faltan.`
+      : `Generar los mantenimientos pendientes de ${MESES[mes-1]} ${año} SIN fecha, para ubicarlos a mano desde "Pendientes"?`;
+    if (!confirm(msg)) return;
+  }
   spin(true);
   try {
-    const r = await fetch(`/api/agenda/auto-fill/${año}/${mes}`, { method:"POST" });
+    const r = await fetch(`/api/agenda/auto-fill/${año}/${mes}?asignar_fecha=${asignarFecha}`, { method:"POST" });
     const d = await r.json();
-    if (!d.ok) { alert("Error: " + d.error); return; }
+    if (!d.ok) { alert("No se pudo completar el mes. Probá de nuevo en un momento.\n\n" + (d.error||"")); return; }
     visitas = d.visitas || [];
     render();
   } finally { spin(false); }
@@ -744,7 +753,8 @@ function setModo(m) {
   modo = m;
   document.getElementById("btn-auto").classList.toggle("active", m==="auto");
   document.getElementById("btn-manual").classList.toggle("active", m==="manual");
-  document.getElementById("btn-fill").style.display = m==="auto" ? "" : "none";
+  document.getElementById("btn-fill").textContent =
+    m === "auto" ? "↻ Completar mes" : "+ Generar pendientes del mes";
   try { localStorage.setItem("ag_modo", m); } catch(e){}
 }
 

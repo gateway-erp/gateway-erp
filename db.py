@@ -430,13 +430,17 @@ _H_MANT = ["id", "nombre", "cliente", "horas_plan", "semanas_mes", "tecnicos", "
 _mant_seeded = False
 
 _MANT_SEED = [
-    [1, "TBAR CCTV",           "Toyota Boshoku", 32, 4, "Camilo,Pablo",  1, 8,  "1,2,3,4"],
-    [2, "TBAR RED INCENDIOS",  "Toyota Boshoku",  8, 2, "Camilo,Pablo",  2, 4,  "2,4"],
-    [3, "TBAR MTTO UPS",       "Toyota Boshoku",  4, 2, "Camilo,Pablo",  3, 2,  "1,3"],
-    [4, "TBAR SIST. INCENDIOS","Toyota Boshoku",  8, 2, "Camilo,Pablo",  4, 2,  "1,3"],
+    [1, "TBAR CCTV",           "Toyota Boshoku", 32, 4, "Camilo,Pablo",  1, 8,  "1;2;3;4"],
+    [2, "TBAR RED INCENDIOS",  "Toyota Boshoku",  8, 2, "Camilo,Pablo",  2, 4,  "2;4"],
+    [3, "TBAR MTTO UPS",       "Toyota Boshoku",  4, 2, "Camilo,Pablo",  3, 2,  "1;3"],
+    [4, "TBAR SIST. INCENDIOS","Toyota Boshoku",  8, 2, "Camilo,Pablo",  4, 2,  "1;3"],
     [5, "MCCAIN CCTV",         "McCain",          32, 2, "Camilo,Pablo", 5, 16, "3"],
-    [6, "MASTER BUS",          "Master Bus",       8, 2, "Matias,Nacho", 6, 4,  "1,3"],
+    [6, "MASTER BUS",          "Master Bus",       8, 2, "Matias,Nacho", 6, 4,  "1;3"],
 ]
+
+def _texto_forzado(v):
+    """Antepone comilla para que Sheets no intente interpretar el valor como número/fecha."""
+    return "'" + str(v)
 
 def load_mantenimientos():
     return _ws("mantenimientos", _H_MANT).get_all_records()
@@ -450,8 +454,26 @@ def crear_mantenimiento_if_missing():
     existing_ids = {str(r.get("id")) for r in records}
     for row in _MANT_SEED:
         if str(row[0]) not in existing_ids:
-            ws.append_row(row)
+            fila = row[:-1] + [_texto_forzado(row[-1])]
+            ws.append_row(fila)
+    _reparar_semanas_pattern(ws, records if records else ws.get_all_records())
     _mant_seeded = True
+
+def _reparar_semanas_pattern(ws, records):
+    """Corrige filas donde Sheets convirtió 'semanas_pattern' en número (perdiendo los separadores)."""
+    seed_map = {row[0]: row[-1] for row in _MANT_SEED}
+    col = _H_MANT.index("semanas_pattern") + 1
+    for i, r in enumerate(records, start=2):
+        val = r.get("semanas_pattern")
+        if isinstance(val, str) and ";" in val:
+            continue  # ya está bien
+        try:
+            mid = int(r.get("id"))
+        except (TypeError, ValueError):
+            continue
+        correcto = seed_map.get(mid)
+        if correcto:
+            ws.update_cell(i, col, _texto_forzado(correcto))
 
 
 # ── REMITOS ───────────────────────────────────────────────────────────────────
@@ -519,8 +541,10 @@ def auto_fill_mes(año, mes):
     visitas = load_visitas_mes(año, mes)
 
     for m in mants:
-        pattern_str = str(m.get("semanas_pattern", "1,2,3,4"))
-        pattern = [int(p.strip()) for p in pattern_str.split(",") if p.strip().isdigit()]
+        pattern_str = str(m.get("semanas_pattern", "1;2;3;4")).lstrip("'")
+        # Compatibilidad con datos viejos guardados con coma
+        sep = ";" if ";" in pattern_str else ","
+        pattern = [int(p.strip()) for p in pattern_str.split(sep) if p.strip().isdigit()]
         total   = int(m.get("semanas_mes", 1))
         per_occ = max(1, total // len(pattern)) if pattern else 1
 

@@ -948,7 +948,9 @@ function genMsg() {
       msg += `\n👷 *${nombreEquipo}*\n`;
       eq.tareas.forEach(t => {
         const turnoIcono = t.turno === "tarde" ? "🌙" : "☀️";
-        msg += `  • ${t.tipo === "mant" ? t.label : t.texto} ${turnoIcono}\n`;
+        const turnoLbl   = t.turno === "tarde" ? "T-Tarde" : "T-Mañana";
+        const texto      = t.tipo === "mant" ? t.label : t.texto;
+        msg += `  • _*${texto}*_ ${turnoIcono} _${turnoLbl}_\n`;
       });
     });
     if (celda?.texto) msg += `\n📋 *ADEMÁS:*\n${celda.texto}\n`;

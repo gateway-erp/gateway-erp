@@ -186,7 +186,9 @@
     .ws-btn-agregar { background: rgba(59,130,246,.15); border: 1px solid var(--accent); color: var(--accent); border-radius: 6px; padding: 5px 12px; font-family: var(--font); font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background .15s; }
     .ws-btn-agregar:hover { background: rgba(59,130,246,.25); }
     .ws-tareas { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
-    .ws-tarea-item { display: flex; align-items: center; justify-content: space-between; background: var(--navy-card); border-radius: 5px; padding: 5px 9px; font-size: 12px; gap: 8px; }
+    .ws-tarea-item { display: flex; align-items: center; justify-content: space-between; background: var(--navy-card); border-radius: 5px; padding: 5px 9px; font-size: 12px; gap: 8px; border: 1px solid transparent; }
+    .ws-tarea-item.sin-confirmar { border-color: rgba(245,158,11,.4); background: rgba(245,158,11,.06); }
+    .ws-tarea-flag { font-size: 9px; color: var(--amber); font-style: normal; font-weight: 600; }
     .ws-tarea-right { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
     .ws-tarea-rm { cursor: pointer; color: var(--text-dim); font-size: 11px; padding-left: 4px; }
     .ws-tarea-rm:hover { color: var(--red); }
@@ -200,9 +202,13 @@
     .btn-add-equipo:hover { border-color: var(--accent); color: var(--accent); }
 
     .ws-prev  { background: var(--navy); border: 1px solid var(--navy-line); border-radius: 8px; padding: 10px 14px; font-family: var(--font-num); font-size: 12px; line-height: 1.8; color: var(--text); white-space: pre-wrap; min-height: 60px; margin-bottom: 8px; }
+    .ws-actions-row { display: flex; gap: 8px; }
     .btn-copy { background: var(--green); color: #fff; border: none; border-radius: 7px; padding: 7px 18px; font-family: var(--font); font-size: 12px; font-weight: 600; cursor: pointer; transition: background .15s; }
     .btn-copy:hover   { background: #16a34a; }
     .btn-copy.copied  { background: var(--navy-line); }
+    .btn-confirmar { background: rgba(59,130,246,.15); border: 1px solid var(--accent); color: var(--accent); border-radius: 7px; padding: 7px 18px; font-family: var(--font); font-size: 12px; font-weight: 600; cursor: pointer; transition: background .15s; }
+    .btn-confirmar:hover:not(:disabled) { background: rgba(59,130,246,.25); }
+    .btn-confirmar:disabled { opacity: .6; cursor: default; }
 
     /* ── MODAL ── */
     .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; z-index: 300; align-items: center; justify-content: center; }
@@ -314,7 +320,10 @@
     <button class="btn-add-equipo" onclick="wsAgregarEquipo()">+ Agregar equipo</button>
 
     <div class="ws-prev" id="ws-prev">Seleccioná un día para ver el mensaje.</div>
-    <button class="btn-copy" id="btn-copy" onclick="copiar()">📋 Copiar mensaje</button>
+    <div class="ws-actions-row">
+      <button class="btn-confirmar" id="btn-confirmar" onclick="wsConfirmarTareas()">✓ Confirmar tareas</button>
+      <button class="btn-copy" id="btn-copy" onclick="copiar()">📋 Copiar mensaje</button>
+    </div>
   </div>
 
 </div>
@@ -788,7 +797,7 @@ function wsPoblarDesdeDia(iso) {
     const tecStr = m.tecnicos || "";
     if (!grupos[tecStr]) grupos[tecStr] = { tecnicos: tecStr.split(",").map(s=>s.trim()).filter(Boolean), tareas: [] };
     grupos[tecStr].tareas.push({ tipo:"mant", año, mes, mant_id:v.mant_id, semana:v.semana, visita_num:v.visita_num||1,
-                                  turno: v.turno || "mañana", label:`${m.nombre} (${m.horas_visita}hs)` });
+                                  turno: v.turno || "mañana", confirmado:true, label:`${m.nombre} (${m.horas_visita}hs)` });
   });
   wsEquipos = Object.values(grupos);
 }
@@ -810,40 +819,52 @@ function wsToggleTecnico(idx, nombre) {
   renderWsEquipos(); genMsg();
 }
 
-async function wsSetTareaTurno(idx, tIdx, t) {
+function wsSetTareaTurno(idx, tIdx, t) {
   const tarea = wsEquipos[idx].tareas[tIdx];
   tarea.turno = t;
+  tarea.confirmado = false; // el cambio de turno necesita re-confirmarse para guardarse
   renderWsEquipos(); genMsg();
-  if (tarea.tipo === "mant") {
-    const iso = document.getElementById("ws-dia").value;
-    await saveVisita({ mant_id:tarea.mant_id, semana:tarea.semana, visita_num:tarea.visita_num,
-                        fecha_real:iso, estado:"pendiente", turno:t }, tarea.año, tarea.mes);
-  }
 }
 
-async function wsAgregarTareaPendiente(idx, selectEl) {
+function wsAgregarTareaPendiente(idx, selectEl) {
   const val = selectEl.value;
   if (!val) return;
   const [añoT, mesT, mantId, semana, visitaNum] = val.split("_");
   const m = mants.find(x => String(x.id) === String(mantId));
-  const iso = document.getElementById("ws-dia").value;
   const tarea = { tipo:"mant", año:parseInt(añoT), mes:parseInt(mesT), mant_id:mantId,
-                  semana:parseInt(semana), visita_num:parseInt(visitaNum), turno:"mañana",
+                  semana:parseInt(semana), visita_num:parseInt(visitaNum), turno:"mañana", confirmado:false,
                   label:`${m ? m.nombre : mantId} (${m ? m.horas_visita : "?"}hs)` };
   wsEquipos[idx].tareas.push(tarea);
-  await saveVisita({ mant_id:mantId, semana:tarea.semana, visita_num:tarea.visita_num,
-                      fecha_real: iso, estado:"pendiente", turno:"mañana" }, tarea.año, tarea.mes);
   renderWsEquipos(); genMsg();
 }
 
 async function wsQuitarTarea(idx, tIdx) {
   const t = wsEquipos[idx].tareas[tIdx];
   wsEquipos[idx].tareas.splice(tIdx, 1);
-  if (t.tipo === "mant") {
+  if (t.tipo === "mant" && t.confirmado) {
     await saveVisita({ mant_id:t.mant_id, semana:t.semana, visita_num:t.visita_num,
                         fecha_real:"", estado:"pendiente", turno:"mañana" }, t.año, t.mes);
   }
   renderWsEquipos(); genMsg();
+}
+
+async function wsConfirmarTareas() {
+  const iso = document.getElementById("ws-dia").value;
+  if (!iso) { alert("Elegí un día primero."); return; }
+  const pendientesMant = [];
+  wsEquipos.forEach(eq => eq.tareas.forEach(t => { if (t.tipo === "mant" && !t.confirmado) pendientesMant.push(t); }));
+  if (!pendientesMant.length) return;
+
+  const btn = document.getElementById("btn-confirmar");
+  btn.disabled = true; btn.textContent = "Confirmando…";
+  for (const t of pendientesMant) {
+    await saveVisita({ mant_id:t.mant_id, semana:t.semana, visita_num:t.visita_num,
+                        fecha_real: iso, estado:"pendiente", turno: t.turno || "mañana" }, t.año, t.mes);
+    t.confirmado = true;
+  }
+  render();
+  btn.textContent = "✓ Confirmado";
+  setTimeout(() => { btn.textContent = "✓ Confirmar tareas"; btn.disabled = false; }, 1500);
 }
 
 function wsAgregarLibre(idx, inputEl) {
@@ -867,9 +888,10 @@ function renderWsEquipos() {
     ).join("");
     const tareasHtml = eq.tareas.map((t, tIdx) => {
       const turno = t.turno || "mañana";
+      const sinConfirmar = t.tipo === "mant" && !t.confirmado;
       return `
-      <div class="ws-tarea-item">
-        <span>${t.tipo==="mant" ? esc(t.label) : esc(t.texto)}</span>
+      <div class="ws-tarea-item ${sinConfirmar ? 'sin-confirmar' : ''}">
+        <span>${t.tipo==="mant" ? esc(t.label) : esc(t.texto)}${sinConfirmar ? ' <em class="ws-tarea-flag">sin confirmar</em>' : ''}</span>
         <div class="ws-tarea-right">
           <span class="ws-turno-btn ${turno==='mañana'?'active':''}" onclick="wsSetTareaTurno(${idx},${tIdx},'mañana')" title="Mañana">☀️</span>
           <span class="ws-turno-btn ${turno==='tarde'?'active':''}" onclick="wsSetTareaTurno(${idx},${tIdx},'tarde')" title="Tarde">🌙</span>

@@ -58,6 +58,10 @@
 - [x] Dashboard: scroll independiente por columna en vista-2 (agenda | presupuestos) — antes scrolleaba todo junto
 - [x] Dashboard: modal propio para mantenimientos (reemplaza `prompt()` nativo) — fecha, turno, Realizado/Guardar/Desmarcar
 - [x] `/agenda`: dropdown de WhatsApp arranca desde mañana; input de fecha del modal no permite fechas pasadas (`min=hoy`)
+- [x] Scroll de vista-2 (definitivo): la altura fija no descontaba el alto de la barra de post-its — ahora se calcula por JS y se recalcula en cada cambio
+- [x] Layout de mantenimientos del dashboard: de columna angosta lateral a fila horizontal debajo del calendario, a todo el ancho
+- [x] Etiqueta "Dashboard" unificada bajo el logo en las 7 pantallas (antes "‹ Inicio")
+- [x] Limpiado dato corrupto: TBAR CCTV sem 1 tenía fecha "2016" guardada por error, quedaba siempre en verde
 
 ---
 *Última actualización: 2026-09-27*

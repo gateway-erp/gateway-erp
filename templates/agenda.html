@@ -173,6 +173,27 @@
     .ws-sel   { background: var(--navy); border: 1px solid var(--navy-line); color: var(--text); border-radius: 6px; padding: 6px 10px; font-family: var(--font); font-size: 12px; outline: none; min-width: 180px; }
     .ws-ta    { background: var(--navy); border: 1px solid var(--navy-line); color: var(--text); border-radius: 6px; padding: 6px 10px; font-family: var(--font); font-size: 12px; outline: none; width: 300px; resize: vertical; min-height: 36px; }
     .ws-sel:focus, .ws-ta:focus { border-color: var(--accent); }
+    /* ── EQUIPOS DE TRABAJO ── */
+    .ws-equipo { background: var(--navy); border: 1px solid var(--navy-line); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
+    .ws-equipo-head { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+    .ws-tec-chks { display: flex; gap: 6px; flex-wrap: wrap; }
+    .ws-tec-chk { padding: 4px 10px; border: 1px solid var(--navy-line); border-radius: 14px; font-size: 11px; font-weight: 600; color: var(--text-dim); cursor: pointer; transition: background .15s, border-color .15s, color .15s; user-select: none; }
+    .ws-tec-chk.active { background: rgba(59,130,246,.2); border-color: var(--accent); color: var(--text); }
+    .ws-equipo-rm { font-size: 10px; color: var(--text-dim); cursor: pointer; white-space: nowrap; }
+    .ws-equipo-rm:hover { color: var(--red); }
+    .ws-tareas { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+    .ws-tarea-item { display: flex; align-items: center; justify-content: space-between; background: var(--navy-card); border-radius: 5px; padding: 5px 9px; font-size: 12px; }
+    .ws-tarea-rm { cursor: pointer; color: var(--text-dim); font-size: 11px; padding-left: 8px; }
+    .ws-tarea-rm:hover { color: var(--red); }
+    .ws-tarea-empty { font-size: 11px; color: var(--text-dim); font-style: italic; padding: 3px 0; }
+    .ws-tarea-add { display: flex; gap: 6px; flex-wrap: wrap; }
+    .ws-sel-sm, .ws-inp-sm { background: var(--navy-card); border: 1px solid var(--navy-line); color: var(--text); border-radius: 6px; padding: 5px 8px; font-family: var(--font); font-size: 11px; outline: none; }
+    .ws-sel-sm { min-width: 170px; }
+    .ws-inp-sm { flex: 1; min-width: 140px; }
+    .ws-sel-sm:focus, .ws-inp-sm:focus { border-color: var(--accent); }
+    .btn-add-equipo { background: none; border: 1px dashed var(--navy-line); color: var(--text-dim); border-radius: 7px; padding: 6px 14px; font-family: var(--font); font-size: 11px; font-weight: 600; cursor: pointer; margin-bottom: 12px; transition: border-color .15s, color .15s; }
+    .btn-add-equipo:hover { border-color: var(--accent); color: var(--accent); }
+
     .ws-prev  { background: var(--navy); border: 1px solid var(--navy-line); border-radius: 8px; padding: 10px 14px; font-family: var(--font-num); font-size: 12px; line-height: 1.8; color: var(--text); white-space: pre-wrap; min-height: 60px; margin-bottom: 8px; }
     .btn-copy { background: var(--green); color: #fff; border: none; border-radius: 7px; padding: 7px 18px; font-family: var(--font); font-size: 12px; font-weight: 600; cursor: pointer; transition: background .15s; }
     .btn-copy:hover   { background: #16a34a; }
@@ -274,7 +295,7 @@
     <div class="ws-row">
       <div class="ws-fld">
         <label class="ws-lbl">Día</label>
-        <select class="ws-sel" id="ws-dia" onchange="genMsg()">
+        <select class="ws-sel" id="ws-dia" onchange="wsPoblarDesdeDia(this.value); renderWsEquipos(); genMsg();">
           <option value="">— Seleccionar —</option>
         </select>
       </div>
@@ -283,6 +304,10 @@
         <textarea class="ws-ta" id="ws-nota" placeholder="Ej: Recuerden llevar los insumos y pasar por mi casa…" oninput="genMsg()" rows="2"></textarea>
       </div>
     </div>
+
+    <div id="ws-equipos"></div>
+    <button class="btn-add-equipo" onclick="wsAgregarEquipo()">+ Agregar equipo</button>
+
     <div class="ws-prev" id="ws-prev">Seleccioná un día para ver el mensaje.</div>
     <button class="btn-copy" id="btn-copy" onclick="copiar()">📋 Copiar mensaje</button>
   </div>
@@ -397,6 +422,7 @@ function render() {
   renderArrastrados();
   renderPendientes();
   fillWsDias();
+  renderWsEquipos();
   genMsg();
 }
 
@@ -719,6 +745,134 @@ function fillWsDias() {
   if (prev) sel.value = prev;
 }
 
+// ── EQUIPOS DE TRABAJO ───────────────────────────────────────────────────────
+const TECNICOS_ALL = ["Camilo","Pablo","Matias","Nacho"];
+let wsEquipos = []; // [{ tecnicos:[...], tareas:[{tipo:'mant',año,mes,mant_id,semana,visita_num,label} | {tipo:'libre',texto}] }]
+
+function tareaKey(t) { return `${t.año}_${t.mes}_${t.mant_id}_${t.semana}_${t.visita_num}`; }
+
+function wsPendientesPool() {
+  const usados = new Set();
+  wsEquipos.forEach(eq => eq.tareas.forEach(t => { if (t.tipo === "mant") usados.add(tareaKey(t)); }));
+  const pool = [];
+  visitas.filter(v => v.estado !== "realizado" && !v.fecha_real).forEach(v => {
+    const m = mants.find(x => String(x.id) === String(v.mant_id));
+    if (!m) return;
+    const t = { tipo:"mant", año, mes, mant_id:v.mant_id, semana:v.semana, visita_num:v.visita_num||1,
+                label:`${m.nombre} (${m.horas_visita}hs)` };
+    if (!usados.has(tareaKey(t))) pool.push(t);
+  });
+  arrastrados.forEach(v => {
+    const m = mants.find(x => String(x.id) === String(v.mant_id));
+    if (!m) return;
+    const t = { tipo:"mant", año:v.año, mes:v.mes, mant_id:v.mant_id, semana:v.semana, visita_num:v.visita_num||1,
+                label:`${m.nombre} (${m.horas_visita}hs) · arrastrado` };
+    if (!usados.has(tareaKey(t))) pool.push(t);
+  });
+  return pool;
+}
+
+function wsPoblarDesdeDia(iso) {
+  wsEquipos = [];
+  if (!iso) return;
+  const visHoy = visitas.filter(v => v.fecha_real === iso && v.estado !== "realizado");
+  const grupos = {};
+  visHoy.forEach(v => {
+    const m = mants.find(x => String(x.id) === String(v.mant_id));
+    if (!m) return;
+    const tecStr = m.tecnicos || "";
+    if (!grupos[tecStr]) grupos[tecStr] = { tecnicos: tecStr.split(",").map(s=>s.trim()).filter(Boolean), tareas: [] };
+    grupos[tecStr].tareas.push({ tipo:"mant", año, mes, mant_id:v.mant_id, semana:v.semana, visita_num:v.visita_num||1,
+                                  label:`${m.nombre} (${m.horas_visita}hs)` });
+  });
+  wsEquipos = Object.values(grupos);
+}
+
+function wsAgregarEquipo() {
+  wsEquipos.push({ tecnicos: [], tareas: [] });
+  renderWsEquipos(); genMsg();
+}
+
+function wsQuitarEquipo(idx) {
+  wsEquipos.splice(idx, 1);
+  renderWsEquipos(); genMsg();
+}
+
+function wsToggleTecnico(idx, nombre) {
+  const eq = wsEquipos[idx];
+  const i = eq.tecnicos.indexOf(nombre);
+  if (i >= 0) eq.tecnicos.splice(i, 1); else eq.tecnicos.push(nombre);
+  renderWsEquipos(); genMsg();
+}
+
+async function wsAgregarTareaPendiente(idx, selectEl) {
+  const val = selectEl.value;
+  if (!val) return;
+  const [añoT, mesT, mantId, semana, visitaNum] = val.split("_");
+  const m = mants.find(x => String(x.id) === String(mantId));
+  const iso = document.getElementById("ws-dia").value;
+  const tarea = { tipo:"mant", año:parseInt(añoT), mes:parseInt(mesT), mant_id:mantId,
+                  semana:parseInt(semana), visita_num:parseInt(visitaNum),
+                  label:`${m ? m.nombre : mantId} (${m ? m.horas_visita : "?"}hs)` };
+  wsEquipos[idx].tareas.push(tarea);
+  await saveVisita({ mant_id:mantId, semana:tarea.semana, visita_num:tarea.visita_num,
+                      fecha_real: iso, estado:"pendiente", turno:"mañana" }, tarea.año, tarea.mes);
+  renderWsEquipos(); genMsg();
+}
+
+async function wsQuitarTarea(idx, tIdx) {
+  const t = wsEquipos[idx].tareas[tIdx];
+  wsEquipos[idx].tareas.splice(tIdx, 1);
+  if (t.tipo === "mant") {
+    await saveVisita({ mant_id:t.mant_id, semana:t.semana, visita_num:t.visita_num,
+                        fecha_real:"", estado:"pendiente", turno:"mañana" }, t.año, t.mes);
+  }
+  renderWsEquipos(); genMsg();
+}
+
+function wsAgregarLibre(idx, inputEl) {
+  const txt = inputEl.value.trim();
+  if (!txt) return;
+  wsEquipos[idx].tareas.push({ tipo:"libre", texto: txt });
+  inputEl.value = "";
+  renderWsEquipos(); genMsg();
+}
+
+function renderWsEquipos() {
+  const cont = document.getElementById("ws-equipos");
+  const pool = wsPendientesPool();
+  const poolOpts = pool.map(p =>
+    `<option value="${p.año}_${p.mes}_${p.mant_id}_${p.semana}_${p.visita_num}">${p.label}</option>`
+  ).join("");
+
+  cont.innerHTML = wsEquipos.map((eq, idx) => {
+    const chks = TECNICOS_ALL.map(n =>
+      `<span class="ws-tec-chk ${eq.tecnicos.includes(n)?'active':''}" onclick="wsToggleTecnico(${idx},'${n}')">${n}</span>`
+    ).join("");
+    const tareasHtml = eq.tareas.map((t, tIdx) => `
+      <div class="ws-tarea-item">
+        <span>${t.tipo==="mant" ? esc(t.label) : esc(t.texto)}</span>
+        <span class="ws-tarea-rm" onclick="wsQuitarTarea(${idx},${tIdx})">✕</span>
+      </div>`).join("") || `<div class="ws-tarea-empty">Sin tareas todavía</div>`;
+
+    return `<div class="ws-equipo">
+      <div class="ws-equipo-head">
+        <div class="ws-tec-chks">${chks}</div>
+        <span class="ws-equipo-rm" onclick="wsQuitarEquipo(${idx})">✕ Quitar equipo</span>
+      </div>
+      <div class="ws-tareas">${tareasHtml}</div>
+      <div class="ws-tarea-add">
+        <select class="ws-sel-sm" onchange="wsAgregarTareaPendiente(${idx},this)">
+          <option value="">+ Desde pendientes…</option>
+          ${poolOpts}
+        </select>
+        <input type="text" class="ws-inp-sm" placeholder="+ Texto libre… (Enter para agregar)"
+          onkeydown="if(event.key==='Enter'){event.preventDefault();wsAgregarLibre(${idx},this);}">
+      </div>
+    </div>`;
+  }).join("");
+}
+
 function genMsg() {
   const iso  = document.getElementById("ws-dia").value;
   const nota = document.getElementById("ws-nota").value.trim();
@@ -730,32 +884,23 @@ function genMsg() {
   const dNum  = dia.getDate();
   const dMes  = dia.getMonth() + 1;
 
-  const visHoy = visitas.filter(v =>
-    v.fecha_real === iso && v.estado !== "realizado"
-  );
-
   const celda = celdas.find(c => String(c.dia)===String(dNum) &&
     String(c.mes||mes)===String(dMes) && c.turno==="libre");
-
-  // Agrupar por técnicos
-  const grupos = {};
-  visHoy.forEach(v => {
-    const m = mants.find(x => String(x.id) === String(v.mant_id));
-    if (!m) return;
-    const tec = m.tecnicos || "—";
-    if (!grupos[tec]) grupos[tec] = [];
-    grupos[tec].push(`${m.nombre} (${m.horas_visita}hs)`);
-  });
 
   const fechaFmt = `${DIAS_F[dow].toUpperCase()} ${dNum}/${zz(dMes)}/${dia.getFullYear()}`;
   let msg = `📅 *${fechaFmt}*\n`;
 
-  if (!Object.keys(grupos).length && !celda?.texto) {
+  const hayContenido = wsEquipos.some(eq => eq.tareas.length) || celda?.texto;
+  if (!hayContenido) {
     msg += "\nSin mantenimientos programados para este día.";
   } else {
-    Object.entries(grupos).forEach(([tec, trabajos]) => {
-      msg += `\n👷 *${(TEC_LBL[tec]||tec).toUpperCase()}*\n`;
-      trabajos.forEach(t => { msg += `  • ${t}\n`; });
+    wsEquipos.forEach(eq => {
+      if (!eq.tareas.length) return;
+      const nombreEquipo = eq.tecnicos.length
+        ? eq.tecnicos.join(" + ").toUpperCase()
+        : "SIN EQUIPO ASIGNADO";
+      msg += `\n👷 *${nombreEquipo}*\n`;
+      eq.tareas.forEach(t => { msg += `  • ${t.tipo === "mant" ? t.label : t.texto}\n`; });
     });
     if (celda?.texto) msg += `\n📋 *ADEMÁS:*\n${celda.texto}\n`;
   }

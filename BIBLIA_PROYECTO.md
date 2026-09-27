@@ -282,6 +282,8 @@ Selector de día (hoy + próximos 14 hábiles) + campo de nota libre → arma el
 
 Nombres de técnicos ficticios por pedido del usuario (discreción).
 
+⚠️ **Las horas NO cierran matemáticamente entre `horas_plan` y (técnicos × horas reales × visitas) — es intencional, no arreglar.** Ejemplo: TBAR CCTV sí cierra (2 técnicos × 4hs media mañana × 4 visitas = 32hs). Pero RED INCENDIOS, UPS, SIST. INCENDIOS y MASTER BUS están facturados/contratados a un número de horas mensuales "de catálogo" que NO coincide con lo que realmente se trabaja en campo (2 técnicos × media mañana × 2 visitas = más horas reales que las contratadas). El operador confirmó esta discrepancia y pidió manejarla **basándose en la cantidad de visitas (`semanas_mes`), no en las horas** — las horas (`horas_plan`, `horas_visita`) son solo una etiqueta informativa que se muestra en la UI, ninguna lógica de programación depende de que ese número sea preciso. No intentar "corregir" `horas_visita` para que la cuenta cierre.
+
 #### Modelo de datos — hojas en Google Sheets
 **Hoja `mantenimientos`** (catálogo fijo, se siembra solo si falta):
 ```

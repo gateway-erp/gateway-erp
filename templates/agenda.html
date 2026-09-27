@@ -181,14 +181,14 @@
     .ws-tec-chk.active { background: rgba(59,130,246,.2); border-color: var(--accent); color: var(--text); }
     .ws-equipo-rm { font-size: 10px; color: var(--text-dim); cursor: pointer; white-space: nowrap; }
     .ws-equipo-rm:hover { color: var(--red); }
-    .ws-turno-row { display: flex; gap: 4px; }
-    .ws-turno-btn { padding: 4px 9px; border: 1px solid var(--navy-line); border-radius: 6px; font-size: 10px; font-weight: 600; color: var(--text-dim); cursor: pointer; transition: border-color .15s, color .15s, background .15s; user-select: none; white-space: nowrap; }
-    .ws-turno-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(59,130,246,.1); }
+    .ws-turno-btn { padding: 3px 6px; border: 1px solid var(--navy-line); border-radius: 5px; font-size: 11px; cursor: pointer; transition: border-color .15s, background .15s; user-select: none; line-height: 1; opacity: .4; }
+    .ws-turno-btn.active { border-color: var(--accent); background: rgba(59,130,246,.15); opacity: 1; }
     .ws-btn-agregar { background: rgba(59,130,246,.15); border: 1px solid var(--accent); color: var(--accent); border-radius: 6px; padding: 5px 12px; font-family: var(--font); font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background .15s; }
     .ws-btn-agregar:hover { background: rgba(59,130,246,.25); }
     .ws-tareas { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
-    .ws-tarea-item { display: flex; align-items: center; justify-content: space-between; background: var(--navy-card); border-radius: 5px; padding: 5px 9px; font-size: 12px; }
-    .ws-tarea-rm { cursor: pointer; color: var(--text-dim); font-size: 11px; padding-left: 8px; }
+    .ws-tarea-item { display: flex; align-items: center; justify-content: space-between; background: var(--navy-card); border-radius: 5px; padding: 5px 9px; font-size: 12px; gap: 8px; }
+    .ws-tarea-right { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+    .ws-tarea-rm { cursor: pointer; color: var(--text-dim); font-size: 11px; padding-left: 4px; }
     .ws-tarea-rm:hover { color: var(--red); }
     .ws-tarea-empty { font-size: 11px; color: var(--text-dim); font-style: italic; padding: 3px 0; }
     .ws-tarea-add { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -786,16 +786,15 @@ function wsPoblarDesdeDia(iso) {
     const m = mants.find(x => String(x.id) === String(v.mant_id));
     if (!m) return;
     const tecStr = m.tecnicos || "";
-    if (!grupos[tecStr]) grupos[tecStr] = { tecnicos: tecStr.split(",").map(s=>s.trim()).filter(Boolean),
-                                             turno: v.turno || "mañana", tareas: [] };
+    if (!grupos[tecStr]) grupos[tecStr] = { tecnicos: tecStr.split(",").map(s=>s.trim()).filter(Boolean), tareas: [] };
     grupos[tecStr].tareas.push({ tipo:"mant", año, mes, mant_id:v.mant_id, semana:v.semana, visita_num:v.visita_num||1,
-                                  label:`${m.nombre} (${m.horas_visita}hs)` });
+                                  turno: v.turno || "mañana", label:`${m.nombre} (${m.horas_visita}hs)` });
   });
   wsEquipos = Object.values(grupos);
 }
 
 function wsAgregarEquipo() {
-  wsEquipos.push({ tecnicos: [], turno: "mañana", tareas: [] });
+  wsEquipos.push({ tecnicos: [], tareas: [] });
   renderWsEquipos(); genMsg();
 }
 
@@ -811,16 +810,14 @@ function wsToggleTecnico(idx, nombre) {
   renderWsEquipos(); genMsg();
 }
 
-async function wsSetTurno(idx, t) {
-  wsEquipos[idx].turno = t;
+async function wsSetTareaTurno(idx, tIdx, t) {
+  const tarea = wsEquipos[idx].tareas[tIdx];
+  tarea.turno = t;
   renderWsEquipos(); genMsg();
-  // Actualizar el turno de las tareas-mantenimiento ya asignadas de este equipo
-  const iso = document.getElementById("ws-dia").value;
-  for (const tarea of wsEquipos[idx].tareas) {
-    if (tarea.tipo === "mant") {
-      await saveVisita({ mant_id:tarea.mant_id, semana:tarea.semana, visita_num:tarea.visita_num,
-                          fecha_real:iso, estado:"pendiente", turno:t }, tarea.año, tarea.mes);
-    }
+  if (tarea.tipo === "mant") {
+    const iso = document.getElementById("ws-dia").value;
+    await saveVisita({ mant_id:tarea.mant_id, semana:tarea.semana, visita_num:tarea.visita_num,
+                        fecha_real:iso, estado:"pendiente", turno:t }, tarea.año, tarea.mes);
   }
 }
 
@@ -830,13 +827,12 @@ async function wsAgregarTareaPendiente(idx, selectEl) {
   const [añoT, mesT, mantId, semana, visitaNum] = val.split("_");
   const m = mants.find(x => String(x.id) === String(mantId));
   const iso = document.getElementById("ws-dia").value;
-  const turno = wsEquipos[idx].turno || "mañana";
   const tarea = { tipo:"mant", año:parseInt(añoT), mes:parseInt(mesT), mant_id:mantId,
-                  semana:parseInt(semana), visita_num:parseInt(visitaNum),
+                  semana:parseInt(semana), visita_num:parseInt(visitaNum), turno:"mañana",
                   label:`${m ? m.nombre : mantId} (${m ? m.horas_visita : "?"}hs)` };
   wsEquipos[idx].tareas.push(tarea);
   await saveVisita({ mant_id:mantId, semana:tarea.semana, visita_num:tarea.visita_num,
-                      fecha_real: iso, estado:"pendiente", turno }, tarea.año, tarea.mes);
+                      fecha_real: iso, estado:"pendiente", turno:"mañana" }, tarea.año, tarea.mes);
   renderWsEquipos(); genMsg();
 }
 
@@ -853,7 +849,7 @@ async function wsQuitarTarea(idx, tIdx) {
 function wsAgregarLibre(idx, inputEl) {
   const txt = inputEl.value.trim();
   if (!txt) return;
-  wsEquipos[idx].tareas.push({ tipo:"libre", texto: txt });
+  wsEquipos[idx].tareas.push({ tipo:"libre", texto: txt, turno:"mañana" });
   inputEl.value = "";
   renderWsEquipos(); genMsg();
 }
@@ -869,20 +865,22 @@ function renderWsEquipos() {
     const chks = TECNICOS_ALL.map(n =>
       `<span class="ws-tec-chk ${eq.tecnicos.includes(n)?'active':''}" onclick="wsToggleTecnico(${idx},'${n}')">${n}</span>`
     ).join("");
-    const turno = eq.turno || "mañana";
-    const turnoBtns = `
-      <span class="ws-turno-btn ${turno==='mañana'?'active':''}" onclick="wsSetTurno(${idx},'mañana')">☀️ Mañana</span>
-      <span class="ws-turno-btn ${turno==='tarde'?'active':''}" onclick="wsSetTurno(${idx},'tarde')">🌙 Tarde</span>`;
-    const tareasHtml = eq.tareas.map((t, tIdx) => `
+    const tareasHtml = eq.tareas.map((t, tIdx) => {
+      const turno = t.turno || "mañana";
+      return `
       <div class="ws-tarea-item">
         <span>${t.tipo==="mant" ? esc(t.label) : esc(t.texto)}</span>
-        <span class="ws-tarea-rm" onclick="wsQuitarTarea(${idx},${tIdx})">✕</span>
-      </div>`).join("") || `<div class="ws-tarea-empty">Sin tareas todavía</div>`;
+        <div class="ws-tarea-right">
+          <span class="ws-turno-btn ${turno==='mañana'?'active':''}" onclick="wsSetTareaTurno(${idx},${tIdx},'mañana')" title="Mañana">☀️</span>
+          <span class="ws-turno-btn ${turno==='tarde'?'active':''}" onclick="wsSetTareaTurno(${idx},${tIdx},'tarde')" title="Tarde">🌙</span>
+          <span class="ws-tarea-rm" onclick="wsQuitarTarea(${idx},${tIdx})">✕</span>
+        </div>
+      </div>`;
+    }).join("") || `<div class="ws-tarea-empty">Sin tareas todavía</div>`;
 
     return `<div class="ws-equipo">
       <div class="ws-equipo-head">
         <div class="ws-tec-chks">${chks}</div>
-        <div class="ws-turno-row">${turnoBtns}</div>
         <span class="ws-equipo-rm" onclick="wsQuitarEquipo(${idx})">✕ Quitar equipo</span>
       </div>
       <div class="ws-tareas">${tareasHtml}</div>
@@ -925,9 +923,11 @@ function genMsg() {
       const nombreEquipo = eq.tecnicos.length
         ? eq.tecnicos.join(" + ").toUpperCase()
         : "SIN EQUIPO ASIGNADO";
-      const turnoIcono = eq.turno === "tarde" ? "🌙 Tarde" : "☀️ Mañana";
-      msg += `\n👷 *${nombreEquipo}* (${turnoIcono})\n`;
-      eq.tareas.forEach(t => { msg += `  • ${t.tipo === "mant" ? t.label : t.texto}\n`; });
+      msg += `\n👷 *${nombreEquipo}*\n`;
+      eq.tareas.forEach(t => {
+        const turnoIcono = t.turno === "tarde" ? "🌙" : "☀️";
+        msg += `  • ${t.tipo === "mant" ? t.label : t.texto} ${turnoIcono}\n`;
+      });
     });
     if (celda?.texto) msg += `\n📋 *ADEMÁS:*\n${celda.texto}\n`;
   }

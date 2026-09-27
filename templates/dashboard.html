@@ -478,10 +478,7 @@
 
 <!-- TOPBAR -->
 <div class="topbar">
-  <a href="/" class="topbar-home" title="Volver al inicio">
-    <img src="/static/logo-gateway.jpeg" alt="Gateway" class="topbar-logo">
-    <span class="topbar-home-lbl">‹ Inicio</span>
-  </a>
+  <img src="/static/logo-gateway.jpeg" alt="Gateway" class="topbar-logo">
   <div class="topbar-sep"></div>
   <nav class="topbar-nav">
     <a class="nav-item active" href="/">Presupuestos</a>
@@ -1223,6 +1220,7 @@ function renderNotas() {
   `).join('');
   _notasOffset = Math.min(_notasOffset, Math.max(0, _notas.length - NOTAS_VISIBLES));
   aplicarOffset();
+  ajustarAlturaVista2();
 }
 
 function aplicarOffset() {
@@ -1238,6 +1236,7 @@ function notasNext() { if (_notasOffset < _notas.length - NOTAS_VISIBLES) { _not
 
 function ocultarNotas() {
   document.getElementById('notas-bar').classList.remove('visible');
+  ajustarAlturaVista2();
 }
 
 async function borrarNota(id) {
@@ -1567,15 +1566,29 @@ function aEsc(s) {
 agendaCargar();
 
 // ── VISTAS ───────────────────────────────────────────────────────────────────
+function ajustarAlturaVista2() {
+  const page = document.getElementById('page-root');
+  if (!page.classList.contains('vista-2')) return;
+  const topbar = document.querySelector('.topbar');
+  const notas  = document.getElementById('notas-bar');
+  let ocupado = topbar ? topbar.offsetHeight : 64;
+  if (notas && notas.classList.contains('visible')) ocupado += notas.offsetHeight;
+  page.style.height = `${window.innerHeight - ocupado}px`;
+}
+
 function setVista(n) {
   const page = document.getElementById('page-root');
   page.classList.remove('vista-2', 'vista-3');
   if (n === 2) page.classList.add('vista-2');
   if (n === 3) page.classList.add('vista-3');
-  document.body.style.overflow = n === 2 ? 'hidden' : '';
+  const bloquear = n === 2;
+  document.body.style.overflow = bloquear ? 'hidden' : '';
+  document.documentElement.style.overflow = bloquear ? 'hidden' : '';
+  if (bloquear) { ajustarAlturaVista2(); } else { page.style.height = ''; }
   document.querySelectorAll('.vbtn').forEach((b, i) => b.classList.toggle('active', i + 1 === n));
   try { localStorage.setItem('gw-vista', n); } catch(e) {}
 }
+window.addEventListener('resize', ajustarAlturaVista2);
 (function() {
   try {
     const v = parseInt(localStorage.getItem('gw-vista') || '1');

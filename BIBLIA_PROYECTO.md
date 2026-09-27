@@ -14,7 +14,7 @@ Sistema web propio para Gateway que reemplaza y centraliza herramientas dispersa
 |---|---|---|
 | Presupuestos | Crear PDF, historial, pipeline kanban | **LIVE en producción** |
 | OC + Factura + Cobro | Enganche al presupuesto vía pipeline | **LIVE en producción** |
-| Agenda / Calendario | Mantenimientos, trabajos, asignación a técnicos, envío diario | Planificado |
+| Agenda / Calendario | Mantenimientos, trabajos, asignación a técnicos, envío diario | **LIVE en producción** |
 | Facturación AFIP | Integración con AFIP, alertas fiscales | Planificado |
 | Layout Cámaras | Ya desarrollado — integrar como módulo del sistema | Hecho (externo) |
 
@@ -240,15 +240,98 @@ Los PDFs generados en `presupuestos/output/` se pierden con cada redeploy. La fu
 ---
 
 ### Agenda / Calendario
-**Estado: planificado.**
+**Estado: LIVE en producción (gestion.gateway.com.ar/agenda) — 2026-09-27**
 
-- Vista día / semana / mes
-- 15 mantenimientos mensuales obligatorios precargados, se repiten automáticamente
-- Recordatorio diario de mantenimientos pendientes al abrir
-- Trabajos rápidos: el programador anota un pedido al vuelo → queda como tarea pendiente
-- Envío automático del resumen del día siguiente; recordatorio si no se hizo; botón de envío
-- Asignación de trabajos a técnicos
-- Vista de pendientes sin asignar vs. programados
+#### Qué resuelve
+El operador tiene mantenimientos mensuales fijos (los que sostienen la facturación recurrente — CCTV, red de incendios, UPS, etc.) que **no se pueden posponer**, mezclados con trabajos random del día a día. Antes no había forma de que el sistema recuerde solo "te falta este mantenimiento", todo dependía de la memoria del operador.
+
+#### Vista semanal (no mensual)
+Se descartó la grilla de mes completo: el operador necesita ver "qué hice ayer y anteayer" junto con "qué viene", así que la vista principal es **la semana actual (lunes a viernes)**, con navegación `‹ semana anterior` / `Hoy` / `semana siguiente ›`. El mes se sincroniza solo tomando como referencia el miércoles de la semana visible (evita ambigüedad cuando la semana cruza de un mes a otro).
+
+#### Dos modos: Automático / Manual (switch en el header)
+- **Automático**: al abrir un mes vacío, ofrece completar todas las visitas del mes con fecha ya asignada (el lunes de la semana que le corresponde a cada mantenimiento según su patrón).
+- **Manual**: el botón equivalente ("+ Generar pendientes del mes") crea los mismos registros pero **sin fecha** — quedan en la sección "Pendientes sin fecha asignada" y el operador los ubica día por día haciendo click en cada uno (abre el mismo modal que en modo automático: elegís fecha + turno).
+- El modo se guarda en `localStorage` del navegador, no es global del sistema.
+
+#### Auto-validación día a día
+Si una visita quedó "pendiente" con fecha ya pasada y nadie la tocó (no la marcó realizada, vencida, ni la reprogramó), el sistema la da por **realizada automáticamente** al otro día. Usa comparación de fechas absolutas (`fecha_real < hoy`), así que no se rompe cuando una semana cruza de un mes a otro.
+
+#### Arrastre entre meses (distinto de la auto-validación)
+Solo lo que **nunca tuvo fecha asignada** (o quedó "vencido" sin resolver) viaja al mes siguiente, en una sección aparte ("↩ Arrastrados de meses anteriores"). No se confunde con la auto-validación: esa resuelve lo que sí se hizo pero no se marcó; el arrastre es para lo que genuinamente no se completó. Al resolverlo desde el mes nuevo, el registro se actualiza en su mes de origen — el historial por mes queda intacto en la Sheet, que funciona como backup natural (nada se borra nunca).
+
+#### Generador de mensaje para WhatsApp
+Selector de día (hoy + próximos 14 hábiles) + campo de nota libre → arma el texto agrupado por equipo técnico, listo para copiar y pegar al grupo:
+```
+📅 *MARTES 30/09/2026*
+
+👷 *CAMILO + PABLO*
+  • TBAR RED INCENDIOS (4hs)
+
+📌 Recuerden llevar los insumos y pasar por mi casa
+```
+
+#### Mantenimientos precargados (seed fijo, 6 registros)
+| Mantenimiento | Cliente | Hs/mes | Patrón semanal | Técnicos |
+|---|---|---|---|---|
+| TBAR CCTV | Toyota Boshoku | 32 | todas las semanas | Camilo + Pablo |
+| TBAR RED INCENDIOS | Toyota Boshoku | 8 | semanas 2 y 4 | Camilo + Pablo |
+| TBAR MTTO UPS | Toyota Boshoku | 4 | semanas 1 y 3 | Camilo + Pablo |
+| TBAR SIST. INCENDIOS | Toyota Boshoku | 8 | semanas 1 y 3 | Camilo + Pablo |
+| MCCAIN CCTV | McCain | 32 | semana 3 (2 visitas) | Camilo + Pablo |
+| MASTER BUS | Master Bus | 8 | semanas 1 y 3 | Matías + Nacho |
+
+Nombres de técnicos ficticios por pedido del usuario (discreción).
+
+#### Modelo de datos — hojas en Google Sheets
+**Hoja `mantenimientos`** (catálogo fijo, se siembra solo si falta):
+```
+id | nombre | cliente | horas_plan | semanas_mes | tecnicos | prioridad | horas_visita | semanas_pattern
+```
+`semanas_pattern` usa `;` como separador (ej. `1;2;3;4`), **nunca coma** — ver problema resuelto más abajo.
+
+**Hoja `mant_visitas`** (una fila por visita programada, por mes):
+```
+mant_id | año | mes | semana | visita_num | fecha_real | estado | turno
+```
+`estado`: `pendiente` / `realizado` / `vencido`. `turno`: `mañana` / `tarde`.
+
+**Hoja `agenda_celdas`** (trabajos libres/random, ya existía del calendario general):
+```
+año | mes | dia | turno | texto | color | negrita
+```
+
+#### Endpoints
+```
+GET  /agenda                              ← página completa
+GET  /api/agenda/{anio}/{mes}             ← trae mantenimientos + visitas + celdas + arrastrados
+                                             (auto-valida día a día antes de devolver)
+POST /api/agenda/celda                    ← guarda texto libre de un día
+POST /api/agenda/visita                   ← asigna/edita fecha, turno o estado de una visita
+POST /api/agenda/auto-fill/{anio}/{mes}   ← genera visitas del mes
+                                             ?asignar_fecha=true  → modo Automático
+                                             ?asignar_fecha=false → modo Manual (sin fecha)
+```
+Nota: el parámetro de path se llama `anio` (no `año`) — ver problema resuelto.
+
+#### Navegación unificada
+Las 7 pantallas del sistema (Presupuestos, Nuevo Presupuesto, Matrices, Matriz, Clientes, Remitos, Agenda) usan el mismo patrón para volver al inicio: logo clickeable con etiqueta `‹ Inicio` visible debajo (no solo al pasar el mouse), consistente en todas.
+
+#### Problemas resueltos durante el desarrollo (dejar registrado — no repetir)
+1. **Ruta con "ñ" nunca matcheaba** (`/api/agenda/{año}/{mes}` devolvía 404 aunque aparecía en el schema de OpenAPI). FastAPI/Starlette listaban la ruta pero el router nunca la resolvía en runtime. Se renombró el parámetro a `{anio}` (ASCII) en todas las rutas con path params — evitar `ñ`/tildes en nombres de parámetros de ruta en este proyecto.
+2. **Google Sheets corrompía `semanas_pattern`**: al escribir `"1,2,3,4"` con `value_input_option=USER_ENTERED`, Sheets lo interpretaba como el número `1234` (locale es-AR usa coma como separador de miles). Fix: separador `;` en vez de `,`, más comilla inicial forzada (`'1;2;3;4`) al escribir para garantizar texto plano, con reparación automática de filas ya corrompidas en cada carga.
+3. **Cuota de lecturas de Google Sheets agotada (429)**: `_ws()` reabría la planilla completa (`open_by_key`, ~1 request) y releía encabezados en **cada** llamada. Una sola carga de `/agenda` hacía ~21 llamadas a la API; tocar "Completar mes" sumaba otra tanda y volaba el límite por minuto. Fix: spreadsheet cacheado a nivel de proceso, verificación de encabezados una sola vez por hoja, y `cargar_agenda_completa()` que consolida las 4 lecturas separadas de `mant_visitas` (auto-validar x2 + visitas + arrastrados) en 1 sola. Bajó de ~21 a ~3 llamadas por carga de página. `auto_fill_mes` también pasó de N escrituras individuales a un solo `append_rows()` en batch.
+
+#### Archivos del módulo
+```
+db.py                       ← funciones mantenimientos/visitas (líneas ~440-660 aprox.)
+main.py                     ← rutas /agenda y /api/agenda/*
+templates/agenda.html       ← página completa (vista semanal, modal, generador WS)
+```
+
+#### Pendiente / a definir
+- Drag & drop de cards en modo Manual (el usuario no está seguro de quererlo — por ahora Manual es "click para asignar fecha", más simple)
+- Decidir si el módulo se integra visualmente dentro del dashboard principal o queda como página separada (por ahora: separada, con nav propio)
+- Falta cargar los 15 mantenimientos reales completos si hay más de los 6 iniciales (confirmado por el usuario: "son todos los que tenemos" — revisar si eso sigue siendo así)
 
 ---
 
@@ -263,4 +346,4 @@ Versión extendida del módulo Presupuestos para trabajos grandes (instalaciones
 **Estado: planificado** — módulo ya desarrollado externamente, a incorporar.
 
 ---
-*Última actualización: 2026-07-10*
+*Última actualización: 2026-09-27*

@@ -28,9 +28,16 @@
 - [ ] ¿Los técnicos van a tener acceso al sistema para ver sus tareas asignadas, o solo lo ve el programador?
 - [ ] ¿Los 15 mantenimientos mensuales tienen cliente/fecha/frecuencia definidos para precargarlos?
 
+## Módulo Agenda de Mantenimientos — pendientes técnicos
+
+- [ ] **Drag & drop en modo Manual**: por ahora Manual es "click en pendiente → elegir fecha/turno en modal". El usuario no confirmó si quiere además poder arrastrar cards directo sobre la grilla.
+- [ ] Confirmar si los 6 mantenimientos cargados son la lista completa o falta agregar más (el usuario dijo que sí son todos, pero originalmente se habló de "15 mantenimientos mensuales" — revisar si esa cifra vieja sigue vigente).
+- [ ] Evaluar si conviene integrar la vista de mantenimientos dentro del dashboard principal (agenda actual del dashboard es un calendario de texto libre aparte) en vez de página separada `/agenda`.
+- [ ] No usar tildes/ñ en nombres de parámetros de ruta de FastAPI (`{año}` nunca matcheaba en runtime aunque aparecía en el schema — usar `{anio}`, `{numero}`, etc.)
+- [ ] No usar comas dentro de strings guardados en Sheets vía `USER_ENTERED` si el valor podría parecer numérico (Sheets locale es-AR las interpreta como separador de miles) — usar `;` o forzar texto con comilla inicial.
+
 ## Módulos nuevos — por arrancar
 
-- [ ] **Agenda / Calendario**: mantenimientos mensuales obligatorios, trabajos rápidos, asignación a técnicos, resumen diario.
 - [ ] **Autenticación Google Login**: control de acceso con roles (operador, facturación, etc.)
 
 ---
@@ -45,6 +52,8 @@
 - [x] Kanban dashboard con dot verde/rojo para estado de cobro
 - [x] Hojas Sheets: `historial` (+ columnas OC), `facturas` (nueva)
 - [x] Editar OC desde cards Aprobados sin cambiar de estado
+- [x] Módulo Agenda de Mantenimientos: vista semanal, modo Automático/Manual, auto-validación día a día, arrastre de pendientes entre meses, generador de mensaje WhatsApp — LIVE en `/agenda` (2026-09-27)
+- [x] Navegación "volver al inicio" unificada en las 7 pantallas del sistema (logo + etiqueta "‹ Inicio")
 
 ---
-*Última actualización: 2026-08-13*
+*Última actualización: 2026-09-27*

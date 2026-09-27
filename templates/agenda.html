@@ -571,7 +571,9 @@ function abrirModal(key) {
   document.getElementById("m-title").textContent = m.nombre;
   document.getElementById("m-sub").textContent =
     `${TEC_LBL[m.tecnicos]||m.tecnicos} · ${m.horas_visita}hs · Semana ${semStr}`;
-  document.getElementById("m-fecha").value = v?.fecha_real || "";
+  const fechaInp = document.getElementById("m-fecha");
+  fechaInp.value = v?.fecha_real || "";
+  fechaInp.min   = new Date().toISOString().split("T")[0];
   setTurno(v?.turno || "mañana");
   document.getElementById("overlay").classList.add("open");
 }
@@ -586,7 +588,9 @@ function abrirModalArrastrado(idx) {
   document.getElementById("m-title").textContent = m.nombre;
   document.getElementById("m-sub").textContent =
     `${TEC_LBL[m.tecnicos]||m.tecnicos} · ${m.horas_visita}hs · Arrastrado de ${mesNom} ${v.año} (sem ${v.semana})`;
-  document.getElementById("m-fecha").value = v.fecha_real || "";
+  const fechaInp2 = document.getElementById("m-fecha");
+  fechaInp2.value = v.fecha_real || "";
+  fechaInp2.min   = new Date().toISOString().split("T")[0];
   setTurno(v.turno || "mañana");
   document.getElementById("overlay").classList.add("open");
 }
@@ -681,9 +685,9 @@ async function guardarLibre(dia, dMes, dAnio, texto) {
 function fillWsDias() {
   const sel = document.getElementById("ws-dia");
   const prev = sel.value;
-  // Mostrar hoy + próximos 14 días
+  // Mostrar próximos 14 días hábiles a partir de mañana
   let opts = `<option value="">— Seleccionar —</option>`;
-  for (let i = 0; i <= 13; i++) {
+  for (let i = 1; i <= 14; i++) {
     const d = new Date(HOY); d.setDate(HOY.getDate() + i);
     const dow = d.getDay();
     if (dow === 0 || dow === 6) continue;

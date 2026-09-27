@@ -453,6 +453,25 @@
       font-family: var(--font-main);
     }
     .btn-hide-notas:hover { color: var(--text); border-color: var(--accent); }
+    /* ── MANT MODAL ── */
+    #mant-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:9000; align-items:center; justify-content:center; }
+    #mant-overlay.open { display:flex; }
+    .mant-modal { background:var(--navy-card); border:1px solid var(--navy-line); border-radius:14px; padding:22px; width:340px; max-width:90vw; }
+    .mant-modal-title { font-size:15px; font-weight:700; margin-bottom:3px; }
+    .mant-modal-sub { font-size:12px; color:var(--text-dim); margin-bottom:16px; }
+    .mant-modal-lbl { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.5px; color:var(--text-dim); margin-bottom:5px; }
+    .mant-modal-fecha { width:100%; background:var(--navy); border:1px solid var(--navy-line); border-radius:6px; color:var(--text); padding:7px 10px; font-size:13px; margin-bottom:14px; color-scheme:dark; }
+    .mant-turno-row { display:flex; gap:8px; margin-bottom:18px; }
+    .mant-turno-btn { flex:1; padding:8px; border:1px solid var(--navy-line); background:var(--navy); color:var(--text-dim); border-radius:7px; cursor:pointer; font-size:12px; font-weight:600; transition:border-color .15s,background .15s,color .15s; }
+    .mant-turno-btn.active { background:rgba(59,130,246,.2); border-color:var(--accent); color:var(--text); }
+    .mant-modal-actions { display:flex; flex-direction:column; gap:8px; }
+    .mant-modal-btn { width:100%; padding:9px; border-radius:7px; border:none; font-size:12px; font-weight:700; cursor:pointer; text-transform:uppercase; letter-spacing:.4px; font-family:var(--font-main); }
+    .mant-modal-btn.green { background:rgba(34,197,94,.2); color:#86EFAC; border:1px solid rgba(34,197,94,.4); }
+    .mant-modal-btn.amber { background:rgba(245,158,11,.15); color:#FCD34D; border:1px solid rgba(245,158,11,.3); }
+    .mant-modal-btn.red   { background:rgba(239,68,68,.15); color:#FCA5A5; border:1px solid rgba(239,68,68,.3); }
+    .mant-modal-btn.ghost { background:none; color:var(--text-dim); border:1px solid var(--navy-line); }
+    .mant-modal-row2 { display:flex; gap:8px; }
+    .mant-modal-row2 .mant-modal-btn { flex:1; }
   </style>
 </head>
 <body>
@@ -1492,21 +1511,42 @@ function aEstLbl(e) {
   return {realizado:'✓ Realiz.',proximo:'Próx.',pendiente:'Pend.'}[e] || e;
 }
 
-async function aClickVisita(mantId, semana) {
-  const key  = `${mantId}-${semana}`;
-  const vis  = aVisitas[key] || {};
-  const est  = vis.estado || 'pendiente';
-  const orden = ['pendiente','proximo','realizado'];
-  const sig  = orden[(orden.indexOf(est)+1) % orden.length];
-  let fecha  = vis.fecha_real || '';
-  if (sig === 'realizado' && !fecha) {
-    fecha = prompt('Fecha de realización (ej: 05/08):','') || '';
-  }
-  aVisitas[key] = {fecha_real: fecha, estado: sig};
+let mmMantId = null, mmSemana = null, mmTurno = 'mañana';
+
+function aClickVisita(mantId, semana) {
+  mmMantId = mantId;
+  mmSemana = semana;
+  const vis  = aVisitas[`${mantId}-${semana}`] || {};
+  const mant = aMants.find(m => String(m.id) === String(mantId));
+  document.getElementById('mm-title').textContent = mant ? mant.nombre : 'Mantenimiento';
+  document.getElementById('mm-sub').textContent   = `Semana ${semana}`;
+  const inp = document.getElementById('mm-fecha');
+  inp.value = vis.fecha_real || '';
+  inp.min   = new Date().toISOString().split('T')[0];
+  mmSetTurno(vis.turno || 'mañana');
+  document.getElementById('mant-overlay').classList.add('open');
+}
+
+function mmSetTurno(t) {
+  mmTurno = t;
+  document.getElementById('mm-man').classList.toggle('active', t === 'mañana');
+  document.getElementById('mm-tar').classList.toggle('active', t === 'tarde');
+}
+
+function mmCerrar() {
+  document.getElementById('mant-overlay').classList.remove('open');
+}
+
+async function mmAccion(tipo) {
+  const key   = `${mmMantId}-${mmSemana}`;
+  const fecha = document.getElementById('mm-fecha').value;
+  const estado = tipo === 'guardar' ? 'proximo' : tipo;
+  aVisitas[key] = {fecha_real: fecha, estado, turno: mmTurno};
+  mmCerrar();
   try {
     await fetch('/api/agenda/visita', {
       method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({mant_id:mantId, año:aAño, mes:aMes, semana, fecha_real:fecha, estado:sig}),
+      body: JSON.stringify({mant_id:mmMantId, año:aAño, mes:aMes, semana:mmSemana, fecha_real:fecha, estado, turno:mmTurno}),
     });
   } catch(e) {}
   agendaRenderMants();
@@ -1543,5 +1583,28 @@ function setVista(n) {
   } catch(e) {}
 })();
 </script>
+
+<!-- MODAL MANTENIMIENTO -->
+<div id="mant-overlay" onclick="if(event.target===this)mmCerrar()">
+  <div class="mant-modal">
+    <div class="mant-modal-title" id="mm-title"></div>
+    <div class="mant-modal-sub"   id="mm-sub"></div>
+    <div class="mant-modal-lbl">Fecha asignada</div>
+    <input type="date" class="mant-modal-fecha" id="mm-fecha">
+    <div class="mant-modal-lbl">Turno</div>
+    <div class="mant-turno-row">
+      <button class="mant-turno-btn active" id="mm-man" onclick="mmSetTurno('mañana')">☀️ Mañana</button>
+      <button class="mant-turno-btn"        id="mm-tar" onclick="mmSetTurno('tarde')">🌙 Tarde</button>
+    </div>
+    <div class="mant-modal-actions">
+      <button class="mant-modal-btn green" onclick="mmAccion('realizado')">✓ Marcar como REALIZADO</button>
+      <div class="mant-modal-row2">
+        <button class="mant-modal-btn amber" onclick="mmAccion('guardar')">💾 Guardar fecha</button>
+        <button class="mant-modal-btn red"   onclick="mmAccion('pendiente')">✗ Desmarcar</button>
+      </div>
+      <button class="mant-modal-btn ghost" onclick="mmCerrar()">Cancelar</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>

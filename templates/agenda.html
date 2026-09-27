@@ -8,7 +8,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
       --navy:      #0F1F3D;
       --navy-mid:  #162644;
@@ -17,18 +16,14 @@
       --accent:    #3B82F6;
       --accent-h:  #2563EB;
       --green:     #22C55E;
-      --green-bg:  #14532d;
       --amber:     #F59E0B;
-      --amber-bg:  #451a03;
       --red:       #EF4444;
-      --red-bg:    #450a0a;
       --text:      #F0F4FF;
       --text-dim:  #8BA3CC;
-      --font-main: 'Montserrat', sans-serif;
+      --font:      'Montserrat', sans-serif;
       --font-num:  'Inter', sans-serif;
     }
-
-    body { background: var(--navy); color: var(--text); font-family: var(--font-main); min-height: 100vh; }
+    body { background: var(--navy); color: var(--text); font-family: var(--font); min-height: 100vh; }
 
     /* ── TOPBAR ── */
     .topbar {
@@ -36,250 +31,184 @@
       padding: 0 32px; height: 64px; display: flex; align-items: center;
       gap: 32px; position: sticky; top: 0; z-index: 100;
     }
-    .topbar-logo { height: 36px; width: auto; }
+    .topbar-logo { height: 36px; width: auto; cursor: pointer; }
     .topbar-sep  { width: 1px; height: 28px; background: var(--navy-line); }
     .topbar-nav  { display: flex; gap: 4px; flex: 1; }
     .nav-item {
       padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 500;
-      color: var(--text-dim); cursor: pointer; text-decoration: none;
-      transition: background .15s, color .15s;
+      color: var(--text-dim); text-decoration: none; transition: background .15s, color .15s;
     }
     .nav-item:hover  { background: var(--navy-card); color: var(--text); }
     .nav-item.active { background: var(--accent); color: #fff; }
 
     /* ── PAGE ── */
-    .page { width: 100%; padding: 24px; }
+    .page { width: 100%; padding: 22px 24px; }
 
-    /* ── HEADER AGENDA ── */
-    .agenda-header {
-      display: flex; align-items: center; justify-content: space-between;
-      flex-wrap: wrap; gap: 12px; margin-bottom: 20px;
-    }
-    .agenda-title { font-size: 18px; font-weight: 700; }
-    .mes-nav { display: flex; align-items: center; gap: 8px; }
-    .mes-btn {
-      background: var(--navy-card); border: 1px solid var(--navy-line);
-      color: var(--text); border-radius: 6px; width: 32px; height: 32px;
-      cursor: pointer; font-size: 16px; display: flex; align-items: center;
-      justify-content: center; transition: border-color .15s, color .15s;
-    }
-    .mes-btn:hover { border-color: var(--accent); color: var(--accent); }
-    .mes-label { font-family: var(--font-num); font-size: 15px; font-weight: 600; min-width: 160px; text-align: center; }
+    /* ── HEADER ── */
+    .hdr { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+    .hdr-left { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .page-title { font-size: 17px; font-weight: 700; }
 
-    /* ── MODO TOGGLE ── */
-    .modo-toggle {
-      display: flex; background: var(--navy); border: 1px solid var(--navy-line);
-      border-radius: 8px; padding: 3px; gap: 2px;
-    }
-    .modo-btn {
-      padding: 5px 16px; border: none; border-radius: 6px; cursor: pointer;
-      font-family: var(--font-main); font-size: 12px; font-weight: 600;
-      color: var(--text-dim); background: none; transition: background .15s, color .15s;
-    }
-    .modo-btn.active { background: var(--accent); color: #fff; }
-    .btn-autofill {
-      background: var(--accent); color: #fff; border: none; border-radius: 7px;
-      padding: 6px 14px; font-family: var(--font-main); font-size: 12px;
-      font-weight: 600; cursor: pointer; transition: background .15s;
-    }
-    .btn-autofill:hover { background: var(--accent-h); }
-    .btn-autofill:disabled { opacity: .4; cursor: default; }
-
-    /* ── RESUMEN ── */
-    .resumen {
-      display: flex; flex-wrap: wrap; gap: 8px;
-      background: var(--navy-card); border: 1px solid var(--navy-line);
-      border-radius: 10px; padding: 12px 16px; margin-bottom: 20px;
-    }
-    .res-item {
-      display: flex; align-items: center; gap: 6px;
-      background: var(--navy); border-radius: 6px;
-      padding: 6px 10px; font-size: 11px;
-    }
-    .res-nombre { font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: .4px; }
-    .res-dots { display: flex; gap: 3px; margin-left: 4px; }
-    .res-dot {
-      width: 8px; height: 8px; border-radius: 50%;
-      background: var(--navy-line);
-    }
-    .res-dot.done    { background: var(--green); }
-    .res-dot.pending { background: var(--amber); }
-    .res-dot.overdue { background: var(--red); }
-
-    /* ── GRILLA MENSUAL ── */
-    .cal-grid { display: flex; flex-direction: column; gap: 8px; }
-
-    .semana-block {
-      background: var(--navy-card); border: 1px solid var(--navy-line);
-      border-radius: 10px; overflow: hidden;
-    }
-    .semana-head {
-      background: var(--navy-mid); padding: 6px 14px;
-      font-size: 10px; font-weight: 700; text-transform: uppercase;
-      letter-spacing: .8px; color: var(--text-dim);
-      border-bottom: 1px solid var(--navy-line);
-      display: flex; align-items: center; gap: 8px;
-    }
-    .semana-num { color: var(--accent); }
-    .semana-rango { color: var(--text-dim); }
-
-    .dias-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0; }
-
-    .dia-col {
-      border-right: 1px solid var(--navy-line);
-      min-height: 100px;
-    }
-    .dia-col:last-child { border-right: none; }
-    .dia-col.hoy { background: rgba(59,130,246,.06); }
-    .dia-col.finde { background: rgba(0,0,0,.15); }
-
-    .dia-head {
-      padding: 5px 8px; font-size: 10px; font-weight: 600;
-      text-transform: uppercase; letter-spacing: .5px;
-      color: var(--text-dim); border-bottom: 1px solid var(--navy-line);
-      display: flex; align-items: baseline; gap: 5px;
-    }
-    .dia-head .dia-num { font-family: var(--font-num); font-size: 13px; font-weight: 700; color: var(--text); }
-    .dia-head .dia-nom { font-size: 9px; }
-    .dia-col.hoy .dia-head .dia-num { color: var(--accent); }
-    .dia-col.pasado .dia-head .dia-num { color: var(--text-dim); }
-
-    .dia-cards { padding: 5px 5px 8px; display: flex; flex-direction: column; gap: 3px; }
-
-    /* ── CARDS DE MANTENIMIENTO ── */
-    .mant-card {
-      border-radius: 5px; padding: 4px 7px;
-      font-size: 10px; font-weight: 600; cursor: pointer;
-      display: flex; align-items: center; gap: 4px;
-      border: 1px solid transparent;
-      transition: filter .15s, transform .1s;
-      line-height: 1.3;
-    }
-    .mant-card:hover { filter: brightness(1.1); transform: translateY(-1px); }
-    .mant-card.estado-pendiente  { background: rgba(245,158,11,.15); border-color: rgba(245,158,11,.35); color: #fde68a; }
-    .mant-card.estado-realizado  { background: rgba(34,197,94,.12);  border-color: rgba(34,197,94,.3);  color: #86efac; opacity: .7; }
-    .mant-card.estado-vencido    { background: rgba(239,68,68,.15);  border-color: rgba(239,68,68,.35); color: #fca5a5; }
-
-    .mant-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-    .mant-card.estado-pendiente .mant-dot  { background: var(--amber); }
-    .mant-card.estado-realizado .mant-dot  { background: var(--green); }
-    .mant-card.estado-vencido   .mant-dot  { background: var(--red); }
-
-    .mant-nombre { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-    .mant-check { font-size: 10px; opacity: .7; flex-shrink: 0; }
-
-    /* ── CARD LIBRE (trabajos random) ── */
-    .libre-area { padding: 0 5px 6px; }
-    .libre-input {
-      width: 100%; background: none; border: 1px dashed var(--navy-line);
-      border-radius: 4px; color: var(--text-dim); font-family: var(--font-main);
-      font-size: 9px; padding: 3px 5px; resize: none; outline: none;
-      transition: border-color .15s; min-height: 28px; line-height: 1.4;
-    }
-    .libre-input:focus  { border-color: var(--accent); color: var(--text); }
-    .libre-input::placeholder { color: var(--navy-line); }
-
-    /* ── DÍAS DEL MES SIN TRABAJO (finde) ── */
-    .dia-col.finde .dia-cards,
-    .dia-col.finde .libre-area { display: none; }
-    .dia-col.finde .dia-head { opacity: .4; }
-
-    /* ── PANEL WS ── */
-    .ws-panel {
-      margin-top: 20px; background: var(--navy-card);
-      border: 1px solid var(--navy-line); border-radius: 10px; padding: 16px 20px;
-    }
-    .ws-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--text-dim); margin-bottom: 12px; }
-    .ws-controls { display: flex; gap: 10px; align-items: flex-start; flex-wrap: wrap; margin-bottom: 12px; }
-    .ws-field { display: flex; flex-direction: column; gap: 4px; }
-    .ws-label { font-size: 10px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: .5px; }
-    .ws-select {
-      background: var(--navy); border: 1px solid var(--navy-line);
-      color: var(--text); border-radius: 6px; padding: 6px 10px;
-      font-family: var(--font-main); font-size: 12px; outline: none;
-      min-width: 160px;
-    }
-    .ws-nota {
-      background: var(--navy); border: 1px solid var(--navy-line);
-      color: var(--text); border-radius: 6px; padding: 6px 10px;
-      font-family: var(--font-main); font-size: 12px; outline: none;
-      width: 320px; resize: vertical; min-height: 36px;
-    }
-    .ws-nota:focus, .ws-select:focus { border-color: var(--accent); }
-
-    .ws-preview {
-      background: var(--navy); border: 1px solid var(--navy-line);
-      border-radius: 8px; padding: 12px 14px; font-family: var(--font-num);
-      font-size: 12px; line-height: 1.7; color: var(--text);
-      white-space: pre-wrap; min-height: 60px; margin-bottom: 10px;
-    }
-    .ws-actions { display: flex; gap: 8px; }
-    .btn-copy {
-      background: var(--green); color: #fff; border: none; border-radius: 7px;
-      padding: 7px 18px; font-family: var(--font-main); font-size: 12px;
-      font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 5px;
-      transition: background .15s;
-    }
-    .btn-copy:hover { background: #16a34a; }
-    .btn-copy.copied { background: var(--navy-line); }
-
-    /* ── MODAL VISITA ── */
-    .overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,.55);
-      display: none; z-index: 200; align-items: center; justify-content: center;
-    }
-    .overlay.open { display: flex; }
-    .modal {
-      background: var(--navy-card); border: 1px solid var(--navy-line);
-      border-radius: 12px; padding: 24px; min-width: 320px; max-width: 440px; width: 100%;
-    }
-    .modal-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
-    .modal-sub { font-size: 11px; color: var(--text-dim); margin-bottom: 16px; }
-    .modal-row { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
-    .mbtn {
-      flex: 1; padding: 8px 12px; border: 1px solid var(--navy-line);
-      background: var(--navy); color: var(--text); border-radius: 7px;
-      font-family: var(--font-main); font-size: 12px; font-weight: 600;
-      cursor: pointer; transition: background .15s, border-color .15s; text-align: center;
-    }
-    .mbtn:hover { border-color: var(--accent); }
-    .mbtn.green { border-color: var(--green); background: rgba(34,197,94,.15); color: var(--green); }
-    .mbtn.green:hover { background: rgba(34,197,94,.25); }
-    .mbtn.red   { border-color: var(--red); background: rgba(239,68,68,.1); color: var(--red); }
-    .mbtn.red:hover { background: rgba(239,68,68,.2); }
-    .mbtn.cancel { color: var(--text-dim); font-weight: 400; }
-    .modal-fecha-row { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
-    .modal-fecha-lbl { font-size: 11px; color: var(--text-dim); }
-    .modal-fecha-inp {
-      background: var(--navy); border: 1px solid var(--navy-line);
-      color: var(--text); border-radius: 6px; padding: 5px 8px;
-      font-family: var(--font-num); font-size: 12px; outline: none;
-    }
-    .modal-fecha-inp:focus { border-color: var(--accent); }
-    .modal-turno-row { display: flex; gap: 6px; margin-bottom: 14px; }
-    .turno-btn {
-      flex: 1; padding: 6px 8px; border: 1px solid var(--navy-line);
-      background: var(--navy); color: var(--text-dim); border-radius: 6px;
-      font-family: var(--font-main); font-size: 11px; cursor: pointer;
+    .sem-nav { display: flex; align-items: center; gap: 6px; }
+    .sem-btn {
+      background: var(--navy-card); border: 1px solid var(--navy-line); color: var(--text);
+      border-radius: 6px; width: 30px; height: 30px; cursor: pointer; font-size: 16px;
+      display: flex; align-items: center; justify-content: center;
       transition: border-color .15s, color .15s;
     }
+    .sem-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .sem-label { font-family: var(--font-num); font-size: 13px; font-weight: 600; min-width: 220px; text-align: center; }
+
+    .hdr-right { display: flex; align-items: center; gap: 8px; }
+    .spinner { width: 14px; height: 14px; border: 2px solid var(--navy-line); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; display: none; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinning { display: inline-block !important; }
+
+    .modo-toggle { display: flex; background: var(--navy); border: 1px solid var(--navy-line); border-radius: 8px; padding: 3px; }
+    .modo-btn { padding: 4px 14px; border: none; border-radius: 5px; cursor: pointer; font-family: var(--font); font-size: 11px; font-weight: 600; color: var(--text-dim); background: none; transition: background .15s, color .15s; }
+    .modo-btn.active { background: var(--accent); color: #fff; }
+
+    .btn-fill { background: rgba(59,130,246,.15); border: 1px solid var(--accent); color: var(--accent); border-radius: 6px; padding: 5px 12px; font-family: var(--font); font-size: 11px; font-weight: 600; cursor: pointer; transition: background .15s; }
+    .btn-fill:hover { background: rgba(59,130,246,.25); }
+
+    /* ── RESUMEN MES ── */
+    .resumen {
+      display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 14px;
+      background: var(--navy-card); border: 1px solid var(--navy-line);
+      border-radius: 8px; margin-bottom: 16px; align-items: center;
+    }
+    .res-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--text-dim); margin-right: 4px; }
+    .res-chip { display: flex; align-items: center; gap: 5px; background: var(--navy); border: 1px solid var(--navy-line); border-radius: 5px; padding: 4px 8px; font-size: 10px; }
+    .res-nombre { color: var(--text-dim); font-weight: 600; font-size: 9px; text-transform: uppercase; letter-spacing: .3px; }
+    .res-dots { display: flex; gap: 3px; }
+    .res-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--navy-line); }
+    .res-dot.done    { background: var(--green); }
+    .res-dot.pending { background: var(--amber); }
+    .res-dot.over    { background: var(--red); }
+    .res-empty { font-size: 11px; color: var(--text-dim); }
+
+    /* ── GRILLA SEMANAL ── */
+    .week-grid {
+      display: grid; grid-template-columns: repeat(5, 1fr);
+      border: 1px solid var(--navy-line); border-radius: 10px;
+      overflow: hidden; background: var(--navy-card);
+      margin-bottom: 14px;
+    }
+    .day-col { border-right: 1px solid var(--navy-line); display: flex; flex-direction: column; min-height: 160px; }
+    .day-col:last-child { border-right: none; }
+    .day-col.is-today { background: rgba(59,130,246,.07); }
+    .day-col.is-past  { opacity: .75; }
+    .day-col.is-weekend { display: none; }
+
+    .day-head {
+      padding: 7px 10px; border-bottom: 1px solid var(--navy-line);
+      background: var(--navy-mid); display: flex; align-items: baseline; gap: 6px;
+    }
+    .day-dow  { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--text-dim); }
+    .day-num  { font-family: var(--font-num); font-size: 16px; font-weight: 700; color: var(--text); }
+    .day-mes  { font-size: 8px; color: var(--text-dim); }
+    .day-col.is-today .day-num { color: var(--accent); }
+    .day-hoy-badge { font-size: 8px; background: var(--accent); color: #fff; border-radius: 3px; padding: 1px 5px; font-weight: 700; margin-left: auto; }
+
+    .day-body { flex: 1; padding: 6px; display: flex; flex-direction: column; gap: 4px; }
+
+    /* ── CARDS MANTENIMIENTO ── */
+    .mcard {
+      border-radius: 5px; padding: 5px 7px; font-size: 10px; font-weight: 600;
+      cursor: pointer; display: flex; align-items: flex-start; gap: 4px;
+      border: 1px solid transparent; transition: filter .15s, transform .1s;
+      line-height: 1.35;
+    }
+    .mcard:hover { filter: brightness(1.12); transform: translateY(-1px); }
+    .mcard.st-pendiente { background: rgba(245,158,11,.14); border-color: rgba(245,158,11,.4);  color: #fde68a; }
+    .mcard.st-realizado { background: rgba(34,197,94,.1);  border-color: rgba(34,197,94,.3);   color: #86efac; opacity: .72; }
+    .mcard.st-vencido   { background: rgba(239,68,68,.14); border-color: rgba(239,68,68,.4);   color: #fca5a5; }
+
+    .mcard-dot  { width: 6px; height: 6px; border-radius: 50%; margin-top: 3px; flex-shrink: 0; }
+    .st-pendiente .mcard-dot { background: var(--amber); }
+    .st-realizado .mcard-dot { background: var(--green); }
+    .st-vencido   .mcard-dot { background: var(--red); }
+
+    .mcard-body { flex: 1; }
+    .mcard-nombre { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 120px; }
+    .mcard-tec    { font-size: 8px; opacity: .7; display: block; }
+    .mcard-check  { font-size: 11px; margin-left: auto; flex-shrink: 0; }
+
+    /* ── ÁREA LIBRE ── */
+    .libre-wrap { padding: 0 6px 6px; margin-top: auto; }
+    .libre-ta {
+      width: 100%; background: none; border: 1px dashed rgba(36,58,102,.8);
+      border-radius: 4px; color: var(--text-dim); font-family: var(--font);
+      font-size: 9px; padding: 4px 6px; resize: none; outline: none;
+      transition: border-color .15s, color .15s; min-height: 30px; line-height: 1.5;
+    }
+    .libre-ta:focus   { border-color: var(--accent); color: var(--text); border-style: solid; }
+    .libre-ta::placeholder { color: var(--navy-line); }
+
+    /* ── PENDIENTES SIN ASIGNAR ── */
+    .pendientes-sec {
+      background: rgba(239,68,68,.07); border: 1px solid rgba(239,68,68,.25);
+      border-radius: 8px; padding: 12px 16px; margin-bottom: 14px;
+    }
+    .pend-title { font-size: 11px; font-weight: 700; color: var(--red); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+    .pend-list  { display: flex; flex-wrap: wrap; gap: 6px; }
+    .pend-chip  {
+      background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.3);
+      border-radius: 6px; padding: 5px 10px; font-size: 10px; font-weight: 600;
+      color: #fca5a5; cursor: pointer; display: flex; align-items: center; gap: 5px;
+      transition: background .15s;
+    }
+    .pend-chip:hover { background: rgba(239,68,68,.2); }
+    .pend-chip-sub { font-size: 9px; opacity: .7; font-weight: 400; }
+
+    /* ── WS PANEL ── */
+    .ws-panel { background: var(--navy-card); border: 1px solid var(--navy-line); border-radius: 10px; padding: 14px 18px; }
+    .ws-head  { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: var(--text-dim); margin-bottom: 12px; }
+    .ws-row   { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; align-items: flex-start; }
+    .ws-fld   { display: flex; flex-direction: column; gap: 3px; }
+    .ws-lbl   { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-dim); }
+    .ws-sel   { background: var(--navy); border: 1px solid var(--navy-line); color: var(--text); border-radius: 6px; padding: 6px 10px; font-family: var(--font); font-size: 12px; outline: none; min-width: 180px; }
+    .ws-ta    { background: var(--navy); border: 1px solid var(--navy-line); color: var(--text); border-radius: 6px; padding: 6px 10px; font-family: var(--font); font-size: 12px; outline: none; width: 300px; resize: vertical; min-height: 36px; }
+    .ws-sel:focus, .ws-ta:focus { border-color: var(--accent); }
+    .ws-prev  { background: var(--navy); border: 1px solid var(--navy-line); border-radius: 8px; padding: 10px 14px; font-family: var(--font-num); font-size: 12px; line-height: 1.8; color: var(--text); white-space: pre-wrap; min-height: 60px; margin-bottom: 8px; }
+    .btn-copy { background: var(--green); color: #fff; border: none; border-radius: 7px; padding: 7px 18px; font-family: var(--font); font-size: 12px; font-weight: 600; cursor: pointer; transition: background .15s; }
+    .btn-copy:hover   { background: #16a34a; }
+    .btn-copy.copied  { background: var(--navy-line); }
+
+    /* ── MODAL ── */
+    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none; z-index: 300; align-items: center; justify-content: center; }
+    .overlay.open { display: flex; }
+    .modal { background: var(--navy-card); border: 1px solid var(--navy-line); border-radius: 12px; padding: 22px; min-width: 300px; max-width: 420px; width: 90%; }
+    .modal-title { font-size: 14px; font-weight: 700; margin-bottom: 3px; }
+    .modal-sub   { font-size: 11px; color: var(--text-dim); margin-bottom: 14px; }
+
+    .modal-label { font-size: 10px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: .4px; margin-bottom: 4px; }
+    .modal-fecha { background: var(--navy); border: 1px solid var(--navy-line); color: var(--text); border-radius: 6px; padding: 6px 10px; font-family: var(--font-num); font-size: 13px; outline: none; width: 100%; margin-bottom: 10px; }
+    .modal-fecha:focus { border-color: var(--accent); }
+
+    .turno-row { display: flex; gap: 6px; margin-bottom: 14px; }
+    .turno-btn { flex: 1; padding: 7px; border: 1px solid var(--navy-line); background: var(--navy); color: var(--text-dim); border-radius: 6px; font-family: var(--font); font-size: 11px; cursor: pointer; transition: border-color .15s, color .15s; }
     .turno-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(59,130,246,.1); }
 
-    /* ── SPINNER ── */
-    .spinner {
-      display: none; width: 14px; height: 14px; border: 2px solid var(--navy-line);
-      border-top-color: var(--accent); border-radius: 50%;
-      animation: spin .7s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .loading .spinner { display: inline-block; }
+    .modal-actions { display: flex; flex-direction: column; gap: 6px; }
+    .mbtn { padding: 9px 12px; border: 1px solid var(--navy-line); background: var(--navy); color: var(--text); border-radius: 7px; font-family: var(--font); font-size: 12px; font-weight: 600; cursor: pointer; transition: background .15s, border-color .15s; text-align: center; }
+    .mbtn:hover { border-color: var(--accent); }
+    .mbtn.green  { border-color: var(--green); background: rgba(34,197,94,.1); color: var(--green); }
+    .mbtn.green:hover { background: rgba(34,197,94,.2); }
+    .mbtn.amber  { border-color: var(--amber); background: rgba(245,158,11,.1); color: var(--amber); }
+    .mbtn.amber:hover { background: rgba(245,158,11,.2); }
+    .mbtn.red    { border-color: var(--red); background: rgba(239,68,68,.08); color: var(--red); }
+    .mbtn.red:hover { background: rgba(239,68,68,.18); }
+    .mbtn.ghost  { color: var(--text-dim); font-weight: 400; }
+    .mbtn-row    { display: flex; gap: 6px; }
+    .mbtn-row .mbtn { flex: 1; }
   </style>
 </head>
 <body>
 
 <!-- TOPBAR -->
 <div class="topbar">
-  <img src="/static/logo-gateway.jpeg" alt="Gateway" class="topbar-logo">
+  <img src="/static/logo-gateway.jpeg" alt="Gateway" class="topbar-logo" onclick="location.href='/'">
   <div class="topbar-sep"></div>
   <nav class="topbar-nav">
     <a class="nav-item" href="/">Presupuestos</a>
@@ -293,505 +222,472 @@
 <div class="page">
 
   <!-- HEADER -->
-  <div class="agenda-header">
-    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-      <span class="agenda-title">Mantenimientos</span>
-      <div class="mes-nav">
-        <button class="mes-btn" onclick="cambiarMes(-1)">‹</button>
-        <span class="mes-label" id="mes-label">—</span>
-        <button class="mes-btn" onclick="cambiarMes(1)">›</button>
+  <div class="hdr">
+    <div class="hdr-left">
+      <span class="page-title">Agenda</span>
+      <div class="sem-nav">
+        <button class="sem-btn" onclick="semAnt()">‹</button>
+        <span class="sem-label" id="sem-label">—</span>
+        <button class="sem-btn" onclick="semSig()">›</button>
       </div>
+      <button class="sem-btn" onclick="irHoy()" title="Ir a hoy" style="width:auto;padding:0 10px;font-size:11px;font-weight:600;">Hoy</button>
     </div>
-    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-      <div class="spinner" id="spinner"></div>
+    <div class="hdr-right">
+      <div class="spinner" id="spin"></div>
       <div class="modo-toggle">
         <button class="modo-btn active" id="btn-auto"   onclick="setModo('auto')">Automático</button>
         <button class="modo-btn"        id="btn-manual" onclick="setModo('manual')">Manual</button>
       </div>
-      <button class="btn-autofill" id="btn-autofill" onclick="ejecutarAutoFill()">↻ Completar mes</button>
+      <button class="btn-fill" id="btn-fill" onclick="doAutoFill()">↻ Completar mes</button>
     </div>
   </div>
 
-  <!-- RESUMEN -->
-  <div class="resumen" id="resumen"><!-- JS --></div>
+  <!-- RESUMEN MES -->
+  <div class="resumen" id="resumen"><span class="res-empty">Cargando…</span></div>
 
-  <!-- GRILLA -->
-  <div class="cal-grid" id="cal-grid"><!-- JS --></div>
+  <!-- GRILLA SEMANAL -->
+  <div class="week-grid" id="week-grid">
+    <!-- JS renderiza 5 columnas -->
+  </div>
 
-  <!-- PANEL WHATSAPP -->
+  <!-- PENDIENTES -->
+  <div class="pendientes-sec" id="pend-sec" style="display:none;">
+    <div class="pend-title">⚠ Pendientes sin fecha asignada este mes</div>
+    <div class="pend-list" id="pend-list"></div>
+  </div>
+
+  <!-- WS PANEL -->
   <div class="ws-panel">
-    <div class="ws-title">📱 Generar mensaje para grupo</div>
-    <div class="ws-controls">
-      <div class="ws-field">
-        <label class="ws-label">Día</label>
-        <select class="ws-select" id="ws-dia" onchange="generarMensaje()">
+    <div class="ws-head">📱 Mensaje para el grupo</div>
+    <div class="ws-row">
+      <div class="ws-fld">
+        <label class="ws-lbl">Día</label>
+        <select class="ws-sel" id="ws-dia" onchange="genMsg()">
           <option value="">— Seleccionar —</option>
         </select>
       </div>
-      <div class="ws-field">
-        <label class="ws-label">Nota extra</label>
-        <textarea class="ws-nota" id="ws-nota" placeholder="Ej: Recuerden llevar los insumos…" oninput="generarMensaje()" rows="2"></textarea>
+      <div class="ws-fld" style="flex:1;">
+        <label class="ws-lbl">Nota extra</label>
+        <textarea class="ws-ta" id="ws-nota" placeholder="Ej: Recuerden llevar los insumos y pasar por mi casa…" oninput="genMsg()" rows="2"></textarea>
       </div>
     </div>
-    <div class="ws-preview" id="ws-preview">Seleccioná un día para ver el mensaje.</div>
-    <div class="ws-actions">
-      <button class="btn-copy" id="btn-copy" onclick="copiarMensaje()">
-        📋 Copiar mensaje
-      </button>
-    </div>
+    <div class="ws-prev" id="ws-prev">Seleccioná un día para ver el mensaje.</div>
+    <button class="btn-copy" id="btn-copy" onclick="copiar()">📋 Copiar mensaje</button>
   </div>
 
 </div>
 
-<!-- MODAL VISITA -->
-<div class="overlay" id="overlay" onclick="cerrarModal(event)">
-  <div class="modal" id="modal" onclick="event.stopPropagation()">
-    <div class="modal-title" id="modal-title">Visita</div>
-    <div class="modal-sub" id="modal-sub"></div>
-    <div class="modal-fecha-row">
-      <span class="modal-fecha-lbl">Fecha:</span>
-      <input type="date" class="modal-fecha-inp" id="modal-fecha">
+<!-- MODAL -->
+<div class="overlay" id="overlay" onclick="if(event.target===this)cerrarModal()">
+  <div class="modal">
+    <div class="modal-title" id="m-title"></div>
+    <div class="modal-sub"   id="m-sub"></div>
+    <div class="modal-label">Fecha asignada</div>
+    <input type="date" class="modal-fecha" id="m-fecha">
+    <div class="modal-label" style="margin-top:10px;">Turno</div>
+    <div class="turno-row">
+      <button class="turno-btn active" id="t-man" onclick="setTurno('mañana')">☀️ Mañana</button>
+      <button class="turno-btn"        id="t-tar" onclick="setTurno('tarde')">🌙 Tarde</button>
     </div>
-    <div class="modal-turno-row">
-      <button class="turno-btn active" id="turno-mañana" onclick="setTurno('mañana')">☀️ Mañana</button>
-      <button class="turno-btn"        id="turno-tarde"  onclick="setTurno('tarde')">🌙 Tarde</button>
-    </div>
-    <div class="modal-row">
-      <button class="mbtn green" onclick="marcarEstado('realizado')">✓ Marcar realizado</button>
-      <button class="mbtn"       onclick="guardarFecha()">💾 Guardar fecha</button>
-    </div>
-    <div class="modal-row">
-      <button class="mbtn red"    onclick="marcarEstado('vencido')">✗ Vencido</button>
-      <button class="mbtn cancel" onclick="cerrarModal()">Cancelar</button>
+    <div class="modal-actions">
+      <button class="mbtn green" onclick="accion('realizado')">✓ Marcar como REALIZADO</button>
+      <div class="mbtn-row">
+        <button class="mbtn amber" onclick="accion('guardar')">💾 Guardar fecha</button>
+        <button class="mbtn red"   onclick="accion('vencido')">✗ Marcar VENCIDO</button>
+      </div>
+      <button class="mbtn ghost" onclick="cerrarModal()">Cancelar</button>
     </div>
   </div>
 </div>
 
 <script>
-  const AÑO_INIT = {{ año_actual }};
-  const MES_INIT = {{ mes_actual }};
-  const MESES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
+// ── CONSTANTES ──────────────────────────────────────────────────────────────
+const MESES   = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
                  "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-  const DIAS_NOM = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
-  const DIAS_FULL = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
-  const TECNICOS_LABEL = {
-    "Camilo,Pablo":  "Camilo + Pablo",
-    "Matias,Nacho":  "Matías + Nacho",
-    "Camilo":        "Camilo",
-    "Pablo":         "Pablo",
-    "Matias":        "Matías",
-    "Nacho":         "Nacho",
-  };
+const DIAS_C  = ["Dom","Lun","Mar","Mié","Jue","Vie","Sáb"];
+const DIAS_F  = ["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+const TEC_LBL = {
+  "Camilo,Pablo": "Camilo + Pablo",
+  "Matias,Nacho": "Matías + Nacho",
+};
 
-  let año = AÑO_INIT, mes = MES_INIT, modo = "auto";
-  let mantenimientos = [], visitas = [], celdas = [];
-  let modalVisita = null; // { mant_id, semana, visita_num, fecha_real, estado, turno }
-  const HOY = new Date(); HOY.setHours(0,0,0,0);
+const HOY = (() => { const d = new Date(); d.setHours(0,0,0,0); return d; })();
 
-  // ── LOAD ────────────────────────────────────────────────────────────────────
+// ── ESTADO ───────────────────────────────────────────────────────────────────
+let pivote   = getMondayOf(new Date()); // lunes de la semana visible
+let año      = pivote.getFullYear();
+let mes      = pivote.getMonth() + 1;
+let modo     = "auto";
+let mants    = [], visitas = [], celdas = [];
+let modalKey = null; // "mantId_semana_visitaNum"
 
-  async function cargarAgenda(autoFillSiVacio = false) {
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/agenda/${año}/${mes}`);
-      const d   = await res.json();
-      if (!d.ok) { console.error(d.error); return; }
-      mantenimientos = d.mantenimientos || [];
-      visitas        = d.visitas        || [];
-      celdas         = d.celdas         || [];
+// ── UTILS ────────────────────────────────────────────────────────────────────
+function getMondayOf(d) {
+  const r = new Date(d); r.setHours(0,0,0,0);
+  const dow = r.getDay();
+  r.setDate(r.getDate() - (dow === 0 ? 6 : dow - 1));
+  return r;
+}
+function isoDate(d)  { return `${d.getFullYear()}-${zz(d.getMonth()+1)}-${zz(d.getDate())}`; }
+function zz(n)       { return String(n).padStart(2,"0"); }
+function esc(s)      { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function spin(on)    { document.getElementById("spin").classList.toggle("spinning", on); }
 
-      // Auto mode: si no hay visitas aún, auto-fill automático
-      if (modo === "auto" && autoFillSiVacio && visitas.length === 0) {
-        await ejecutarAutoFill(false); // false = no confirm
-        return; // ejecutarAutoFill llama render al final
+function semanaDelMes(diaNum) { return Math.ceil(diaNum / 7); }
+
+// ── CARGA ────────────────────────────────────────────────────────────────────
+async function cargar() {
+  spin(true);
+  try {
+    const r = await fetch(`/api/agenda/${año}/${mes}`);
+    const d = await r.json();
+    if (!d.ok) { console.error(d.error); return; }
+    mants   = d.mantenimientos || [];
+    visitas = d.visitas        || [];
+    celdas  = d.celdas         || [];
+    render();
+    // En modo auto, si el mes no tiene visitas: ofrecer auto-fill
+    if (modo === "auto" && visitas.length === 0) {
+      if (confirm(`No hay mantenimientos cargados para ${MESES[mes-1]} ${año}.\n¿Completar el mes automáticamente?`)) {
+        await doAutoFill(false);
       }
-      render();
-    } finally {
-      setLoading(false);
     }
-  }
+  } finally { spin(false); }
+}
 
-  async function ejecutarAutoFill(confirm = true) {
-    if (confirm && !window.confirm(`¿Completar automáticamente los mantenimientos de ${MESES[mes-1]} ${año}?\n\nSolo se agregan los que faltan.`)) return;
-    setLoading(true);
-    try {
-      const res = await fetch(`/api/agenda/auto-fill/${año}/${mes}`, { method: "POST" });
-      const d   = await res.json();
-      if (!d.ok) { alert("Error: " + d.error); return; }
-      visitas = d.visitas || [];
-      render();
-    } finally {
-      setLoading(false);
+async function doAutoFill(confirmar = true) {
+  if (confirmar && !confirm(`Completar mantenimientos de ${MESES[mes-1]} ${año}?\n\nSolo agrega los que faltan.`)) return;
+  spin(true);
+  try {
+    const r = await fetch(`/api/agenda/auto-fill/${año}/${mes}`, { method:"POST" });
+    const d = await r.json();
+    if (!d.ok) { alert("Error: " + d.error); return; }
+    visitas = d.visitas || [];
+    render();
+  } finally { spin(false); }
+}
+
+// ── RENDER ───────────────────────────────────────────────────────────────────
+function render() {
+  renderResumen();
+  renderWeek();
+  renderPendientes();
+  fillWsDias();
+  genMsg();
+}
+
+// RESUMEN DEL MES
+function renderResumen() {
+  const el = document.getElementById("resumen");
+  if (!mants.length) { el.innerHTML = '<span class="res-empty">Sin mantenimientos.</span>'; return; }
+  let html = '<span class="res-lbl">Mes:</span>';
+  mants.forEach(m => {
+    const vm = visitas.filter(v => String(v.mant_id) === String(m.id));
+    const tot = parseInt(m.semanas_mes) || 1;
+    let dots = "";
+    for (let i = 0; i < tot; i++) {
+      const v = vm[i];
+      const cls = !v ? "" : v.estado === "realizado" ? "done" : v.estado === "vencido" ? "over" : "pending";
+      dots += `<span class="res-dot ${cls}"></span>`;
     }
-  }
+    html += `<div class="res-chip"><span class="res-nombre">${m.nombre}</span><div class="res-dots">${dots}</div></div>`;
+  });
+  el.innerHTML = html;
+}
 
-  // ── RENDER ───────────────────────────────────────────────────────────────────
+// GRILLA SEMANAL
+function renderWeek() {
+  const dias = weekDays();
+  const label = buildSemLabel(dias);
+  document.getElementById("sem-label").textContent = label;
 
-  function render() {
-    renderResumen();
-    renderGrid();
-    populateWsDias();
-    generarMensaje();
-  }
+  let html = "";
+  dias.forEach(dia => {
+    const iso   = isoDate(dia);
+    const dow   = dia.getDay();
+    const esHoy = dia.toDateString() === HOY.toDateString();
+    const esPas = dia < HOY;
+    const dNum  = dia.getDate();
+    const dMes  = dia.getMonth() + 1;
+    const dAnio = dia.getFullYear();
+    const semDia = semanaDelMes(dNum);
 
-  function renderResumen() {
-    const el = document.getElementById("resumen");
-    if (!mantenimientos.length) { el.innerHTML = '<span style="color:var(--text-dim);font-size:11px;">Sin mantenimientos cargados.</span>'; return; }
-    el.innerHTML = mantenimientos.map(m => {
-      const visM = visitas.filter(v => String(v.mant_id) === String(m.id));
-      const total = parseInt(m.semanas_mes) || 1;
-      const hechos = visM.filter(v => v.estado === "realizado").length;
-      const vencidos = visM.filter(v => v.estado === "vencido").length;
-      const pendientes = visM.filter(v => v.estado === "pendiente").length;
+    // visitas cuya fecha_real = este día, O cuya semana coincide y no tienen fecha asignada
+    const visHoy = visitas.filter(v => v.fecha_real === iso);
 
-      let dots = "";
-      for (let i = 0; i < total; i++) {
-        const vis = visM.find(v => {
-          const patt = (m.semanas_pattern || "1,2,3,4").split(",").map(x => x.trim());
-          // Ordenar las visitas del mantenimiento para asignar dots
-          return true;
-        });
-        const v = visM[i];
-        if (!v) { dots += `<span class="res-dot"></span>`; continue; }
-        const cls = v.estado === "realizado" ? "done" : v.estado === "vencido" ? "overdue" : "pending";
-        dots += `<span class="res-dot ${cls}" title="${v.fecha_real || '—'}"></span>`;
-      }
-      return `<div class="res-item">
-        <span class="res-nombre">${m.nombre}</span>
-        <div class="res-dots">${dots}</div>
+    const cards = visHoy.map(v => {
+      const m = mants.find(x => String(x.id) === String(v.mant_id));
+      if (!m) return "";
+      const esVenc = v.estado === "pendiente" && dia < HOY;
+      const st = esVenc ? "vencido" : (v.estado || "pendiente");
+      const chk = st === "realizado" ? "✓" : st === "vencido" ? "!" : "";
+      const key = `${v.mant_id}_${v.semana}_${v.visita_num || 1}`;
+      return `<div class="mcard st-${st}" onclick="abrirModal('${key}')"
+        title="${m.nombre} · ${TEC_LBL[m.tecnicos]||m.tecnicos} · ${m.horas_visita}hs">
+        <span class="mcard-dot"></span>
+        <span class="mcard-body">
+          <span class="mcard-nombre">${m.nombre}</span>
+          <span class="mcard-tec">${TEC_LBL[m.tecnicos]||m.tecnicos}</span>
+        </span>
+        <span class="mcard-check">${chk}</span>
       </div>`;
     }).join("");
+
+    const celda = celdas.find(c => String(c.dia) === String(dNum) &&
+      String(c.año||año) === String(dAnio) && String(c.mes||mes) === String(dMes) && c.turno === "libre");
+    const libreVal = celda ? celda.texto : "";
+
+    const clsDia = esHoy ? "is-today" : esPas ? "is-past" : "";
+    html += `<div class="day-col ${clsDia}" data-iso="${iso}" data-dia="${dNum}">
+      <div class="day-head">
+        <span class="day-dow">${DIAS_C[dow]}</span>
+        <span class="day-num">${dNum}</span>
+        ${dMes !== mes ? `<span class="day-mes">${MESES[dMes-1].substring(0,3)}</span>` : ""}
+        ${esHoy ? '<span class="day-hoy-badge">HOY</span>' : ""}
+      </div>
+      <div class="day-body">
+        ${cards}
+      </div>
+      <div class="libre-wrap">
+        <textarea class="libre-ta" placeholder="+ trabajo libre…"
+          onblur="guardarLibre(${dNum},${dMes},${dAnio},this.value)"
+          rows="1">${esc(libreVal)}</textarea>
+      </div>
+    </div>`;
+  });
+
+  document.getElementById("week-grid").innerHTML = html;
+}
+
+// PENDIENTES SIN FECHA
+function renderPendientes() {
+  const sin = visitas.filter(v => v.estado !== "realizado" && !v.fecha_real);
+  const sec = document.getElementById("pend-sec");
+  if (!sin.length) { sec.style.display = "none"; return; }
+  sec.style.display = "block";
+  const html = sin.map(v => {
+    const m = mants.find(x => String(x.id) === String(v.mant_id));
+    if (!m) return "";
+    const key = `${v.mant_id}_${v.semana}_${v.visita_num||1}`;
+    return `<div class="pend-chip" onclick="abrirModal('${key}')">
+      <span>${m.nombre}</span>
+      <span class="pend-chip-sub">· sem ${v.semana} · sin fecha</span>
+    </div>`;
+  }).join("");
+  document.getElementById("pend-list").innerHTML = html;
+}
+
+// ── SEMANA ───────────────────────────────────────────────────────────────────
+function weekDays() {
+  return Array.from({length:5}, (_,i) => {
+    const d = new Date(pivote); d.setDate(pivote.getDate() + i); return d;
+  });
+}
+
+function buildSemLabel(dias) {
+  const d0 = dias[0], d4 = dias[4];
+  const m0 = MESES[d0.getMonth()].substring(0,3);
+  const m4 = MESES[d4.getMonth()].substring(0,3);
+  const mesStr = d0.getMonth() === d4.getMonth()
+    ? `${m0} ${d0.getFullYear()}`
+    : `${m0} – ${m4} ${d4.getFullYear()}`;
+  return `${d0.getDate()} al ${d4.getDate()} de ${mesStr}`;
+}
+
+function semAnt() {
+  pivote.setDate(pivote.getDate() - 7);
+  syncMes();
+  cargar();
+}
+function semSig() {
+  pivote.setDate(pivote.getDate() + 7);
+  syncMes();
+  cargar();
+}
+function irHoy() {
+  pivote = getMondayOf(new Date());
+  syncMes();
+  cargar();
+}
+function syncMes() {
+  // Usar el mes del miércoles (centro de la semana) para evitar ambigüedad
+  const mierc = new Date(pivote); mierc.setDate(pivote.getDate() + 2);
+  año = mierc.getFullYear();
+  mes = mierc.getMonth() + 1;
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────────────────
+function abrirModal(key) {
+  const [mid, semStr, vnumStr] = key.split("_");
+  const v = visitas.find(x =>
+    String(x.mant_id) === mid &&
+    String(x.semana)  === semStr &&
+    String(x.visita_num||1) === (vnumStr||"1")
+  );
+  const m = mants.find(x => String(x.id) === mid);
+  if (!m) return;
+  modalKey = key;
+  document.getElementById("m-title").textContent = m.nombre;
+  document.getElementById("m-sub").textContent =
+    `${TEC_LBL[m.tecnicos]||m.tecnicos} · ${m.horas_visita}hs · Semana ${semStr}`;
+  document.getElementById("m-fecha").value = v?.fecha_real || "";
+  setTurno(v?.turno || "mañana");
+  document.getElementById("overlay").classList.add("open");
+}
+function cerrarModal() {
+  document.getElementById("overlay").classList.remove("open");
+  modalKey = null;
+}
+function setTurno(t) {
+  document.getElementById("t-man").classList.toggle("active", t === "mañana");
+  document.getElementById("t-tar").classList.toggle("active", t === "tarde");
+  if (modalKey) {
+    const [mid,s,vn] = modalKey.split("_");
+    const idx = visitas.findIndex(x => String(x.mant_id)===mid && String(x.semana)===s && String(x.visita_num||1)===(vn||"1"));
+    if (idx >= 0) visitas[idx]._pendTurno = t;
+    else window._pendTurno = t;
   }
+  window._modalTurno = t;
+}
 
-  function renderGrid() {
-    const grid = document.getElementById("cal-grid");
-    const totalDias = new Date(año, mes, 0).getDate();
-    let html = "";
+async function accion(tipo) {
+  if (!modalKey) return;
+  const [mid, semStr, vnumStr] = modalKey.split("_");
+  const v = visitas.find(x =>
+    String(x.mant_id) === mid && String(x.semana) === semStr &&
+    String(x.visita_num||1) === (vnumStr||"1")
+  );
+  const fecha = document.getElementById("m-fecha").value || v?.fecha_real || "";
+  const turno = window._modalTurno || v?.turno || "mañana";
+  const estado = tipo === "guardar" ? (v?.estado||"pendiente") : tipo;
 
-    for (let sem = 1; sem <= 5; sem++) {
-      const diaInicio = (sem - 1) * 7 + 1;
-      if (diaInicio > totalDias) break;
-      const diaFin = Math.min(sem * 7, totalDias);
+  if (tipo === "guardar" && !fecha) { alert("Ingresá una fecha."); return; }
 
-      // Dias de semana (Lun–Vie) dentro del bloque
-      const diasSem = [];
-      for (let d = diaInicio; d <= diaFin; d++) {
-        const fecha = new Date(año, mes - 1, d);
-        const dow = fecha.getDay();
-        if (dow >= 1 && dow <= 5) diasSem.push({ d, dow, fecha });
-      }
+  await saveVisita({ mant_id:mid, semana:parseInt(semStr), visita_num:parseInt(vnumStr||1),
+                     fecha_real:fecha, estado, turno });
+  cerrarModal();
+}
 
-      if (diasSem.length === 0) continue;
-
-      // Armar rango mostrable
-      const range = `${padZ(diaInicio)}/${padZ(mes)} – ${padZ(diaFin)}/${padZ(mes)}`;
-
-      html += `<div class="semana-block">
-        <div class="semana-head">
-          <span class="semana-num">Semana ${sem}</span>
-          <span class="semana-rango">${range}</span>
-        </div>
-        <div class="dias-row">`;
-
-      // Necesitamos exactamente 5 columnas (Lun-Vie); rellenamos con vacíos si el mes empieza en miércoles, etc.
-      for (let dow = 1; dow <= 5; dow++) {
-        const dia = diasSem.find(x => x.dow === dow);
-        if (!dia) {
-          html += `<div class="dia-col finde"><div class="dia-head"><span class="dia-num">—</span></div></div>`;
-          continue;
-        }
-        const esHoy   = dia.fecha.toDateString() === HOY.toDateString();
-        const esPasado = dia.fecha < HOY;
-        const cls = esHoy ? "hoy" : esPasado ? "pasado" : "";
-
-        // Visitas para este día (por semana)
-        const visEste = visitas.filter(v =>
-          String(v.semana) === String(sem) &&
-          (v.fecha_real === formatISO(dia.fecha) || !v.fecha_real)
-        );
-
-        // También mostrar visitas cuya fecha_real coincide con este día
-        const visFecha = visitas.filter(v =>
-          v.fecha_real === formatISO(dia.fecha) &&
-          String(v.semana) !== String(sem)
-        );
-
-        const todasVis = [...visEste, ...visFecha];
-
-        // Eliminar duplicados
-        const visUnicas = todasVis.filter((v, i, arr) =>
-          arr.findIndex(x => String(x.mant_id) === String(v.mant_id) &&
-            String(x.semana) === String(v.semana) &&
-            String(x.visita_num || 1) === String(v.visita_num || 1)) === i
-        );
-
-        const cards = visUnicas.map(v => {
-          const m = mantenimientos.find(x => String(x.id) === String(v.mant_id));
-          if (!m) return "";
-          const esVencido = v.estado === "pendiente" && dia.fecha < HOY;
-          const estado = esVencido ? "vencido" : v.estado;
-          const check = estado === "realizado" ? "✓" : estado === "vencido" ? "!" : "";
-          const key = `${v.mant_id}_${v.semana}_${v.visita_num || 1}`;
-          return `<div class="mant-card estado-${estado}" onclick="abrirModal('${key}')" title="${m.nombre} — ${TECNICOS_LABEL[m.tecnicos] || m.tecnicos}">
-            <span class="mant-dot"></span>
-            <span class="mant-nombre">${m.nombre}</span>
-            <span class="mant-check">${check}</span>
-          </div>`;
-        }).join("");
-
-        // Input para trabajos libres
-        const celda = celdas.find(c => String(c.dia) === String(dia.d) && c.turno === "libre");
-        const libreVal = celda ? celda.texto : "";
-
-        html += `<div class="dia-col ${cls}" data-dia="${dia.d}" data-sem="${sem}">
-          <div class="dia-head">
-            <span class="dia-num">${dia.d}</span>
-            <span class="dia-nom">${DIAS_NOM[dow]}</span>
-          </div>
-          <div class="dia-cards">${cards}</div>
-          <div class="libre-area">
-            <textarea class="libre-input" placeholder="+ trabajo libre…"
-              onblur="guardarLibre(${dia.d},'libre',this.value)"
-              onfocus="this.rows=3" rows="1">${escHtml(libreVal)}</textarea>
-          </div>
-        </div>`;
-      }
-
-      html += `</div></div>`;
-    }
-
-    grid.innerHTML = html;
-  }
-
-  // ── MODAL ────────────────────────────────────────────────────────────────────
-
-  function abrirModal(key) {
-    const [mid, semStr, vnumStr] = key.split("_");
-    const semana   = parseInt(semStr);
-    const visitaNum = parseInt(vnumStr || "1");
-
-    const v = visitas.find(x =>
-      String(x.mant_id) === String(mid) &&
-      String(x.semana)  === String(semana) &&
-      String(x.visita_num || 1) === String(visitaNum)
-    );
-    const m = mantenimientos.find(x => String(x.id) === String(mid));
-    if (!m) return;
-
-    modalVisita = { mant_id: mid, semana, visita_num: visitaNum,
-                    fecha_real: v?.fecha_real || "", estado: v?.estado || "pendiente",
-                    turno: v?.turno || "mañana" };
-
-    document.getElementById("modal-title").textContent = m.nombre;
-    document.getElementById("modal-sub").textContent   =
-      `${TECNICOS_LABEL[m.tecnicos] || m.tecnicos} · ${m.horas_visita}hs · Semana ${semana}`;
-    document.getElementById("modal-fecha").value = modalVisita.fecha_real || "";
-    setTurno(modalVisita.turno || "mañana");
-    document.getElementById("overlay").classList.add("open");
-  }
-
-  function cerrarModal(e) {
-    if (e && e.target !== document.getElementById("overlay")) return;
-    document.getElementById("overlay").classList.remove("open");
-    modalVisita = null;
-  }
-
-  function setTurno(t) {
-    modalVisita && (modalVisita.turno = t);
-    document.getElementById("turno-mañana").classList.toggle("active", t === "mañana");
-    document.getElementById("turno-tarde").classList.toggle("active",  t === "tarde");
-  }
-
-  async function marcarEstado(estado) {
-    if (!modalVisita) return;
-    const fecha = document.getElementById("modal-fecha").value || modalVisita.fecha_real || "";
-    await saveVisita({ ...modalVisita, fecha_real: fecha, estado });
-    document.getElementById("overlay").classList.remove("open");
-    modalVisita = null;
-  }
-
-  async function guardarFecha() {
-    if (!modalVisita) return;
-    const fecha = document.getElementById("modal-fecha").value;
-    if (!fecha) { alert("Ingresá la fecha."); return; }
-    await saveVisita({ ...modalVisita, fecha_real: fecha });
-    document.getElementById("overlay").classList.remove("open");
-    modalVisita = null;
-  }
-
-  async function saveVisita(data) {
-    setLoading(true);
-    try {
-      await fetch("/api/agenda/visita", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          mant_id:    data.mant_id,
-          año, mes,
-          semana:     data.semana,
-          visita_num: data.visita_num || 1,
-          fecha_real: data.fecha_real || "",
-          estado:     data.estado     || "pendiente",
-          turno:      data.turno      || "mañana",
-        }),
-      });
-      // Actualizar local
-      const idx = visitas.findIndex(v =>
-        String(v.mant_id) === String(data.mant_id) &&
-        String(v.semana)  === String(data.semana) &&
-        String(v.visita_num || 1) === String(data.visita_num || 1)
-      );
-      const upd = { mant_id: String(data.mant_id), año: String(año), mes: String(mes),
-                    semana: String(data.semana), visita_num: String(data.visita_num || 1),
-                    fecha_real: data.fecha_real || "", estado: data.estado || "pendiente",
-                    turno: data.turno || "mañana" };
-      if (idx >= 0) visitas[idx] = upd; else visitas.push(upd);
-      render();
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // ── LIBRE ────────────────────────────────────────────────────────────────────
-
-  async function guardarLibre(dia, turno, texto) {
-    await fetch("/api/agenda/celda", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ año, mes, dia, turno, texto, color: "", negrita: false }),
+async function saveVisita(data) {
+  spin(true);
+  try {
+    await fetch("/api/agenda/visita", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ mant_id:data.mant_id, año, mes,
+        semana:data.semana, visita_num:data.visita_num||1,
+        fecha_real:data.fecha_real||"", estado:data.estado||"pendiente", turno:data.turno||"mañana" }),
     });
     // Actualizar local
-    const idx = celdas.findIndex(c => String(c.dia) === String(dia) && c.turno === turno);
-    const upd = { año: String(año), mes: String(mes), dia: String(dia), turno, texto, color: "", negrita: "no" };
-    if (idx >= 0) celdas[idx] = upd; else celdas.push(upd);
-    populateWsDias(); generarMensaje();
+    const upd = { mant_id:String(data.mant_id), año:String(año), mes:String(mes),
+      semana:String(data.semana), visita_num:String(data.visita_num||1),
+      fecha_real:data.fecha_real||"", estado:data.estado||"pendiente", turno:data.turno||"mañana" };
+    const idx = visitas.findIndex(x =>
+      String(x.mant_id)===String(data.mant_id) && String(x.semana)===String(data.semana) &&
+      String(x.visita_num||1)===String(data.visita_num||1));
+    if (idx>=0) visitas[idx]=upd; else visitas.push(upd);
+    render();
+  } finally { spin(false); }
+}
+
+// ── LIBRE ─────────────────────────────────────────────────────────────────────
+async function guardarLibre(dia, dMes, dAnio, texto) {
+  const body = { año:dAnio, mes:dMes, dia, turno:"libre", texto, color:"", negrita:false };
+  await fetch("/api/agenda/celda", { method:"POST",
+    headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
+  const upd = { año:String(dAnio), mes:String(dMes), dia:String(dia), turno:"libre", texto, color:"", negrita:"no" };
+  const idx = celdas.findIndex(c => String(c.dia)===String(dia) && String(c.mes||mes)===String(dMes) && c.turno==="libre");
+  if (idx>=0) celdas[idx]=upd; else celdas.push(upd);
+  fillWsDias(); genMsg();
+}
+
+// ── WS GENERATOR ─────────────────────────────────────────────────────────────
+function fillWsDias() {
+  const sel = document.getElementById("ws-dia");
+  const prev = sel.value;
+  // Mostrar hoy + próximos 14 días
+  let opts = `<option value="">— Seleccionar —</option>`;
+  for (let i = 0; i <= 13; i++) {
+    const d = new Date(HOY); d.setDate(HOY.getDate() + i);
+    const dow = d.getDay();
+    if (dow === 0 || dow === 6) continue;
+    const iso = isoDate(d);
+    const lbl = `${DIAS_F[dow]} ${d.getDate()}/${zz(d.getMonth()+1)}`;
+    opts += `<option value="${iso}">${lbl}</option>`;
   }
+  sel.innerHTML = opts;
+  if (prev) sel.value = prev;
+}
 
-  // ── WS GENERATOR ─────────────────────────────────────────────────────────────
+function genMsg() {
+  const iso  = document.getElementById("ws-dia").value;
+  const nota = document.getElementById("ws-nota").value.trim();
+  const prev = document.getElementById("ws-prev");
+  if (!iso) { prev.textContent = "Seleccioná un día para ver el mensaje."; return; }
 
-  function populateWsDias() {
-    const sel = document.getElementById("ws-dia");
-    const prev = sel.value;
-    const totalDias = new Date(año, mes, 0).getDate();
-    let opts = `<option value="">— Seleccionar —</option>`;
-    for (let d = 1; d <= totalDias; d++) {
-      const fecha = new Date(año, mes - 1, d);
-      const dow = fecha.getDay();
-      if (dow === 0 || dow === 6) continue;
-      opts += `<option value="${d}">${DIAS_FULL[dow]} ${d}/${mes}</option>`;
-    }
-    sel.innerHTML = opts;
-    if (prev) sel.value = prev;
-  }
+  const dia   = new Date(iso + "T00:00:00");
+  const dow   = dia.getDay();
+  const dNum  = dia.getDate();
+  const dMes  = dia.getMonth() + 1;
 
-  function generarMensaje() {
-    const diaVal = document.getElementById("ws-dia").value;
-    const nota   = document.getElementById("ws-nota").value.trim();
-    const prev   = document.getElementById("ws-preview");
-    if (!diaVal) { prev.textContent = "Seleccioná un día para ver el mensaje."; return; }
+  const visHoy = visitas.filter(v =>
+    v.fecha_real === iso && v.estado !== "realizado"
+  );
 
-    const dia   = parseInt(diaVal);
-    const fecha = new Date(año, mes - 1, dia);
-    const dow   = fecha.getDay();
+  const celda = celdas.find(c => String(c.dia)===String(dNum) &&
+    String(c.mes||mes)===String(dMes) && c.turno==="libre");
 
-    // Semana del mes (bloque de 7 días)
-    const semana = Math.ceil(dia / 7);
-
-    // Visitas para ese día (por semana o fecha_real)
-    const vis = visitas.filter(v =>
-      (String(v.semana) === String(semana) && (v.fecha_real === formatISO(fecha) || !v.fecha_real)) ||
-      v.fecha_real === formatISO(fecha)
-    );
-    const visUnicas = vis.filter((v, i, arr) =>
-      arr.findIndex(x => String(x.mant_id) === String(v.mant_id) &&
-        String(x.semana) === String(v.semana)) === i
-    );
-
-    // Celda libre del día
-    const libre = celdas.find(c => String(c.dia) === String(dia) && c.turno === "libre");
-
-    // Agrupar por equipo de técnicos
-    const grupos = {};
-    visUnicas.forEach(v => {
-      if (v.estado === "realizado") return; // ya realizado, no va en el mensaje
-      const m = mantenimientos.find(x => String(x.id) === String(v.mant_id));
-      if (!m) return;
-      const tec = m.tecnicos || "—";
-      if (!grupos[tec]) grupos[tec] = [];
-      grupos[tec].push(`${m.nombre} (${m.horas_visita}hs)`);
-    });
-
-    const fechaFmt = `${DIAS_FULL[dow].toUpperCase()} ${dia}/${padZ(mes)}/${año}`;
-    let msg = `📅 *${fechaFmt}*\n`;
-
-    if (Object.keys(grupos).length === 0 && !libre?.texto) {
-      msg += "\nSin mantenimientos programados para este día.";
-    } else {
-      Object.entries(grupos).forEach(([tec, trabajos]) => {
-        const tecLabel = (TECNICOS_LABEL[tec] || tec).toUpperCase();
-        msg += `\n👷 *${tecLabel}*\n`;
-        trabajos.forEach(t => { msg += `  • ${t}\n`; });
-      });
-      if (libre?.texto) {
-        msg += `\n📋 *ADEMÁS:*\n${libre.texto}\n`;
-      }
-    }
-
-    if (nota) msg += `\n📌 ${nota}`;
-
-    prev.textContent = msg;
-  }
-
-  function copiarMensaje() {
-    const txt = document.getElementById("ws-preview").textContent;
-    navigator.clipboard.writeText(txt).then(() => {
-      const btn = document.getElementById("btn-copy");
-      btn.textContent = "✓ Copiado";
-      btn.classList.add("copied");
-      setTimeout(() => { btn.textContent = "📋 Copiar mensaje"; btn.classList.remove("copied"); }, 2000);
-    });
-  }
-
-  // ── MODO ─────────────────────────────────────────────────────────────────────
-
-  function setModo(m) {
-    modo = m;
-    document.getElementById("btn-auto").classList.toggle("active", m === "auto");
-    document.getElementById("btn-manual").classList.toggle("active", m === "manual");
-    document.getElementById("btn-autofill").style.display = m === "auto" ? "" : "none";
-    localStorage.setItem("agenda_modo", m);
-  }
-
-  // ── MES NAV ──────────────────────────────────────────────────────────────────
-
-  function cambiarMes(delta) {
-    mes += delta;
-    if (mes > 12) { mes = 1;  año++; }
-    if (mes < 1)  { mes = 12; año--; }
-    document.getElementById("mes-label").textContent = `${MESES[mes-1]} ${año}`;
-    cargarAgenda(modo === "auto");
-  }
-
-  // ── UTILS ────────────────────────────────────────────────────────────────────
-
-  function formatISO(fecha) {
-    return `${fecha.getFullYear()}-${padZ(fecha.getMonth()+1)}-${padZ(fecha.getDate())}`;
-  }
-  function padZ(n) { return String(n).padStart(2, "0"); }
-  function escHtml(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
-  function setLoading(on) {
-    document.getElementById("spinner").style.display = on ? "inline-block" : "none";
-  }
-
-  // ── INIT ─────────────────────────────────────────────────────────────────────
-
-  document.addEventListener("DOMContentLoaded", () => {
-    try { modo = localStorage.getItem("agenda_modo") || "auto"; } catch(e) {}
-    setModo(modo);
-    document.getElementById("mes-label").textContent = `${MESES[mes-1]} ${año}`;
-    cargarAgenda(modo === "auto");
+  // Agrupar por técnicos
+  const grupos = {};
+  visHoy.forEach(v => {
+    const m = mants.find(x => String(x.id) === String(v.mant_id));
+    if (!m) return;
+    const tec = m.tecnicos || "—";
+    if (!grupos[tec]) grupos[tec] = [];
+    grupos[tec].push(`${m.nombre} (${m.horas_visita}hs)`);
   });
-</script>
 
+  const fechaFmt = `${DIAS_F[dow].toUpperCase()} ${dNum}/${zz(dMes)}/${dia.getFullYear()}`;
+  let msg = `📅 *${fechaFmt}*\n`;
+
+  if (!Object.keys(grupos).length && !celda?.texto) {
+    msg += "\nSin mantenimientos programados para este día.";
+  } else {
+    Object.entries(grupos).forEach(([tec, trabajos]) => {
+      msg += `\n👷 *${(TEC_LBL[tec]||tec).toUpperCase()}*\n`;
+      trabajos.forEach(t => { msg += `  • ${t}\n`; });
+    });
+    if (celda?.texto) msg += `\n📋 *ADEMÁS:*\n${celda.texto}\n`;
+  }
+  if (nota) msg += `\n📌 ${nota}`;
+  prev.textContent = msg;
+}
+
+function copiar() {
+  const txt = document.getElementById("ws-prev").textContent;
+  navigator.clipboard.writeText(txt).then(() => {
+    const btn = document.getElementById("btn-copy");
+    btn.textContent = "✓ Copiado"; btn.classList.add("copied");
+    setTimeout(() => { btn.textContent = "📋 Copiar mensaje"; btn.classList.remove("copied"); }, 2000);
+  });
+}
+
+// ── MODO ──────────────────────────────────────────────────────────────────────
+function setModo(m) {
+  modo = m;
+  document.getElementById("btn-auto").classList.toggle("active", m==="auto");
+  document.getElementById("btn-manual").classList.toggle("active", m==="manual");
+  document.getElementById("btn-fill").style.display = m==="auto" ? "" : "none";
+  try { localStorage.setItem("ag_modo", m); } catch(e){}
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded", () => {
+  try { modo = localStorage.getItem("ag_modo") || "auto"; } catch(e){}
+  setModo(modo);
+  syncMes();
+  cargar();
+});
+</script>
 </body>
 </html>

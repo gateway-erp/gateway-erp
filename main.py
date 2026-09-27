@@ -750,7 +750,7 @@ async def get_agenda(año: int, mes: int):
     import traceback
     try:
         db.crear_mantenimiento_if_missing()
-        db.auto_validar_visitas(año, mes)
+        # auto_validar deshabilitado — pendientes se arrastran al mes siguiente manualmente
         celdas  = db.load_agenda_celdas(año, mes)
         mants   = db.load_mantenimientos()
         visitas = db.load_visitas_mes(año, mes)

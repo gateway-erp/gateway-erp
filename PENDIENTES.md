@@ -33,7 +33,8 @@
 - [ ] **Drag & drop en modo Manual**: por ahora Manual es "click en pendiente → elegir fecha/turno en modal". El usuario no confirmó si quiere además poder arrastrar cards directo sobre la grilla.
 - [ ] Confirmar si los 6 mantenimientos cargados son la lista completa o falta agregar más (el usuario dijo que sí son todos, pero originalmente se habló de "15 mantenimientos mensuales" — revisar si esa cifra vieja sigue vigente).
 - [ ] Evaluar si conviene integrar la vista de mantenimientos dentro del dashboard principal (agenda actual del dashboard es un calendario de texto libre aparte) en vez de página separada `/agenda`.
-- [ ] **Dos UIs de mantenimientos en paralelo**: el dashboard ya tenía su propio widget (`#agenda-mant`) que ahora también tiene modal de edición propio (agregado 2026-09-27 en otra sesión), además de la página `/agenda` completa. Ambos escriben sobre las mismas hojas `mantenimientos`/`mant_visitas`. Definir si se unifican o se mantienen a propósito (dashboard = vista rápida, `/agenda` = vista completa).
+- [x] **Dos UIs de mantenimientos en paralelo — resuelto (paso 1/2)**: se decidió que `/agenda` es el único lugar para editar. Paso 1 hecho: el widget del dashboard (`#agenda-mant`) perdió toda capacidad de edición (se sacó el modal, `aClickVisita`/`mmSetTurno`/`mmCerrar`/`mmAccion` y el onclick de las cards) — ahora es solo informativo (nombre, cliente, estado por color).
+- [ ] **Paso 2 pendiente**: el widget del dashboard debería linkear a `/agenda` (el título "Agenda Operativa" o un botón) en vez de no hacer nada al click.
 - [ ] No usar tildes/ñ en nombres de parámetros de ruta de FastAPI (`{año}` nunca matcheaba en runtime aunque aparecía en el schema — usar `{anio}`, `{numero}`, etc.)
 - [ ] No usar comas dentro de strings guardados en Sheets vía `USER_ENTERED` si el valor podría parecer numérico (Sheets locale es-AR las interpreta como separador de miles) — usar `;` o forzar texto con comilla inicial.
 

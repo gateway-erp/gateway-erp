@@ -356,6 +356,12 @@ Hechos en otra sesión de Claude Code sobre el mismo directorio (commits `8ff40d
 - Funciones nuevas en `agenda.html`: `wsPoblarDesdeDia()`, `wsAgregarEquipo()`, `wsQuitarEquipo()`, `wsToggleTecnico()`, `wsAgregarTareaPendiente()`, `wsQuitarTarea()`, `wsAgregarLibre()`, `renderWsEquipos()`, `wsPendientesPool()`.
 - Probado en vivo: 2 equipos el mismo día (Camilo+Pablo con un mantenimiento real, Matías+Nacho con texto libre) generan el mensaje agrupado correctamente.
 
+**Ajustes posteriores al generador de WhatsApp (2026-09-28):**
+- **Turno por tarea, no por equipo**: el mismo equipo puede hacer una tarea a la mañana y otra a la tarde (ej. Camilo+Pablo con un mantenimiento a la mañana y otro trabajo distinto a la tarde). Cada tarea tiene su propio toggle ☀️/🌙, no el equipo entero. Función `wsSetTareaTurno(idx, tIdx, turno)`.
+- **Botón "+ Agregar" explícito para texto libre**: el Enter-only no era descubrible. Se agregó un botón visible al lado del input (el Enter sigue funcionando).
+- **Botón "✓ Confirmar tareas"**: antes cada tarea elegida desde pendientes se guardaba sola en el momento de elegirla, sin instancia de revisión — confuso, no quedaba claro qué había impactado en el calendario. Ahora armar el mensaje (equipos, tareas, turnos) queda todo en memoria (campo `confirmado:false` en cada tarea-mantenimiento) hasta apretar "Confirmar tareas", que recién ahí guarda todo en la Sheet de una vez y refresca grilla/pendientes/resumen. Las tareas sin confirmar se marcan con borde ámbar + etiqueta "sin confirmar". Cambiar el turno de una tarea ya confirmada la vuelve a marcar `confirmado:false` (necesita reconfirmarse para persistir el cambio).
+- **Formato del mensaje**: cada línea de tarea va en negrita+cursiva (`_*texto*_`) para resaltar, y el turno se muestra como emoji + etiqueta chica (`☀️ _T-Mañana_` / `🌙 _T-Tarde_`) en vez de ir solo el ícono.
+
 ⚠️ **Aclaración de negocio — las horas NO tienen que cerrar matemáticamente**: ver nota más arriba en la sección de mantenimientos precargados. La cantidad de visitas (`semanas_mes`) es la fuente de verdad para toda la programación; las horas son solo una etiqueta informativa.
 
 #### Archivos del módulo

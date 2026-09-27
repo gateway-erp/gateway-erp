@@ -158,7 +158,13 @@
     .mant-card { flex:0 0 260px; width:260px; background:var(--navy-card); border:1px solid var(--navy-line); border-radius:8px; padding:10px 12px; }
     .mant-nombre { font-size:12px; font-weight:700; margin-bottom:2px; }
     .mant-cliente { font-size:10px; color:var(--text-dim); margin-bottom:6px; }
-    .mant-plan { font-size:9px; color:var(--text-dim); margin-bottom:8px; background:rgba(59,130,246,.08); border:1px solid rgba(59,130,246,.15); border-radius:4px; padding:3px 6px; display:inline-block; }
+    .mant-plan { font-size:9px; color:var(--text-dim); background:rgba(59,130,246,.08); border:1px solid rgba(59,130,246,.15); border-radius:4px; padding:3px 6px; display:inline-block; }
+    .mant-plan-row { display:flex; align-items:center; justify-content:space-between; gap:6px; margin-bottom:8px; }
+    .mant-dots { display:flex; gap:3px; flex-shrink:0; }
+    .mant-dot { width:7px; height:7px; border-radius:50%; background:var(--navy-line); }
+    .mant-dot.md-realizado { background:#22c55e; }
+    .mant-dot.md-proximo   { background:#f59e0b; }
+    .mant-dot.md-pendiente { background:#ef4444; }
     .mant-sems { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:4px; }
     .mant-sem { display:flex; flex-direction:column; align-items:center; gap:2px; padding:5px 3px; border-radius:6px; border:1px solid var(--navy-line); }
     .ms-lbl { font-size:8px; font-weight:700; text-transform:uppercase; letter-spacing:.3px; color:var(--text-dim); }
@@ -1261,7 +1267,7 @@ let aAño = new Date().getFullYear();
 let aMes = new Date().getMonth() + 1;
 let aCeldas  = {};  // "dia-turno" → {texto, color, negrita}
 let aMants   = [];
-let aVisitas = {}; // "mantId-semana" → {fecha_real, estado}
+let aVisitas = {}; // "mantId-semana-visitaNum" → {fecha_real, estado}
 let aCelActEl   = null;
 let aCelActDia  = null;
 let aCelActTurno= null;
@@ -1279,7 +1285,7 @@ async function agendaCargar() {
       });
       aMants = d.mantenimientos || [];
       (d.visitas||[]).forEach(v => {
-        aVisitas[`${v.mant_id}-${v.semana}`] = {fecha_real:v.fecha_real||'', estado:v.estado||'pendiente'};
+        aVisitas[`${v.mant_id}-${v.semana}-${v.visita_num||1}`] = {fecha_real:v.fecha_real||'', estado:v.estado||'pendiente'};
       });
     }
   } catch(e) { console.error('[Agenda]', e); }
@@ -1448,23 +1454,33 @@ function agendaRenderMants() {
     panel.innerHTML = html; return;
   }
   aMants.forEach(m => {
-    const id   = m.id;
-    const sems = parseInt(m.semanas_mes) || 4;
+    const id = m.id;
+    const esperadas = aVisitasEsperadas(m);
+
+    const dots = esperadas.map(e => {
+      const vis = aVisitas[`${id}-${e.semana}-${e.visita_num}`] || {};
+      const est = vis.estado || aSugerirEstado(e.semana);
+      return `<span class="mant-dot md-${est}"></span>`;
+    }).join('');
+
     html += `<div class="mant-card">
       <div class="mant-nombre">${aEsc(m.nombre)}</div>
       <div class="mant-cliente">${aEsc(m.cliente)}</div>
-      <div class="mant-plan">${m.horas_plan}hs &times; ${sems} visitas/mes</div>
-      <div class="mant-sems">`;
-    for (let s=1;s<=4;s++) {
-      const vis   = aVisitas[`${id}-${s}`] || {};
-      const est   = vis.estado || aSugerirEstado(s);
+      <div class="mant-plan-row">
+        <span class="mant-plan">${m.horas_plan}hs &times; ${esperadas.length} visitas/mes</span>
+        <span class="mant-dots">${dots}</span>
+      </div>
+      <div class="mant-sems" style="grid-template-columns:repeat(${esperadas.length},1fr);">`;
+    esperadas.forEach((e, idx) => {
+      const vis   = aVisitas[`${id}-${e.semana}-${e.visita_num}`] || {};
+      const est   = vis.estado || aSugerirEstado(e.semana);
       const fecha = vis.fecha_real || '';
       html += `<div class="mant-sem ms-${est}">
-        <span class="ms-lbl">Sem ${s}</span>
+        <span class="ms-lbl">Visita ${idx+1}</span>
         <span class="ms-fecha">${fecha||'—'}</span>
         <span class="ms-estado">${aEstLbl(est)}</span>
       </div>`;
-    }
+    });
     html += `</div></div>`;
   });
   html += `<div class="mant-legend">
@@ -1473,6 +1489,19 @@ function agendaRenderMants() {
     <div class="leg-item"><div class="leg-dot" style="background:#ef4444"></div>Pendiente</div>
   </div>`;
   panel.innerHTML = html;
+}
+
+function aVisitasEsperadas(m) {
+  const patronStr = String(m.semanas_pattern || '1;2;3;4').replace(/^'/, '');
+  const sep = patronStr.includes(';') ? ';' : ',';
+  const patron = patronStr.split(sep).map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+  const total = parseInt(m.semanas_mes) || 1;
+  const porOcurrencia = patron.length ? Math.max(1, Math.floor(total / patron.length)) : 1;
+  const out = [];
+  patron.forEach(semana => {
+    for (let v = 1; v <= porOcurrencia; v++) out.push({ semana, visita_num: v });
+  });
+  return out;
 }
 
 function aSugerirEstado(semana) {

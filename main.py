@@ -736,11 +736,21 @@ async def editar_cliente(codigo: str, request: Request):
     )
     return JSONResponse({"ok": ok})
 
+@app.get("/agenda", response_class=HTMLResponse)
+async def agenda_page(request: Request):
+    hoy = date.today()
+    return templates.TemplateResponse("agenda.html", {
+        "request": request,
+        "año_actual": hoy.year,
+        "mes_actual": hoy.month,
+    })
+
 @app.get("/api/agenda/{año}/{mes}")
 async def get_agenda(año: int, mes: int):
     import traceback
     try:
         db.crear_mantenimiento_if_missing()
+        db.auto_validar_visitas(año, mes)
         celdas  = db.load_agenda_celdas(año, mes)
         mants   = db.load_mantenimientos()
         visitas = db.load_visitas_mes(año, mes)
@@ -762,9 +772,20 @@ async def save_visita_agenda(request: Request):
     data = await request.json()
     db.guardar_visita(
         data["mant_id"], data["año"], data["mes"], data["semana"],
-        data.get("fecha_real", ""), data.get("estado", "pendiente"),
+        data.get("visita_num", 1), data.get("fecha_real", ""),
+        data.get("estado", "pendiente"), data.get("turno", "mañana"),
     )
     return JSONResponse({"ok": True})
+
+@app.post("/api/agenda/auto-fill/{año}/{mes}")
+async def auto_fill_agenda(año: int, mes: int):
+    import traceback
+    try:
+        db.auto_fill_mes(año, mes)
+        visitas = db.load_visitas_mes(año, mes)
+        return JSONResponse({"ok": True, "visitas": visitas})
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e), "trace": traceback.format_exc()})
 
 
 @app.get("/api/proveedores")

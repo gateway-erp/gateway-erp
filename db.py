@@ -426,8 +426,17 @@ def guardar_celda_agenda(año, mes, dia, turno, texto, color, negrita):
     ws.append_row([año, mes, dia, turno, texto, color, "si" if negrita else "no"])
 
 
-_H_MANT = ["id", "nombre", "cliente", "horas_plan", "semanas_mes"]
+_H_MANT = ["id", "nombre", "cliente", "horas_plan", "semanas_mes", "tecnicos", "prioridad", "horas_visita", "semanas_pattern"]
 _mant_seeded = False
+
+_MANT_SEED = [
+    [1, "TBAR CCTV",           "Toyota Boshoku", 32, 4, "Camilo,Pablo",  1, 8,  "1,2,3,4"],
+    [2, "TBAR RED INCENDIOS",  "Toyota Boshoku",  8, 2, "Camilo,Pablo",  2, 4,  "2,4"],
+    [3, "TBAR MTTO UPS",       "Toyota Boshoku",  4, 2, "Camilo,Pablo",  3, 2,  "1,3"],
+    [4, "TBAR SIST. INCENDIOS","Toyota Boshoku",  8, 2, "Camilo,Pablo",  4, 2,  "1,3"],
+    [5, "MCCAIN CCTV",         "McCain",          32, 2, "Camilo,Pablo", 5, 16, "3"],
+    [6, "MASTER BUS",          "Master Bus",       8, 2, "Matias,Nacho", 6, 4,  "1,3"],
+]
 
 def load_mantenimientos():
     return _ws("mantenimientos", _H_MANT).get_all_records()
@@ -438,8 +447,10 @@ def crear_mantenimiento_if_missing():
         return
     ws = _ws("mantenimientos", _H_MANT)
     records = ws.get_all_records()
-    if not any(str(r.get("nombre")) == "TBAR CCTV" for r in records):
-        ws.append_row([1, "TBAR CCTV", "Toyota Boshoku", 8, 4])
+    existing_ids = {str(r.get("id")) for r in records}
+    for row in _MANT_SEED:
+        if str(row[0]) not in existing_ids:
+            ws.append_row(row)
     _mant_seeded = True
 
 
@@ -481,23 +492,84 @@ def load_remitos():
     return result
 
 
-_H_MVIS = ["mant_id", "año", "mes", "semana", "fecha_real", "estado"]
+_H_MVIS = ["mant_id", "año", "mes", "semana", "visita_num", "fecha_real", "estado", "turno"]
 
 def load_visitas_mes(año, mes):
     ws = _ws("mant_visitas", _H_MVIS)
     return [r for r in ws.get_all_records()
             if str(r.get("año")) == str(año) and str(r.get("mes")) == str(mes)]
 
-def guardar_visita(mant_id, año, mes, semana, fecha_real, estado):
+def guardar_visita(mant_id, año, mes, semana, visita_num=1, fecha_real="", estado="pendiente", turno="mañana"):
     ws = _ws("mant_visitas", _H_MVIS)
     records = ws.get_all_records()
     for i, r in enumerate(records, start=2):
         if (str(r.get("mant_id")) == str(mant_id) and str(r.get("año")) == str(año)
-                and str(r.get("mes")) == str(mes) and str(r.get("semana")) == str(semana)):
+                and str(r.get("mes")) == str(mes) and str(r.get("semana")) == str(semana)
+                and str(r.get("visita_num", "1")) == str(visita_num)):
             ws.update_cell(i, _H_MVIS.index("fecha_real") + 1, fecha_real)
             ws.update_cell(i, _H_MVIS.index("estado") + 1, estado)
+            ws.update_cell(i, _H_MVIS.index("turno") + 1, turno)
             return
-    ws.append_row([mant_id, año, mes, semana, fecha_real, estado])
+    ws.append_row([mant_id, año, mes, semana, visita_num, fecha_real, estado, turno])
+
+def auto_fill_mes(año, mes):
+    """Genera registros de visita para el mes según el patrón de cada mantenimiento."""
+    crear_mantenimiento_if_missing()
+    mants   = load_mantenimientos()
+    visitas = load_visitas_mes(año, mes)
+
+    for m in mants:
+        pattern_str = str(m.get("semanas_pattern", "1,2,3,4"))
+        pattern = [int(p.strip()) for p in pattern_str.split(",") if p.strip().isdigit()]
+        total   = int(m.get("semanas_mes", 1))
+        per_occ = max(1, total // len(pattern)) if pattern else 1
+
+        for semana in pattern:
+            for vnum in range(1, per_occ + 1):
+                already = any(
+                    str(r.get("mant_id")) == str(m["id"]) and
+                    str(r.get("semana"))  == str(semana) and
+                    str(r.get("visita_num", "1")) == str(vnum)
+                    for r in visitas
+                )
+                if not already:
+                    # Calcular fecha del lunes de esa semana del mes
+                    from datetime import date as _date, timedelta as _td
+                    lunes_sem = _date(int(año), int(mes), 1)
+                    while lunes_sem.weekday() != 0:
+                        lunes_sem += _td(days=1)
+                    lunes_sem += _td(weeks=semana - 1)
+                    # Asegurarse que siga dentro del mes
+                    if lunes_sem.month != int(mes):
+                        lunes_sem = _date(int(año), int(mes), 1)
+                    fecha_str = (lunes_sem + _td(days=vnum - 1)).isoformat()
+                    guardar_visita(m["id"], año, mes, semana, vnum, fecha_str, "pendiente", "mañana")
+                    visitas.append({"mant_id": str(m["id"]), "año": str(año), "mes": str(mes),
+                                    "semana": str(semana), "visita_num": str(vnum),
+                                    "fecha_real": fecha_str, "estado": "pendiente", "turno": "mañana"})
+
+def auto_validar_visitas(año, mes):
+    """Marca como 'realizado' las visitas pasadas que siguen en 'pendiente'."""
+    from datetime import datetime, timezone, timedelta, date as _date
+    AR  = timezone(timedelta(hours=-3))
+    hoy = datetime.now(AR).date()
+
+    ws      = _ws("mant_visitas", _H_MVIS)
+    records = ws.get_all_records()
+    col_est = _H_MVIS.index("estado") + 1
+
+    for i, r in enumerate(records, start=2):
+        if (str(r.get("año")) == str(año) and str(r.get("mes")) == str(mes)
+                and r.get("estado") == "pendiente"):
+            fecha_str = str(r.get("fecha_real", ""))
+            if not fecha_str:
+                continue
+            try:
+                fd = _date.fromisoformat(fecha_str)
+                if fd < hoy:
+                    ws.update_cell(i, col_est, "realizado")
+            except ValueError:
+                pass
 
 
 def presupuesto_cobrado_ok(numero):

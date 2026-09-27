@@ -250,6 +250,12 @@
     <!-- JS renderiza 5 columnas -->
   </div>
 
+  <!-- ARRASTRADOS DE MESES ANTERIORES -->
+  <div class="pendientes-sec" id="arr-sec" style="display:none; background:rgba(245,158,11,.08); border-color:rgba(245,158,11,.3);">
+    <div class="pend-title" style="color:var(--amber);">↩ Arrastrados de meses anteriores — nunca se resolvieron</div>
+    <div class="pend-list" id="arr-list"></div>
+  </div>
+
   <!-- PENDIENTES -->
   <div class="pendientes-sec" id="pend-sec" style="display:none;">
     <div class="pend-title">⚠ Pendientes sin fecha asignada este mes</div>
@@ -318,8 +324,9 @@ let pivote   = getMondayOf(new Date()); // lunes de la semana visible
 let año      = pivote.getFullYear();
 let mes      = pivote.getMonth() + 1;
 let modo     = "auto";
-let mants    = [], visitas = [], celdas = [];
-let modalKey = null; // "mantId_semana_visitaNum"
+let mants    = [], visitas = [], celdas = [], arrastrados = [];
+let modalKey = null;    // "mantId_semana_visitaNum" (mes actual)
+let modalArr = null;    // { mant_id, semana, visita_num, año, mes } (arrastrado de otro mes)
 
 // ── UTILS ────────────────────────────────────────────────────────────────────
 function getMondayOf(d) {
@@ -342,9 +349,10 @@ async function cargar() {
     const r = await fetch(`/api/agenda/${año}/${mes}`);
     const d = await r.json();
     if (!d.ok) { console.error(d.error); return; }
-    mants   = d.mantenimientos || [];
-    visitas = d.visitas        || [];
-    celdas  = d.celdas         || [];
+    mants       = d.mantenimientos || [];
+    visitas     = d.visitas        || [];
+    celdas      = d.celdas         || [];
+    arrastrados = d.arrastrados    || [];
     render();
     // En modo auto, si el mes no tiene visitas: ofrecer auto-fill
     if (modo === "auto" && visitas.length === 0) {
@@ -371,9 +379,27 @@ async function doAutoFill(confirmar = true) {
 function render() {
   renderResumen();
   renderWeek();
+  renderArrastrados();
   renderPendientes();
   fillWsDias();
   genMsg();
+}
+
+// ARRASTRADOS DE MESES ANTERIORES
+function renderArrastrados() {
+  const sec = document.getElementById("arr-sec");
+  if (!arrastrados.length) { sec.style.display = "none"; return; }
+  sec.style.display = "block";
+  const html = arrastrados.map((v, idx) => {
+    const m = mants.find(x => String(x.id) === String(v.mant_id));
+    if (!m) return "";
+    const mesNom = MESES[parseInt(v.mes) - 1] || v.mes;
+    return `<div class="pend-chip" style="background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.35);color:#fde68a;" onclick="abrirModalArrastrado(${idx})">
+      <span>${m.nombre}</span>
+      <span class="pend-chip-sub">· ${mesNom} ${v.año} · sem ${v.semana}</span>
+    </div>`;
+  }).join("");
+  document.getElementById("arr-list").innerHTML = html;
 }
 
 // RESUMEN DEL MES
@@ -534,9 +560,26 @@ function abrirModal(key) {
   setTurno(v?.turno || "mañana");
   document.getElementById("overlay").classList.add("open");
 }
+function abrirModalArrastrado(idx) {
+  const v = arrastrados[idx];
+  const m = mants.find(x => String(x.id) === String(v.mant_id));
+  if (!m) return;
+  modalKey = null;
+  modalArr = { mant_id: v.mant_id, semana: v.semana, visita_num: v.visita_num || 1,
+               año: v.año, mes: v.mes };
+  const mesNom = MESES[parseInt(v.mes) - 1] || v.mes;
+  document.getElementById("m-title").textContent = m.nombre;
+  document.getElementById("m-sub").textContent =
+    `${TEC_LBL[m.tecnicos]||m.tecnicos} · ${m.horas_visita}hs · Arrastrado de ${mesNom} ${v.año} (sem ${v.semana})`;
+  document.getElementById("m-fecha").value = v.fecha_real || "";
+  setTurno(v.turno || "mañana");
+  document.getElementById("overlay").classList.add("open");
+}
+
 function cerrarModal() {
   document.getElementById("overlay").classList.remove("open");
   modalKey = null;
+  modalArr = null;
 }
 function setTurno(t) {
   document.getElementById("t-man").classList.toggle("active", t === "mañana");
@@ -551,7 +594,18 @@ function setTurno(t) {
 }
 
 async function accion(tipo) {
-  if (!modalKey) return;
+  if (!modalKey && !modalArr) return;
+
+  if (modalArr) {
+    const fecha = document.getElementById("m-fecha").value || modalArr.fecha_real || "";
+    const turno = window._modalTurno || modalArr.turno || "mañana";
+    const estado = tipo === "guardar" ? "pendiente" : tipo;
+    if (tipo === "guardar" && !fecha) { alert("Ingresá una fecha."); return; }
+    await saveVisita({ ...modalArr, fecha_real: fecha, estado, turno }, modalArr.año, modalArr.mes);
+    cerrarModal();
+    return;
+  }
+
   const [mid, semStr, vnumStr] = modalKey.split("_");
   const v = visitas.find(x =>
     String(x.mant_id) === mid && String(x.semana) === semStr &&
@@ -568,24 +622,31 @@ async function accion(tipo) {
   cerrarModal();
 }
 
-async function saveVisita(data) {
+async function saveVisita(data, targetAño = año, targetMes = mes) {
   spin(true);
   try {
     await fetch("/api/agenda/visita", {
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({ mant_id:data.mant_id, año, mes,
+      body: JSON.stringify({ mant_id:data.mant_id, año:targetAño, mes:targetMes,
         semana:data.semana, visita_num:data.visita_num||1,
         fecha_real:data.fecha_real||"", estado:data.estado||"pendiente", turno:data.turno||"mañana" }),
     });
-    // Actualizar local
-    const upd = { mant_id:String(data.mant_id), año:String(año), mes:String(mes),
-      semana:String(data.semana), visita_num:String(data.visita_num||1),
-      fecha_real:data.fecha_real||"", estado:data.estado||"pendiente", turno:data.turno||"mañana" };
-    const idx = visitas.findIndex(x =>
-      String(x.mant_id)===String(data.mant_id) && String(x.semana)===String(data.semana) &&
-      String(x.visita_num||1)===String(data.visita_num||1));
-    if (idx>=0) visitas[idx]=upd; else visitas.push(upd);
+    if (String(targetAño) === String(año) && String(targetMes) === String(mes)) {
+      // Actualizar local (mes actual)
+      const upd = { mant_id:String(data.mant_id), año:String(año), mes:String(mes),
+        semana:String(data.semana), visita_num:String(data.visita_num||1),
+        fecha_real:data.fecha_real||"", estado:data.estado||"pendiente", turno:data.turno||"mañana" };
+      const idx = visitas.findIndex(x =>
+        String(x.mant_id)===String(data.mant_id) && String(x.semana)===String(data.semana) &&
+        String(x.visita_num||1)===String(data.visita_num||1));
+      if (idx>=0) visitas[idx]=upd; else visitas.push(upd);
+    } else {
+      // Era un arrastrado de otro mes: sacarlo de la lista local si quedó resuelto
+      arrastrados = arrastrados.filter(x =>
+        !(String(x.mant_id)===String(data.mant_id) && String(x.año)===String(targetAño) &&
+          String(x.mes)===String(targetMes) && String(x.semana)===String(data.semana)));
+    }
     render();
   } finally { spin(false); }
 }

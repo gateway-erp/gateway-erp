@@ -548,6 +548,20 @@ def auto_fill_mes(año, mes):
                                     "semana": str(semana), "visita_num": str(vnum),
                                     "fecha_real": fecha_str, "estado": "pendiente", "turno": "mañana"})
 
+def load_pendientes_arrastrados(año, mes):
+    """Visitas 'pendiente' de meses anteriores al indicado (nunca completadas ni resueltas)."""
+    target = (int(año), int(mes))
+    ws = _ws("mant_visitas", _H_MVIS)
+    result = []
+    for r in ws.get_all_records():
+        try:
+            r_key = (int(r.get("año")), int(r.get("mes")))
+        except (TypeError, ValueError):
+            continue
+        if r_key < target and r.get("estado") == "pendiente":
+            result.append(r)
+    return result
+
 def auto_validar_visitas(año, mes):
     """Marca como 'realizado' las visitas pasadas que siguen en 'pendiente'."""
     from datetime import datetime, timezone, timedelta, date as _date

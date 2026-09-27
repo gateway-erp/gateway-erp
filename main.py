@@ -750,11 +750,21 @@ async def get_agenda(año: int, mes: int):
     import traceback
     try:
         db.crear_mantenimiento_if_missing()
-        # auto_validar deshabilitado — pendientes se arrastran al mes siguiente manualmente
-        celdas  = db.load_agenda_celdas(año, mes)
-        mants   = db.load_mantenimientos()
-        visitas = db.load_visitas_mes(año, mes)
-        return JSONResponse({"ok": True, "celdas": celdas, "mantenimientos": mants, "visitas": visitas})
+
+        # Auto-validar: si una visita quedó "pendiente" con fecha ya pasada
+        # y nadie la tocó, se da por realizada (día a día, con fecha absoluta).
+        mes_prev, año_prev = (mes - 1, año) if mes > 1 else (12, año - 1)
+        db.auto_validar_visitas(año_prev, mes_prev)
+        db.auto_validar_visitas(año, mes)
+
+        celdas      = db.load_agenda_celdas(año, mes)
+        mants       = db.load_mantenimientos()
+        visitas     = db.load_visitas_mes(año, mes)
+        arrastrados = db.load_pendientes_arrastrados(año, mes)
+        return JSONResponse({
+            "ok": True, "celdas": celdas, "mantenimientos": mants,
+            "visitas": visitas, "arrastrados": arrastrados,
+        })
     except Exception as e:
         return JSONResponse({"ok": False, "error": str(e), "trace": traceback.format_exc()})
 

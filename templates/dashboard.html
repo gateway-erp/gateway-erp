@@ -1458,9 +1458,8 @@ function agendaRenderMants() {
     const esperadas = aVisitasEsperadas(m);
 
     const dots = esperadas.map(e => {
-      const vis = aVisitas[`${id}-${e.semana}-${e.visita_num}`] || {};
-      const est = vis.estado || aSugerirEstado(e.semana);
-      return `<span class="mant-dot md-${est}"></span>`;
+      const vis = aVisitas[`${id}-${e.semana}-${e.visita_num}`];
+      return `<span class="mant-dot md-${aEstadoVisual(vis)}"></span>`;
     }).join('');
 
     html += `<div class="mant-card">
@@ -1472,9 +1471,9 @@ function agendaRenderMants() {
       </div>
       <div class="mant-sems" style="grid-template-columns:repeat(${esperadas.length},1fr);">`;
     esperadas.forEach((e, idx) => {
-      const vis   = aVisitas[`${id}-${e.semana}-${e.visita_num}`] || {};
-      const est   = vis.estado || aSugerirEstado(e.semana);
-      const fecha = vis.fecha_real || '';
+      const vis   = aVisitas[`${id}-${e.semana}-${e.visita_num}`];
+      const est   = aEstadoVisual(vis);
+      const fecha = vis && vis.fecha_real || '';
       html += `<div class="mant-sem ms-${est}">
         <span class="ms-lbl">Visita ${idx+1}</span>
         <span class="ms-fecha">${fecha||'—'}</span>
@@ -1504,15 +1503,13 @@ function aVisitasEsperadas(m) {
   return out;
 }
 
-function aSugerirEstado(semana) {
-  const hoy = new Date();
-  if (hoy.getFullYear() !== aAño || hoy.getMonth()+1 !== aMes) {
-    return semana === 1 ? 'proximo' : 'pendiente';
-  }
-  const semHoy = Math.ceil(hoy.getDate() / 7);
-  if (semana < semHoy) return 'pendiente';
-  if (semana === semHoy) return 'proximo';
-  return 'pendiente';
+// Misma regla que /agenda: verde=realizado, ámbar=programado (tiene fecha),
+// rojo=vencido o sin programar todavía. Así los dos lugares siempre coinciden.
+function aEstadoVisual(vis) {
+  if (!vis) return 'pendiente';
+  if (vis.estado === 'realizado') return 'realizado';
+  if (vis.estado === 'vencido') return 'pendiente';
+  return vis.fecha_real ? 'proximo' : 'pendiente';
 }
 
 function aEstLbl(e) {

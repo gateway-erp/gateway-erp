@@ -418,19 +418,39 @@ function renderArrastrados() {
 }
 
 // RESUMEN DEL MES
+// Visitas esperadas de un mantenimiento según su patrón (mismo cálculo que auto_fill_mes en el backend)
+function visitasEsperadas(m) {
+  const patronStr = String(m.semanas_pattern || "1;2;3;4").replace(/^'/, "");
+  const sep = patronStr.includes(";") ? ";" : ",";
+  const patron = patronStr.split(sep).map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+  const total = parseInt(m.semanas_mes) || 1;
+  const porOcurrencia = patron.length ? Math.max(1, Math.floor(total / patron.length)) : 1;
+  const out = [];
+  patron.forEach(semana => { for (let v = 1; v <= porOcurrencia; v++) out.push({ semana, visita_num: v }); });
+  return out;
+}
+
+// Misma regla que el dashboard: verde=realizado, ámbar=programado (tiene fecha),
+// rojo=vencido o sin programar todavía. Así los dos lugares siempre coinciden.
+function estadoVisual(v) {
+  if (!v) return "over";
+  if (v.estado === "realizado") return "done";
+  if (v.estado === "vencido") return "over";
+  return v.fecha_real ? "pending" : "over";
+}
+
 function renderResumen() {
   const el = document.getElementById("resumen");
   if (!mants.length) { el.innerHTML = '<span class="res-empty">Sin mantenimientos.</span>'; return; }
   let html = '<span class="res-lbl">Mes:</span>';
   mants.forEach(m => {
-    const vm = visitas.filter(v => String(v.mant_id) === String(m.id));
-    const tot = parseInt(m.semanas_mes) || 1;
+    const esperadas = visitasEsperadas(m);
     let dots = "";
-    for (let i = 0; i < tot; i++) {
-      const v = vm[i];
-      const cls = !v ? "" : v.estado === "realizado" ? "done" : v.estado === "vencido" ? "over" : "pending";
-      dots += `<span class="res-dot ${cls}"></span>`;
-    }
+    esperadas.forEach(e => {
+      const v = visitas.find(x => String(x.mant_id) === String(m.id) &&
+        String(x.semana) === String(e.semana) && String(x.visita_num || 1) === String(e.visita_num));
+      dots += `<span class="res-dot ${estadoVisual(v)}"></span>`;
+    });
     html += `<div class="res-chip"><span class="res-nombre">${m.nombre}</span><div class="res-dots">${dots}</div></div>`;
   });
   el.innerHTML = html;

@@ -745,10 +745,11 @@ async def agenda_page(request: Request):
         "mes_actual": hoy.month,
     })
 
-@app.get("/api/agenda/{año}/{mes}")
-async def get_agenda(año: int, mes: int):
+@app.get("/api/agenda/{anio}/{mes}")
+async def get_agenda(anio: int, mes: int):
     import traceback
     try:
+        año = anio
         db.crear_mantenimiento_if_missing()
 
         # Auto-validar: si una visita quedó "pendiente" con fecha ya pasada
@@ -787,10 +788,11 @@ async def save_visita_agenda(request: Request):
     )
     return JSONResponse({"ok": True})
 
-@app.post("/api/agenda/auto-fill/{año}/{mes}")
-async def auto_fill_agenda(año: int, mes: int):
+@app.post("/api/agenda/auto-fill/{anio}/{mes}")
+async def auto_fill_agenda(anio: int, mes: int):
     import traceback
     try:
+        año = anio
         db.auto_fill_mes(año, mes)
         visitas = db.load_visitas_mes(año, mes)
         return JSONResponse({"ok": True, "visitas": visitas})

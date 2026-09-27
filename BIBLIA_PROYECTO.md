@@ -321,6 +321,16 @@ Las 7 pantallas del sistema (Presupuestos, Nuevo Presupuesto, Matrices, Matriz, 
 2. **Google Sheets corrompía `semanas_pattern`**: al escribir `"1,2,3,4"` con `value_input_option=USER_ENTERED`, Sheets lo interpretaba como el número `1234` (locale es-AR usa coma como separador de miles). Fix: separador `;` en vez de `,`, más comilla inicial forzada (`'1;2;3;4`) al escribir para garantizar texto plano, con reparación automática de filas ya corrompidas en cada carga.
 3. **Cuota de lecturas de Google Sheets agotada (429)**: `_ws()` reabría la planilla completa (`open_by_key`, ~1 request) y releía encabezados en **cada** llamada. Una sola carga de `/agenda` hacía ~21 llamadas a la API; tocar "Completar mes" sumaba otra tanda y volaba el límite por minuto. Fix: spreadsheet cacheado a nivel de proceso, verificación de encabezados una sola vez por hoja, y `cargar_agenda_completa()` que consolida las 4 lecturas separadas de `mant_visitas` (auto-validar x2 + visitas + arrastrados) en 1 sola. Bajó de ~21 a ~3 llamadas por carga de página. `auto_fill_mes` también pasó de N escrituras individuales a un solo `append_rows()` en batch.
 
+#### Ajustes de UX posteriores (2026-09-27, misma noche)
+Hechos en otra sesión de Claude Code sobre el mismo directorio (commits `8ff40d5` y `f673759`), documentados acá para que quede todo junto:
+
+- **Dashboard, vista 2 columnas (agenda + presupuestos)**: antes scrolleaba como una sola página larga. Ahora `#page-root.vista-2` tiene altura fija (`calc(100vh - 64px)`) y cada columna scrollea de forma independiente (`overflow-y: auto` propia). Se sacó el `position: sticky` de la agenda. `setVista()` bloquea el scroll del body al entrar en vista-2 y lo libera al salir.
+- **Dashboard tiene su propio widget de mantenimientos** (`#agenda-mant`, dentro de la agenda operativa del dashboard — distinto de la página `/agenda`). Al hacer click en una semana abría un `prompt()` nativo feo y sin control de estado. Se reemplazó por un modal propio (mismo patrón que el de `/agenda`): fecha, turno, botones Realizado / Guardar fecha / Desmarcar / Cancelar. Funciones nuevas en `dashboard.html`: `aClickVisita()`, `mmSetTurno()`, `mmCerrar()`, `mmAccion()`.
+- **`/agenda` — generador de WhatsApp**: el dropdown de días empezaba desde hoy; ahora empieza desde mañana (no tiene sentido mandar el mensaje del día para "hoy" a esta altura de la jornada).
+- **`/agenda` — modal de fecha**: el input `type="date"` ahora tiene `min` = hoy, no deja seleccionar fechas pasadas al asignar una visita.
+
+⚠️ **Nota de arquitectura que quedó pendiente de resolver**: el dashboard tiene su propio mini-calendario de mantenimientos (`#agenda-mant`) que ahora también tiene modal de edición, en paralelo a la página `/agenda` completa. Son dos UIs distintas escribiendo sobre las mismas hojas (`mantenimientos`, `mant_visitas`). Falta decidir si conviene unificarlas o si el dashboard queda como vista rápida y `/agenda` como la vista completa a propósito.
+
 #### Archivos del módulo
 ```
 db.py                       ← funciones mantenimientos/visitas (líneas ~440-660 aprox.)

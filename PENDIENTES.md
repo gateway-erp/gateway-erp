@@ -33,6 +33,7 @@
 - [ ] **Drag & drop en modo Manual**: por ahora Manual es "click en pendiente → elegir fecha/turno en modal". El usuario no confirmó si quiere además poder arrastrar cards directo sobre la grilla.
 - [ ] Confirmar si los 6 mantenimientos cargados son la lista completa o falta agregar más (el usuario dijo que sí son todos, pero originalmente se habló de "15 mantenimientos mensuales" — revisar si esa cifra vieja sigue vigente).
 - [ ] Evaluar si conviene integrar la vista de mantenimientos dentro del dashboard principal (agenda actual del dashboard es un calendario de texto libre aparte) en vez de página separada `/agenda`.
+- [ ] **Dos UIs de mantenimientos en paralelo**: el dashboard ya tenía su propio widget (`#agenda-mant`) que ahora también tiene modal de edición propio (agregado 2026-09-27 en otra sesión), además de la página `/agenda` completa. Ambos escriben sobre las mismas hojas `mantenimientos`/`mant_visitas`. Definir si se unifican o se mantienen a propósito (dashboard = vista rápida, `/agenda` = vista completa).
 - [ ] No usar tildes/ñ en nombres de parámetros de ruta de FastAPI (`{año}` nunca matcheaba en runtime aunque aparecía en el schema — usar `{anio}`, `{numero}`, etc.)
 - [ ] No usar comas dentro de strings guardados en Sheets vía `USER_ENTERED` si el valor podría parecer numérico (Sheets locale es-AR las interpreta como separador de miles) — usar `;` o forzar texto con comilla inicial.
 
@@ -54,6 +55,9 @@
 - [x] Editar OC desde cards Aprobados sin cambiar de estado
 - [x] Módulo Agenda de Mantenimientos: vista semanal, modo Automático/Manual, auto-validación día a día, arrastre de pendientes entre meses, generador de mensaje WhatsApp — LIVE en `/agenda` (2026-09-27)
 - [x] Navegación "volver al inicio" unificada en las 7 pantallas del sistema (logo + etiqueta "‹ Inicio")
+- [x] Dashboard: scroll independiente por columna en vista-2 (agenda | presupuestos) — antes scrolleaba todo junto
+- [x] Dashboard: modal propio para mantenimientos (reemplaza `prompt()` nativo) — fecha, turno, Realizado/Guardar/Desmarcar
+- [x] `/agenda`: dropdown de WhatsApp arranca desde mañana; input de fecha del modal no permite fechas pasadas (`min=hoy`)
 
 ---
 *Última actualización: 2026-09-27*

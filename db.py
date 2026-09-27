@@ -558,6 +558,8 @@ def auto_fill_mes(año, mes, asignar_fecha=True):
     crear_mantenimiento_if_missing()
     mants   = load_mantenimientos()
     visitas = load_visitas_mes(año, mes)
+    ws      = _ws("mant_visitas", _H_MVIS)
+    nuevas_filas = []
 
     for m in mants:
         pattern_str = str(m.get("semanas_pattern", "1;2;3;4")).lstrip("'")
@@ -588,10 +590,14 @@ def auto_fill_mes(año, mes, asignar_fecha=True):
                         if lunes_sem.month != int(mes):
                             lunes_sem = _date(int(año), int(mes), 1)
                         fecha_str = (lunes_sem + _td(days=vnum - 1)).isoformat()
-                    guardar_visita(m["id"], año, mes, semana, vnum, fecha_str, "pendiente", "mañana")
+                    nuevas_filas.append([m["id"], año, mes, semana, vnum, fecha_str, "pendiente", "mañana"])
                     visitas.append({"mant_id": str(m["id"]), "año": str(año), "mes": str(mes),
                                     "semana": str(semana), "visita_num": str(vnum),
                                     "fecha_real": fecha_str, "estado": "pendiente", "turno": "mañana"})
+
+    # Una sola escritura para todas las filas nuevas (en vez de una por mantenimiento)
+    if nuevas_filas:
+        ws.append_rows(nuevas_filas)
 
 def load_pendientes_arrastrados(año, mes):
     """Visitas 'pendiente' de meses anteriores al indicado (nunca completadas ni resueltas)."""
@@ -629,6 +635,52 @@ def auto_validar_visitas(año, mes):
                     ws.update_cell(i, col_est, "realizado")
             except ValueError:
                 pass
+
+
+def cargar_agenda_completa(año, mes):
+    """Trae todo lo necesario para /api/agenda en una sola lectura por hoja.
+
+    Reemplaza a llamar por separado auto_validar_visitas (x2), load_visitas_mes
+    y load_pendientes_arrastrados, que releían 'mant_visitas' 4 veces por carga
+    de página y agotaban la cuota de lecturas de Google Sheets.
+    """
+    from datetime import datetime, timezone, timedelta, date as _date
+    crear_mantenimiento_if_missing()
+
+    mants  = load_mantenimientos()
+    celdas = load_agenda_celdas(año, mes)
+
+    ws_vis  = _ws("mant_visitas", _H_MVIS)
+    todas   = ws_vis.get_all_records()  # única lectura de esta hoja
+    col_est = _H_MVIS.index("estado") + 1
+
+    AR  = timezone(timedelta(hours=-3))
+    hoy = datetime.now(AR).date()
+
+    # Auto-validar en memoria (día a día, fecha absoluta) y aplicar los updates necesarios
+    for i, r in enumerate(todas, start=2):
+        if r.get("estado") == "pendiente":
+            fecha_str = str(r.get("fecha_real", ""))
+            if fecha_str:
+                try:
+                    if _date.fromisoformat(fecha_str) < hoy:
+                        ws_vis.update_cell(i, col_est, "realizado")
+                        r["estado"] = "realizado"
+                except ValueError:
+                    pass
+
+    target      = (int(año), int(mes))
+    visitas     = [r for r in todas if str(r.get("año")) == str(año) and str(r.get("mes")) == str(mes)]
+    arrastrados = []
+    for r in todas:
+        try:
+            r_key = (int(r.get("año")), int(r.get("mes")))
+        except (TypeError, ValueError):
+            continue
+        if r_key < target and r.get("estado") == "pendiente":
+            arrastrados.append(r)
+
+    return mants, visitas, celdas, arrastrados
 
 
 def presupuesto_cobrado_ok(numero):

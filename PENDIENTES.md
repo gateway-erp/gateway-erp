@@ -62,6 +62,9 @@
 - [x] Layout de mantenimientos del dashboard: de columna angosta lateral a fila horizontal debajo del calendario, a todo el ancho
 - [x] Etiqueta "Dashboard" unificada bajo el logo en las 7 pantallas (antes "‹ Inicio")
 - [x] Limpiado dato corrupto: TBAR CCTV sem 1 tenía fecha "2016" guardada por error, quedaba siempre en verde
+- [x] Nav tab que iba a "/" decía "Presupuestos", renombrado a "Dashboard" en las 6 pantallas
+- [x] Etiqueta chica bajo el logo sacada del dashboard (redundante con el tab activo); se mantiene en las otras 6
+- [x] Logo de Clientes y Nuevo Presupuesto usaba `logo.png` (fondo negro, desentonaba) — unificado a `logo-gateway.jpeg`
 
 ---
 *Última actualización: 2026-09-27*

@@ -9,16 +9,16 @@
 <body>
 
 <div class="topbar">
-  <img src="/static/logo.png" alt="Gateway">
+  <a href="/" class="topbar-home" title="Volver al inicio">
+    <img src="/static/logo.png" alt="Gateway">
+    <span class="topbar-home-lbl">‹ Inicio</span>
+  </a>
   <h1>{% if edit_mode %}Editar Presupuesto{% else %}Nuevo Presupuesto{% endif %}</h1>
   <div class="sep"></div>
   <div class="chip" id="chip-numero">{{ numero }}</div>
 </div>
 
 <form method="POST" action="{% if edit_mode %}/editar/{{ numero }}{% else %}/generar{% endif %}" id="form-presupuesto">
-  <div style="margin-bottom:12px">
-    <a href="/" style="color:var(--muted);font-size:12px;text-decoration:none">← Volver al dashboard</a>
-  </div>
 
   <!-- ══ FILA SUPERIOR: datos + cliente | sidebar ════════════════════════════ -->
   <div class="layout">

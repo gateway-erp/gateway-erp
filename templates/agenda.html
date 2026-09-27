@@ -31,7 +31,10 @@
       padding: 0 32px; height: 64px; display: flex; align-items: center;
       gap: 32px; position: sticky; top: 0; z-index: 100;
     }
-    .topbar-logo { height: 36px; width: auto; cursor: pointer; }
+    .topbar-logo { height: 36px; width: auto; }
+    .topbar-home { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 1px; text-decoration: none; line-height: 1; }
+    .topbar-home-lbl { font-size: 9px; font-weight: 600; color: var(--text-dim); letter-spacing: .3px; transition: color .15s; }
+    .topbar-home:hover .topbar-home-lbl { color: var(--accent); }
     .topbar-sep  { width: 1px; height: 28px; background: var(--navy-line); }
     .topbar-nav  { display: flex; gap: 4px; flex: 1; }
     .nav-item {
@@ -208,7 +211,10 @@
 
 <!-- TOPBAR -->
 <div class="topbar">
-  <img src="/static/logo-gateway.jpeg" alt="Gateway" class="topbar-logo" onclick="location.href='/'">
+  <a href="/" class="topbar-home" title="Volver al inicio">
+    <img src="/static/logo-gateway.jpeg" alt="Gateway" class="topbar-logo">
+    <span class="topbar-home-lbl">‹ Inicio</span>
+  </a>
   <div class="topbar-sep"></div>
   <nav class="topbar-nav">
     <a class="nav-item" href="/">Presupuestos</a>

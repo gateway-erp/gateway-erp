@@ -27,6 +27,9 @@
     /* topbar */
     .topbar { background: var(--navy-mid); border-bottom: 1px solid var(--navy-line); display: flex; align-items: center; gap: 14px; padding: 0 24px; height: 56px; }
     .topbar-logo { height: 36px; width: auto; }
+    .topbar-home { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 1px; text-decoration: none; line-height: 1; }
+    .topbar-home-lbl { font-size: 9px; font-weight: 600; color: var(--text-dim); letter-spacing: .3px; transition: color .15s; }
+    .topbar-home:hover .topbar-home-lbl { color: var(--accent); }
     .topbar-sep  { width: 1px; height: 28px; background: var(--navy-line); }
     .topbar-nav  { display: flex; gap: 4px; flex: 1; }
     .nav-item { padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; color: var(--text-dim); text-decoration: none; transition: background .15s; }
@@ -101,7 +104,10 @@
 <body>
 
 <div class="topbar">
-  <img src="/static/logo.png" alt="Gateway" class="topbar-logo">
+  <a href="/" class="topbar-home" title="Volver al inicio">
+    <img src="/static/logo.png" alt="Gateway" class="topbar-logo">
+    <span class="topbar-home-lbl">‹ Inicio</span>
+  </a>
   <div class="topbar-sep"></div>
   <nav class="topbar-nav">
     <a class="nav-item" href="/">Presupuestos</a>

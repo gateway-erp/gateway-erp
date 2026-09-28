@@ -795,19 +795,25 @@ function wsPendientesPool() {
   const usados = new Set();
   wsEquipos.forEach(eq => eq.tareas.forEach(t => { if (t.tipo === "mant") usados.add(tareaKey(t)); }));
   const pool = [];
+  // visitas puede traer datos de 2 meses (semana que cruza de mes) — usar el año/mes
+  // de cada registro, no el mes "principal" global, para no mezclar meses distintos.
   visitas.filter(v => v.estado !== "realizado" && !v.fecha_real).forEach(v => {
     const m = mants.find(x => String(x.id) === String(v.mant_id));
     if (!m) return;
-    const t = { tipo:"mant", año, mes, mant_id:v.mant_id, semana:v.semana, visita_num:v.visita_num||1,
+    const t = { tipo:"mant", año:v.año, mes:v.mes, mant_id:v.mant_id, semana:v.semana, visita_num:v.visita_num||1,
                 label:`${m.nombre} (${m.horas_visita}hs)` };
-    if (!usados.has(tareaKey(t))) pool.push(t);
+    const k = tareaKey(t);
+    if (!usados.has(k)) { usados.add(k); pool.push(t); }
   });
+  // arrastrados puede repetir algo que 'visitas' ya trajo (semana que cruza justo a fin de
+  // mes) — el Set 'usados' ya lo filtra acá.
   arrastrados.forEach(v => {
     const m = mants.find(x => String(x.id) === String(v.mant_id));
     if (!m) return;
     const t = { tipo:"mant", año:v.año, mes:v.mes, mant_id:v.mant_id, semana:v.semana, visita_num:v.visita_num||1,
                 label:`${m.nombre} (${m.horas_visita}hs) · arrastrado` };
-    if (!usados.has(tareaKey(t))) pool.push(t);
+    const k = tareaKey(t);
+    if (!usados.has(k)) { usados.add(k); pool.push(t); }
   });
   return pool;
 }

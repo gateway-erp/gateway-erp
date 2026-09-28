@@ -346,6 +346,7 @@
         <button class="mbtn amber" onclick="accion('guardar')">💾 Guardar fecha</button>
         <button class="mbtn red"   onclick="accion('vencido')">✗ Marcar VENCIDO</button>
       </div>
+      <button class="mbtn ghost" onclick="accion('quitar')">🗑 Quitar — enviar a pendientes sin fecha</button>
       <button class="mbtn ghost" onclick="cerrarModal()">Cancelar</button>
     </div>
   </div>
@@ -701,9 +702,9 @@ async function accion(tipo) {
   if (!modalKey && !modalArr) return;
 
   if (modalArr) {
-    const fecha = document.getElementById("m-fecha").value || modalArr.fecha_real || "";
+    const fecha = tipo === "quitar" ? "" : (document.getElementById("m-fecha").value || modalArr.fecha_real || "");
     const turno = window._modalTurno || modalArr.turno || "mañana";
-    const estado = tipo === "guardar" ? "pendiente" : tipo;
+    const estado = (tipo === "guardar" || tipo === "quitar") ? "pendiente" : tipo;
     if (tipo === "guardar" && !fecha) { alert("Ingresá una fecha."); return; }
     await saveVisita({ ...modalArr, fecha_real: fecha, estado, turno }, modalArr.año, modalArr.mes);
     cerrarModal();
@@ -715,9 +716,9 @@ async function accion(tipo) {
     String(x.mant_id) === mid && String(x.semana) === semStr &&
     String(x.visita_num||1) === (vnumStr||"1")
   );
-  const fecha = document.getElementById("m-fecha").value || v?.fecha_real || "";
+  const fecha = tipo === "quitar" ? "" : (document.getElementById("m-fecha").value || v?.fecha_real || "");
   const turno = window._modalTurno || v?.turno || "mañana";
-  const estado = tipo === "guardar" ? (v?.estado||"pendiente") : tipo;
+  const estado = (tipo === "guardar" || tipo === "quitar") ? "pendiente" : tipo;
 
   if (tipo === "guardar" && !fecha) { alert("Ingresá una fecha."); return; }
 

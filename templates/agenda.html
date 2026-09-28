@@ -391,16 +391,35 @@ function semanaDelMes(diaNum) { return Math.ceil(diaNum / 7); }
 async function cargar() {
   spin(true);
   try {
-    const r = await fetch(`/api/agenda/${año}/${mes}`);
-    const d = await r.json();
-    if (!d.ok) { console.error(d.error); return; }
-    mants       = d.mantenimientos || [];
-    visitas     = d.visitas        || [];
-    celdas      = d.celdas         || [];
-    arrastrados = d.arrastrados    || [];
+    // La semana visible puede tener días de 2 meses distintos (ej. mié 30/09 a vie 2/10).
+    // Traemos los datos de TODOS los meses que toque la semana, no solo el del miércoles,
+    // para no perder lo que ya esté cargado en los días del mes "siguiente".
+    const combosMap = new Map();
+    weekDays().forEach(d => {
+      const a = d.getFullYear(), m = d.getMonth() + 1;
+      combosMap.set(`${a}-${m}`, { año: a, mes: m });
+    });
+    const combos = Array.from(combosMap.values()).sort((x, y) => (x.año - y.año) || (x.mes - y.mes));
+
+    const resultados = await Promise.all(
+      combos.map(c => fetch(`/api/agenda/${c.año}/${c.mes}`).then(r => r.json()))
+    );
+    const conError = resultados.find(d => !d.ok);
+    if (conError) { console.error(conError.error); return; }
+
+    mants   = resultados[0].mantenimientos || [];
+    visitas = [];
+    celdas  = [];
+    resultados.forEach(d => {
+      visitas.push(...(d.visitas || []));
+      celdas.push(...(d.celdas  || []));
+    });
+    arrastrados = resultados[resultados.length - 1].arrastrados || [];
+
     render();
-    // Si el mes no tiene ningún mantenimiento cargado, ofrecer generarlos
-    if (visitas.length === 0 && mants.length > 0) {
+    // Si el mes principal no tiene ningún mantenimiento cargado, ofrecer generarlos
+    const visitasMesPrincipal = visitas.filter(v => String(v.año) === String(año) && String(v.mes) === String(mes));
+    if (visitasMesPrincipal.length === 0 && mants.length > 0) {
       const msg = modo === "auto"
         ? `No hay mantenimientos cargados para ${MESES[mes-1]} ${año}.\n¿Completar el mes automáticamente (con fecha asignada)?`
         : `No hay mantenimientos cargados para ${MESES[mes-1]} ${año}.\n¿Generar la lista de pendientes para ubicarlos a mano?`;
@@ -424,7 +443,9 @@ async function doAutoFill(confirmar = true) {
     const r = await fetch(`/api/agenda/auto-fill/${año}/${mes}?asignar_fecha=${asignarFecha}`, { method:"POST" });
     const d = await r.json();
     if (!d.ok) { alert("No se pudo completar el mes. Probá de nuevo en un momento.\n\n" + (d.error||"")); return; }
-    visitas = d.visitas || [];
+    // Reemplazar solo las visitas de este mes — conservar las del otro mes si la semana lo cruza
+    visitas = visitas.filter(v => !(String(v.año) === String(año) && String(v.mes) === String(mes)));
+    visitas.push(...(d.visitas || []));
     render();
   } finally { spin(false); }
 }
@@ -482,12 +503,15 @@ function estadoVisual(v) {
 function renderResumen() {
   const el = document.getElementById("resumen");
   if (!mants.length) { el.innerHTML = '<span class="res-empty">Sin mantenimientos.</span>'; return; }
+  // visitas puede traer datos de 2 meses (semana que cruza de mes) — el resumen es
+  // siempre del mes "principal" (el que se está navegando con ‹ / ›).
+  const visitasMes = visitas.filter(v => String(v.año) === String(año) && String(v.mes) === String(mes));
   let html = '<span class="res-lbl">Mes:</span>';
   mants.forEach(m => {
     const esperadas = visitasEsperadas(m);
     let dots = "";
     esperadas.forEach(e => {
-      const v = visitas.find(x => String(x.mant_id) === String(m.id) &&
+      const v = visitasMes.find(x => String(x.mant_id) === String(m.id) &&
         String(x.semana) === String(e.semana) && String(x.visita_num || 1) === String(e.visita_num));
       dots += `<span class="res-dot ${estadoVisual(v)}"></span>`;
     });
@@ -562,7 +586,8 @@ function renderWeek() {
 
 // PENDIENTES SIN FECHA
 function renderPendientes() {
-  const sin = visitas.filter(v => v.estado !== "realizado" && !v.fecha_real);
+  const visitasMes = visitas.filter(v => String(v.año) === String(año) && String(v.mes) === String(mes));
+  const sin = visitasMes.filter(v => v.estado !== "realizado" && !v.fecha_real);
   const sec = document.getElementById("pend-sec");
   if (!sin.length) { sec.style.display = "none"; return; }
   sec.style.display = "block";
@@ -711,21 +736,21 @@ async function saveVisita(data, targetAño = año, targetMes = mes) {
         semana:data.semana, visita_num:data.visita_num||1,
         fecha_real:data.fecha_real||"", estado:data.estado||"pendiente", turno:data.turno||"mañana" }),
     });
-    if (String(targetAño) === String(año) && String(targetMes) === String(mes)) {
-      // Actualizar local (mes actual)
-      const upd = { mant_id:String(data.mant_id), año:String(año), mes:String(mes),
-        semana:String(data.semana), visita_num:String(data.visita_num||1),
-        fecha_real:data.fecha_real||"", estado:data.estado||"pendiente", turno:data.turno||"mañana" };
-      const idx = visitas.findIndex(x =>
-        String(x.mant_id)===String(data.mant_id) && String(x.semana)===String(data.semana) &&
-        String(x.visita_num||1)===String(data.visita_num||1));
-      if (idx>=0) visitas[idx]=upd; else visitas.push(upd);
-    } else {
-      // Era un arrastrado de otro mes: sacarlo de la lista local si quedó resuelto
-      arrastrados = arrastrados.filter(x =>
-        !(String(x.mant_id)===String(data.mant_id) && String(x.año)===String(targetAño) &&
-          String(x.mes)===String(targetMes) && String(x.semana)===String(data.semana)));
-    }
+    // visitas puede tener datos de más de un mes (semana que cruza de mes) — matchear
+    // siempre por la clave completa (mant_id + año + mes + semana + visita_num).
+    const upd = { mant_id:String(data.mant_id), año:String(targetAño), mes:String(targetMes),
+      semana:String(data.semana), visita_num:String(data.visita_num||1),
+      fecha_real:data.fecha_real||"", estado:data.estado||"pendiente", turno:data.turno||"mañana" };
+    const idx = visitas.findIndex(x =>
+      String(x.mant_id)===String(data.mant_id) && String(x.año)===String(targetAño) &&
+      String(x.mes)===String(targetMes) && String(x.semana)===String(data.semana) &&
+      String(x.visita_num||1)===String(data.visita_num||1));
+    if (idx>=0) visitas[idx]=upd; else visitas.push(upd);
+    // Si estaba en arrastrados y ahora se resolvió (o se le asignó fecha), sacarlo de ahí
+    arrastrados = arrastrados.filter(x =>
+      !(String(x.mant_id)===String(data.mant_id) && String(x.año)===String(targetAño) &&
+        String(x.mes)===String(targetMes) && String(x.semana)===String(data.semana) &&
+        String(x.visita_num||1)===String(data.visita_num||1)));
     render();
   } finally { spin(false); }
 }
@@ -736,7 +761,8 @@ async function guardarLibre(dia, dMes, dAnio, texto) {
   await fetch("/api/agenda/celda", { method:"POST",
     headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
   const upd = { año:String(dAnio), mes:String(dMes), dia:String(dia), turno:"libre", texto, color:"", negrita:"no" };
-  const idx = celdas.findIndex(c => String(c.dia)===String(dia) && String(c.mes||mes)===String(dMes) && c.turno==="libre");
+  const idx = celdas.findIndex(c => String(c.dia)===String(dia) && String(c.año||año)===String(dAnio) &&
+    String(c.mes||mes)===String(dMes) && c.turno==="libre");
   if (idx>=0) celdas[idx]=upd; else celdas.push(upd);
   fillWsDias(); genMsg();
 }
@@ -851,17 +877,41 @@ async function wsQuitarTarea(idx, tIdx) {
 async function wsConfirmarTareas() {
   const iso = document.getElementById("ws-dia").value;
   if (!iso) { alert("Elegí un día primero."); return; }
-  const pendientesMant = [];
-  wsEquipos.forEach(eq => eq.tareas.forEach(t => { if (t.tipo === "mant" && !t.confirmado) pendientesMant.push(t); }));
-  if (!pendientesMant.length) return;
+
+  const pendientesMant  = [];
+  const pendientesLibre = [];
+  wsEquipos.forEach(eq => eq.tareas.forEach(t => {
+    if (t.confirmado) return;
+    (t.tipo === "mant" ? pendientesMant : pendientesLibre).push(t);
+  }));
+  if (!pendientesMant.length && !pendientesLibre.length) return;
 
   const btn = document.getElementById("btn-confirmar");
   btn.disabled = true; btn.textContent = "Confirmando…";
+
   for (const t of pendientesMant) {
     await saveVisita({ mant_id:t.mant_id, semana:t.semana, visita_num:t.visita_num,
                         fecha_real: iso, estado:"pendiente", turno: t.turno || "mañana" }, t.año, t.mes);
     t.confirmado = true;
   }
+
+  if (pendientesLibre.length) {
+    // El texto libre del generador no se guardaba en ningún lado — quedaba solo en el
+    // mensaje y desaparecía al recargar. Ahora se agrega al "trabajo libre" del día,
+    // así queda visible en la grilla semanal como cualquier otra nota del día.
+    const dia   = new Date(iso + "T00:00:00");
+    const dNum  = dia.getDate();
+    const dMes  = dia.getMonth() + 1;
+    const dAnio = dia.getFullYear();
+    const celdaActual = celdas.find(c => String(c.dia) === String(dNum) &&
+      String(c.año||año) === String(dAnio) && String(c.mes||mes) === String(dMes) && c.turno === "libre");
+    const previo = celdaActual ? celdaActual.texto : "";
+    const nuevasLineas = pendientesLibre.map(t => t.texto).join("\n");
+    const textoFinal = previo ? `${previo}\n${nuevasLineas}` : nuevasLineas;
+    await guardarLibre(dNum, dMes, dAnio, textoFinal);
+    pendientesLibre.forEach(t => t.confirmado = true);
+  }
+
   render();
   btn.textContent = "✓ Confirmado";
   setTimeout(() => { btn.textContent = "✓ Confirmar tareas"; btn.disabled = false; }, 1500);
@@ -870,7 +920,7 @@ async function wsConfirmarTareas() {
 function wsAgregarLibre(idx, inputEl) {
   const txt = inputEl.value.trim();
   if (!txt) return;
-  wsEquipos[idx].tareas.push({ tipo:"libre", texto: txt, turno:"mañana" });
+  wsEquipos[idx].tareas.push({ tipo:"libre", texto: txt, turno:"mañana", confirmado:false });
   inputEl.value = "";
   renderWsEquipos(); genMsg();
 }
@@ -888,7 +938,7 @@ function renderWsEquipos() {
     ).join("");
     const tareasHtml = eq.tareas.map((t, tIdx) => {
       const turno = t.turno || "mañana";
-      const sinConfirmar = t.tipo === "mant" && !t.confirmado;
+      const sinConfirmar = !t.confirmado;
       return `
       <div class="ws-tarea-item ${sinConfirmar ? 'sin-confirmar' : ''}">
         <span>${t.tipo==="mant" ? esc(t.label) : esc(t.texto)}${sinConfirmar ? ' <em class="ws-tarea-flag">sin confirmar</em>' : ''}</span>

@@ -599,42 +599,6 @@ def auto_fill_mes(año, mes, asignar_fecha=True):
     if nuevas_filas:
         ws.append_rows(nuevas_filas)
 
-def load_pendientes_arrastrados(año, mes):
-    """Visitas 'pendiente' de meses anteriores al indicado (nunca completadas ni resueltas)."""
-    target = (int(año), int(mes))
-    ws = _ws("mant_visitas", _H_MVIS)
-    result = []
-    for r in ws.get_all_records():
-        try:
-            r_key = (int(r.get("año")), int(r.get("mes")))
-        except (TypeError, ValueError):
-            continue
-        if r_key < target and r.get("estado") == "pendiente":
-            result.append(r)
-    return result
-
-def auto_validar_visitas(año, mes):
-    """Marca como 'realizado' las visitas pasadas que siguen en 'pendiente'."""
-    from datetime import datetime, timezone, timedelta, date as _date
-    AR  = timezone(timedelta(hours=-3))
-    hoy = datetime.now(AR).date()
-
-    ws      = _ws("mant_visitas", _H_MVIS)
-    records = ws.get_all_records()
-    col_est = _H_MVIS.index("estado") + 1
-
-    for i, r in enumerate(records, start=2):
-        if (str(r.get("año")) == str(año) and str(r.get("mes")) == str(mes)
-                and r.get("estado") == "pendiente"):
-            fecha_str = str(r.get("fecha_real", ""))
-            if not fecha_str:
-                continue
-            try:
-                fd = _date.fromisoformat(fecha_str)
-                if fd < hoy:
-                    ws.update_cell(i, col_est, "realizado")
-            except ValueError:
-                pass
 
 
 def cargar_agenda_completa(año, mes):
@@ -677,7 +641,9 @@ def cargar_agenda_completa(año, mes):
             r_key = (int(r.get("año")), int(r.get("mes")))
         except (TypeError, ValueError):
             continue
-        if r_key < target and r.get("estado") == "pendiente":
+        # Solo cuenta como "arrastrado" si sigue sin fecha asignada — una vez que se
+        # programó (aunque sea para el mes siguiente) deja de ser un pendiente sin resolver.
+        if r_key < target and r.get("estado") == "pendiente" and not r.get("fecha_real"):
             arrastrados.append(r)
 
     return mants, visitas, celdas, arrastrados

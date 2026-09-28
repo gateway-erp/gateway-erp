@@ -767,6 +767,28 @@ async def save_celda_agenda(request: Request):
     )
     return JSONResponse({"ok": True})
 
+@app.post("/api/admin/fix-semanas-invalidas")
+async def fix_semanas_invalidas():
+    """Endpoint temporal: corrige filas con 'semana' fuera del patrón real del mantenimiento (uso único)."""
+    ws = db._ws("mant_visitas", db._H_MVIS)
+    records = ws.get_all_records()
+    mants = {str(m["id"]): m for m in db.load_mantenimientos()}
+    col_semana = db._H_MVIS.index("semana") + 1
+    corregidas = []
+    for i, r in enumerate(records, start=2):
+        mid = str(r.get("mant_id"))
+        m = mants.get(mid)
+        if not m:
+            continue
+        patron_str = str(m.get("semanas_pattern", "")).lstrip("'")
+        sep = ";" if ";" in patron_str else ","
+        patron = [int(p.strip()) for p in patron_str.split(sep) if p.strip().isdigit()]
+        if patron and int(r.get("semana")) not in patron:
+            nueva = patron[0]
+            ws.update_cell(i, col_semana, nueva)
+            corregidas.append({"fila": i, "mant_id": mid, "semana_vieja": r.get("semana"), "semana_nueva": nueva})
+    return JSONResponse({"ok": True, "corregidas": corregidas})
+
 @app.post("/api/agenda/visita")
 async def save_visita_agenda(request: Request):
     data = await request.json()

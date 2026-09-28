@@ -362,6 +362,29 @@ Hechos en otra sesión de Claude Code sobre el mismo directorio (commits `8ff40d
 - **Botón "✓ Confirmar tareas"**: antes cada tarea elegida desde pendientes se guardaba sola en el momento de elegirla, sin instancia de revisión — confuso, no quedaba claro qué había impactado en el calendario. Ahora armar el mensaje (equipos, tareas, turnos) queda todo en memoria (campo `confirmado:false` en cada tarea-mantenimiento) hasta apretar "Confirmar tareas", que recién ahí guarda todo en la Sheet de una vez y refresca grilla/pendientes/resumen. Las tareas sin confirmar se marcan con borde ámbar + etiqueta "sin confirmar". Cambiar el turno de una tarea ya confirmada la vuelve a marcar `confirmado:false` (necesita reconfirmarse para persistir el cambio).
 - **Formato del mensaje**: cada línea de tarea va en negrita+cursiva (`_*texto*_`) para resaltar, y el turno se muestra como emoji + etiqueta chica (`☀️ _T-Mañana_` / `🌙 _T-Tarde_`) en vez de ir solo el ícono.
 
+#### Bug grave — semana que cruza de mes perdía datos (2026-09-28)
+El usuario preguntó 4 cosas de arquitectura que destaparon este bug: **la vista semanal solo pedía datos de UN mes** (`syncMes()` usa el mes del miércoles de la semana visible), así que cuando la semana tenía días de dos meses (ej. mié 30/09 a vie 2/10), los días del mes "siguiente" (jueves y viernes, ya en octubre) se mostraban vacíos aunque tuvieran mantenimientos o texto libre guardado — porque esos datos nunca se pedían al servidor. Con fecha real 2026-09-28, la semana actual cruzaba justo este límite, así que se pudo reproducir y confirmar el fix en vivo.
+
+**Fix (agenda.html):**
+- `cargar()` ahora arma la lista de todos los `{año,mes}` que toca la semana visible y pide `/api/agenda/{año}/{mes}` para cada uno con `Promise.all`, mergeando `visitas`/`celdas` de todos los meses involucrados. `mants` sale del primer fetch (catálogo, es igual en todos los meses). `arrastrados` sale del fetch del mes MÁS TARDÍO de los combos (como su definición es "todo lo anterior a este mes", ya cubre a los meses anteriores del combo).
+- `doAutoFill()` ya no reemplaza `visitas` entero — solo la porción del mes que autocompletó, para no pisar los datos del otro mes ya mergeados.
+- `saveVisita()` reescrito para matchear siempre por clave completa (`mant_id+año+mes+semana+visita_num`) en vez de asumir que todo pertenece al "mes actual" — evita que dos meses con el mismo número de semana (1-4, se repite cada mes) se confundan entre sí.
+- `renderResumen()` y `renderPendientes()` filtran explícitamente `visitas` al mes "principal" (`año`/`mes` global) antes de calcular — son widgets de resumen MENSUAL, no deben mezclar datos de 2 meses aunque la semana los cruce.
+- `guardarLibre()` ahora compara año (no solo día+mes) al buscar la celda en el array local — antes el día 30 de un mes podía confundirse con el día 30 de otro.
+- `wsPendientesPool()`: usaba el año/mes global para TODAS las entradas de `visitas` en vez del propio de cada registro (bug latente, quedaba enmascarado cuando solo había 1 mes cargado). Al mergear 2 meses, esto causaba que el mismo pendiente apareciera duplicado en el selector "+ Desde pendientes" (una vez vía `visitas`, otra vía `arrastrados`, con años/meses mezclados). Fix: usar `v.año`/`v.mes` de cada registro + un solo `Set` de deduplicación compartido entre ambas fuentes.
+
+**Fix (db.py):**
+- Un "arrastrado" deja de considerarse tal apenas tiene `fecha_real` asignada — antes el filtro solo miraba `año/mes` + `estado`, así que algo recién programado para el mes siguiente seguía apareciendo como "arrastrado sin resolver" aunque ya estuviera agendado.
+- Sacado código muerto: `auto_validar_visitas()` y `load_pendientes_arrastrados()` como funciones standalone — ya estaban inlineadas dentro de `cargar_agenda_completa()` desde el fix de cuota de Sheets, estas versiones sueltas no se llamaban desde ningún lado.
+
+#### Gap real — texto libre del generador de WhatsApp no se guardaba en ningún lado
+El usuario cargó una tarea de texto libre en el generador de WhatsApp y no la vio reflejada en el calendario — tenía razón, ese texto nunca se persistía, solo vivía en el mensaje compuesto en memoria del navegador. Fix: al apretar "Confirmar tareas", el texto libre de cada equipo se concatena y se agrega al campo "trabajo libre" del día elegido (mismo campo que la grilla semanal ya mostraba), así queda visible ahí y sobrevive a un reload. Limitación conocida y aceptada: si luego se saca esa tarea del compositor, NO se revierte el texto ya agregado a la celda (el campo es un blob de texto libre por día, no itemizado) — el operador puede editarlo directamente en la grilla si hace falta sacar algo.
+
+⚠️ **Aclaración importante de esta sesión**: hay DOS calendarios de texto libre distintos en el sistema y es fácil confundirlos:
+1. El calendario general del **dashboard** (celdas M/T por día, tabla mensual) — siempre fue editable directamente ahí, nunca estuvo en el alcance de "todo se edita solo en /agenda". Es una función de notas libres sin relación con mantenimientos.
+2. El campo "trabajo libre" por día dentro de **`/agenda`** (grilla semanal) — es el que alimenta el generador de WhatsApp y donde ahora también aterriza el texto libre confirmado desde el compositor de equipos.
+Ambos escriben a la misma hoja `agenda_celdas`, pero currently no está unificada la experiencia entre uno y otro — quedó como posible ítem a evaluar más adelante si generan confusión.
+
 ⚠️ **Aclaración de negocio — las horas NO tienen que cerrar matemáticamente**: ver nota más arriba en la sección de mantenimientos precargados. La cantidad de visitas (`semanas_mes`) es la fuente de verdad para toda la programación; las horas son solo una etiqueta informativa.
 
 #### Archivos del módulo

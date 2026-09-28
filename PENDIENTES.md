@@ -40,6 +40,10 @@
 - [x] Generador de WhatsApp rediseñado: soporta 2+ equipos el mismo día, cada uno con técnicos elegidos a mano y tareas desde pendientes (con un click) o texto libre
 - [ ] No usar tildes/ñ en nombres de parámetros de ruta de FastAPI (`{año}` nunca matcheaba en runtime aunque aparecía en el schema — usar `{anio}`, `{numero}`, etc.)
 - [ ] No usar comas dentro de strings guardados en Sheets vía `USER_ENTERED` si el valor podría parecer numérico (Sheets locale es-AR las interpreta como separador de miles) — usar `;` o forzar texto con comilla inicial.
+- [x] **Bug grave: semana que cruza de mes perdía los datos del mes siguiente** — `cargar()` solo pedía un mes (el del miércoles de la semana visible), así que jueves/viernes de la semana quedaban vacíos si ya eran del mes siguiente. Ahora se piden todos los meses que toque la semana y se mergean. Reproducido y confirmado en vivo con la semana real 28/09-2/10/2026.
+- [x] "Arrastrado" seguía marcado como tal aunque ya tuviera fecha asignada (el filtro no miraba `fecha_real`) — corregido en `cargar_agenda_completa`.
+- [x] Texto libre del generador de WhatsApp no se guardaba en ningún lado — ahora se agrega al "trabajo libre" del día al confirmar. Limitación conocida: sacarlo del compositor no revierte el texto ya guardado en la celda (hay que editarla a mano si hace falta).
+- [ ] **Dos calendarios de texto libre sin unificar**: el del dashboard (M/T por día) y el de `/agenda` (trabajo libre semanal) escriben a la misma hoja `agenda_celdas` pero son experiencias separadas — evaluar si conviene unificarlas más adelante.
 
 ## Módulos nuevos — por arrancar
 

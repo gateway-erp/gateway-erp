@@ -633,8 +633,25 @@ def cargar_agenda_completa(año, mes):
                 except ValueError:
                     pass
 
-    target      = (int(año), int(mes))
-    visitas     = [r for r in todas if str(r.get("año")) == str(año) and str(r.get("mes")) == str(mes)]
+    target  = (int(año), int(mes))
+    visitas = []
+    for r in todas:
+        if str(r.get("año")) == str(año) and str(r.get("mes")) == str(mes):
+            visitas.append(r)
+            continue
+        # El operador puede reprogramar un mantenimiento para una fecha de OTRO mes
+        # (ej. uno de septiembre reagendado para el 5/10). La fila sigue "perteneciendo"
+        # a su mes de origen (así no se pisa con el ciclo propio de ese mes), pero tiene
+        # que verse al mirar el mes donde realmente va a pasar — si no, queda invisible
+        # en cualquier vista mensual (dashboard, resumen) de ese otro mes.
+        fecha_str = str(r.get("fecha_real", ""))
+        if fecha_str:
+            try:
+                fd = _date.fromisoformat(fecha_str)
+                if (fd.year, fd.month) == target:
+                    visitas.append(r)
+            except ValueError:
+                pass
     arrastrados = []
     for r in todas:
         try:

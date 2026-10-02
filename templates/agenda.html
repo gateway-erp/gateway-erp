@@ -92,7 +92,7 @@
 
     /* ── GRILLA SEMANAL ── */
     .week-grid {
-      display: grid; grid-template-columns: repeat(5, 1fr);
+      display: grid; grid-template-columns: repeat(7, 1fr);
       border: 1px solid var(--navy-line); border-radius: 10px;
       overflow: hidden; background: var(--navy-card);
       margin-bottom: 14px;
@@ -101,7 +101,7 @@
     .day-col:last-child { border-right: none; }
     .day-col.is-today { background: rgba(59,130,246,.07); }
     .day-col.is-past  { opacity: .75; }
-    .day-col.is-weekend { display: none; }
+    .day-col.is-finde { background: rgba(0,0,0,.12); }
 
     .day-head {
       padding: 7px 10px; border-bottom: 1px solid var(--navy-line);
@@ -563,7 +563,8 @@ function renderWeek() {
       String(c.año||año) === String(dAnio) && String(c.mes||mes) === String(dMes) && c.turno === "libre");
     const libreVal = celda ? celda.texto : "";
 
-    const clsDia = esHoy ? "is-today" : esPas ? "is-past" : "";
+    const esFinde = dow === 0 || dow === 6;
+    const clsDia = [esHoy && "is-today", esPas && "is-past", esFinde && "is-finde"].filter(Boolean).join(" ");
     html += `<div class="day-col ${clsDia}" data-iso="${iso}" data-dia="${dNum}">
       <div class="day-head">
         <span class="day-dow">${DIAS_C[dow]}</span>
@@ -606,19 +607,21 @@ function renderPendientes() {
 
 // ── SEMANA ───────────────────────────────────────────────────────────────────
 function weekDays() {
-  return Array.from({length:5}, (_,i) => {
+  // Lunes a domingo — la mayoría de los trabajos también caen en fin de semana,
+  // antes se cortaba en viernes y quedaban invisibles.
+  return Array.from({length:7}, (_,i) => {
     const d = new Date(pivote); d.setDate(pivote.getDate() + i); return d;
   });
 }
 
 function buildSemLabel(dias) {
-  const d0 = dias[0], d4 = dias[4];
+  const d0 = dias[0], dN = dias[dias.length - 1];
   const m0 = MESES[d0.getMonth()].substring(0,3);
-  const m4 = MESES[d4.getMonth()].substring(0,3);
-  const mesStr = d0.getMonth() === d4.getMonth()
+  const mN = MESES[dN.getMonth()].substring(0,3);
+  const mesStr = d0.getMonth() === dN.getMonth()
     ? `${m0} ${d0.getFullYear()}`
-    : `${m0} – ${m4} ${d4.getFullYear()}`;
-  return `${d0.getDate()} al ${d4.getDate()} de ${mesStr}`;
+    : `${m0} – ${mN} ${dN.getFullYear()}`;
+  return `${d0.getDate()} al ${dN.getDate()} de ${mesStr}`;
 }
 
 function semAnt() {
@@ -772,12 +775,11 @@ async function guardarLibre(dia, dMes, dAnio, texto) {
 function fillWsDias() {
   const sel = document.getElementById("ws-dia");
   const prev = sel.value;
-  // Mostrar próximos 14 días hábiles a partir de mañana
+  // Mostrar próximos 14 días (incluye fin de semana — el operador suele trabajar sábados/domingos)
   let opts = `<option value="">— Seleccionar —</option>`;
   for (let i = 1; i <= 14; i++) {
     const d = new Date(HOY); d.setDate(HOY.getDate() + i);
     const dow = d.getDay();
-    if (dow === 0 || dow === 6) continue;
     const iso = isoDate(d);
     const lbl = `${DIAS_F[dow]} ${d.getDate()}/${zz(d.getMonth()+1)}`;
     opts += `<option value="${iso}">${lbl}</option>`;

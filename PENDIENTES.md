@@ -44,6 +44,11 @@
 - [x] "Arrastrado" seguía marcado como tal aunque ya tuviera fecha asignada (el filtro no miraba `fecha_real`) — corregido en `cargar_agenda_completa`.
 - [x] Texto libre del generador de WhatsApp no se guardaba en ningún lado — ahora se agrega al "trabajo libre" del día al confirmar. Limitación conocida: sacarlo del compositor no revierte el texto ya guardado en la celda (hay que editarla a mano si hace falta).
 - [ ] **Dos calendarios de texto libre sin unificar**: el del dashboard (M/T por día) y el de `/agenda` (trabajo libre semanal) escriben a la misma hoja `agenda_celdas` pero son experiencias separadas — evaluar si conviene unificarlas más adelante.
+- [x] **Bug grave #2: mantenimiento reprogramado a otro mes no se veía en el mes destino** (ej. de septiembre reprogramado al 5/10 — invisible en el dashboard de octubre). Arreglado en `cargar_agenda_completa` incluyendo filas de otro mes de origen cuya fecha_real caiga en el mes pedido. Confirmado en vivo.
+- [ ] Edge case conocido sin resolver: si se reprograma un mantenimiento a otro mes y DESPUÉS se corre "Completar mes" sobre ese mes destino para el mismo slot, puede quedar una fila nativa duplicada compitiendo con la reprogramada. Poco frecuente, no resuelto a propósito (evitar mover filas físicamente entre meses y arriesgar colisiones).
+- [x] Grilla semanal de `/agenda` pasaba por alto sábado y domingo (solo lun-vie) — el operador trabaja fines de semana seguido. Ahora muestra 7 días, y el selector de día del generador de WhatsApp también los incluye.
+- [x] Dato corrupto: 4 mantenimientos tenían una visita con `semana` fuera de su patrón real (semana=4 en mantenimientos cuyo patrón es "1;3" o "3") — restos de pruebas previas al fix de las comas en Sheets. Corregidas las 4 filas.
+- [x] Agregado botón "Quitar — enviar a pendientes sin fecha" en el modal principal de `/agenda` — antes no había forma de desasignar una tarea ya cargada en la grilla, solo marcarla realizado/vencido/cambiar fecha.
 
 ## Módulos nuevos — por arrancar
 

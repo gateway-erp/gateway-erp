@@ -385,6 +385,16 @@ El usuario cargó una tarea de texto libre en el generador de WhatsApp y no la v
 2. El campo "trabajo libre" por día dentro de **`/agenda`** (grilla semanal) — es el que alimenta el generador de WhatsApp y donde ahora también aterriza el texto libre confirmado desde el compositor de equipos.
 Ambos escriben a la misma hoja `agenda_celdas`, pero currently no está unificada la experiencia entre uno y otro — quedó como posible ítem a evaluar más adelante si generan confusión.
 
+#### Bug grave #2 — mantenimiento reprogramado a OTRO mes era invisible en ese mes (2026-10-02)
+Variante más amplia del bug de semana-cruzando-mes: el usuario reprogramó un mantenimiento de septiembre para el **5 de octubre** (vía el generador de WhatsApp, un mes de diferencia, no solo una semana). La fila sigue "perteneciendo" a septiembre en la Sheet (año/mes de origen, por diseño — ver más abajo), pero el dashboard al mirar **octubre completo** nunca la encontraba, porque `cargar_agenda_completa(año,mes)` filtraba estrictamente por año/mes de la fila, sin mirar nunca a dónde apunta realmente `fecha_real`.
+
+**Fix (db.py → `cargar_agenda_completa`):** además de las filas nativas del mes pedido, ahora también se incluyen filas de **otro mes de origen** cuya `fecha_real` caiga dentro del mes pedido. No se mueve la fila físicamente (seguiría bookkeeped en septiembre) — solo se la incluye también en la respuesta cuando se pide octubre, para que cualquier vista mensual (dashboard, resumen de `/agenda`) la vea donde realmente va a pasar. Afecta a ambas pantallas porque comparten el mismo endpoint.
+
+⚠️ **Limitación conocida y aceptada**: si más adelante se corre "Completar mes" sobre el mes DESTINO (octubre, en este ejemplo) y ese mismo slot (mant_id + semana) todavía no tiene una fila nativa de octubre, el auto-fill va a crear una fila nueva nativa para octubre en esa semana — quedando dos filas "compitiendo" conceptualmente por el mismo slot (la movida desde septiembre + la nativa de octubre). Es un caso borde poco frecuente (requiere reprogramar manualmente Y DESPUÉS auto-completar el mismo mes); no se resolvió para no arriesgar colisiones de datos al mover filas físicamente entre meses.
+
+#### Fix — grilla semanal de `/agenda` pasa de 5 a 7 días
+Solo mostraba lunes a viernes. El operador normalmente también tiene trabajo sábados y domingos, y esos días eran completamente invisibles — ni se veían tareas cargadas ahí ni había forma de cargar algo nuevo para un fin de semana. Ahora `weekDays()` devuelve 7 días (lun-dom), sábado/domingo se marcan con fondo distinto (`.is-finde`), y el selector de día del generador de WhatsApp ya no se salta el fin de semana.
+
 ⚠️ **Aclaración de negocio — las horas NO tienen que cerrar matemáticamente**: ver nota más arriba en la sección de mantenimientos precargados. La cantidad de visitas (`semanas_mes`) es la fuente de verdad para toda la programación; las horas son solo una etiqueta informativa.
 
 #### Archivos del módulo

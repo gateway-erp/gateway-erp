@@ -1190,12 +1190,12 @@ async function generarImagen() {
     ctx.textAlign = "center";
     ctx.fillStyle = "#0F1F3D";
     ctx.font = `800 24px ${fFamily}`;
-    ctx.fillText("🔧 AGENDA DEL DÍA", W / 2, cy + 20);
+    ctx.fillText(modelo.fechaFmt, W / 2, cy + 20);
     cy += 30;
 
     ctx.fillStyle = "#3B82F6";
     ctx.font = `700 16px ${fFamily}`;
-    ctx.fillText(modelo.fechaFmt, W / 2, cy + 14);
+    ctx.fillText("📅🔧 AGENDA DEL DÍA", W / 2, cy + 14);
     cy += 22 + 14;
 
     ctx.strokeStyle = "#E2E5EA"; ctx.lineWidth = 1.5;

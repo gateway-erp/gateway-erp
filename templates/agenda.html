@@ -371,8 +371,9 @@ let año      = pivote.getFullYear();
 let mes      = pivote.getMonth() + 1;
 let modo     = "auto";
 let mants    = [], visitas = [], celdas = [], arrastrados = [];
-let modalKey = null;    // "mantId_semana_visitaNum" (mes actual)
-let modalArr = null;    // { mant_id, semana, visita_num, año, mes } (arrastrado de otro mes)
+let modalKey    = null; // "mantId_semana_visitaNum" (mes actual)
+let modalOrigen = null; // { año, mes } reales de la visita abierta con abrirModal (puede ser "prestada" de otro mes)
+let modalArr    = null; // { mant_id, semana, visita_num, año, mes } (arrastrado de otro mes)
 
 // ── UTILS ────────────────────────────────────────────────────────────────────
 function getMondayOf(d) {
@@ -657,6 +658,10 @@ function abrirModal(key) {
   const m = mants.find(x => String(x.id) === mid);
   if (!m) return;
   modalKey = key;
+  // La visita puede venir "prestada" de otro mes de origen (reprogramada para una fecha
+  // de este mes) — hay que guardar y usar SU año/mes real, no el mes que se está viendo,
+  // si no el guardado posterior crea una fila fantasma en el mes equivocado.
+  modalOrigen = { año: v?.año || año, mes: v?.mes || mes };
   document.getElementById("m-title").textContent = m.nombre;
   document.getElementById("m-sub").textContent =
     `${TEC_LBL[m.tecnicos]||m.tecnicos} · ${m.horas_visita}hs · Semana ${semStr}`;
@@ -686,8 +691,9 @@ function abrirModalArrastrado(idx) {
 
 function cerrarModal() {
   document.getElementById("overlay").classList.remove("open");
-  modalKey = null;
-  modalArr = null;
+  modalKey    = null;
+  modalOrigen = null;
+  modalArr    = null;
 }
 function setTurno(t) {
   document.getElementById("t-man").classList.toggle("active", t === "mañana");
@@ -725,8 +731,12 @@ async function accion(tipo) {
 
   if (tipo === "guardar" && !fecha) { alert("Ingresá una fecha."); return; }
 
+  // Usar el año/mes REAL de la visita (puede estar "prestada" de otro mes de origen),
+  // no el mes que se está viendo — si no, esto crea una fila fantasma en el mes equivocado
+  // y la visita original nunca se toca (el bug de "no se borra").
+  const { año: origAño, mes: origMes } = modalOrigen || { año, mes };
   await saveVisita({ mant_id:mid, semana:parseInt(semStr), visita_num:parseInt(vnumStr||1),
-                     fecha_real:fecha, estado, turno });
+                     fecha_real:fecha, estado, turno }, origAño, origMes);
   cerrarModal();
 }
 

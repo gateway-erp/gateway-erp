@@ -397,6 +397,14 @@ Solo mostraba lunes a viernes. El operador normalmente también tiene trabajo s�
 
 ⚠️ **Aclaración de negocio — las horas NO tienen que cerrar matemáticamente**: ver nota más arriba en la sección de mantenimientos precargados. La cantidad de visitas (`semanas_mes`) es la fuente de verdad para toda la programación; las horas son solo una etiqueta informativa.
 
+#### Bug grave #3 — "Quitar" no funcionaba en visitas prestadas de otro mes (2026-10-03)
+Efecto colateral del fix del bug #2 (visitas visibles en el mes destino aunque su bookkeeping sea de otro mes de origen): al abrir el modal de una de esas visitas "prestadas" y tocar cualquier acción (Guardar fecha, Marcar realizado/vencido, Quitar), `accion()` guardaba usando el año/mes de la vista ACTUAL (el mes que se está mirando), no el año/mes real de la fila. Resultado: creaba una fila nueva en el mes equivocado con los datos del cambio, mientras la fila original (con su fecha_real vieja) quedaba intacta — el botón "Quitar" visualmente no hacía nada.
+
+**Fix:** `abrirModal()` ahora guarda el año/mes real de la visita encontrada en una variable `modalOrigen`, y `accion()` la usa al llamar `saveVisita()` en vez de asumir el mes principal de la vista. Confirmado en vivo: se pudo quitar correctamente una visita de TBAR CCTV (origen septiembre) que estaba reprogramada para el 5/10.
+
+#### Mensaje de WhatsApp con marco visual (2026-10-03)
+Pedido estético: que el mensaje generado se destaque como algo distinto dentro del chat del grupo, no como un mensaje más. Se agregó un marco con línea de separadores (`▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬`) arriba y abajo, con título "🔧 AGENDA DEL DÍA 🔧" antes de la fecha. WhatsApp no soporta recuadros reales (solo *negrita*, _cursiva_, ~tachado~, texto monoespaciado), esto es lo más parecido logrado con texto plano + unicode.
+
 #### Archivos del módulo
 ```
 db.py                       ← funciones mantenimientos/visitas (líneas ~440-660 aprox.)
@@ -422,4 +430,4 @@ Versión extendida del módulo Presupuestos para trabajos grandes (instalaciones
 **Estado: planificado** — módulo ya desarrollado externamente, a incorporar.
 
 ---
-*Última actualización: 2026-09-27*
+*Última actualización: 2026-10-03*

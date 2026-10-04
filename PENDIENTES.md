@@ -78,6 +78,8 @@
 - [x] Nav tab que iba a "/" decía "Presupuestos", renombrado a "Dashboard" en las 6 pantallas
 - [x] Etiqueta chica bajo el logo sacada del dashboard (redundante con el tab activo); se mantiene en las otras 6
 - [x] Logo de Clientes y Nuevo Presupuesto usaba `logo.png` (fondo negro, desentonaba) — unificado a `logo-gateway.jpeg`
+- [x] **Bug grave #3**: "Quitar"/cualquier acción del modal fallaba en visitas prestadas de otro mes de origen (creaba fila fantasma en el mes equivocado, la original quedaba intacta). Arreglado con `modalOrigen` guardando el año/mes real. Confirmado en vivo.
+- [x] Mensaje de WhatsApp ahora lleva un marco visual (línea de separadores + título) para destacarse del resto del chat
 
 ---
-*Última actualización: 2026-09-27*
+*Última actualización: 2026-10-03*

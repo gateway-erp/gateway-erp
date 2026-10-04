@@ -993,7 +993,8 @@ function genMsg() {
     String(c.mes||mes)===String(dMes) && c.turno==="libre");
 
   const fechaFmt = `${DIAS_F[dow].toUpperCase()} ${dNum}/${zz(dMes)}/${dia.getFullYear()}`;
-  let msg = `📅 *${fechaFmt}*\n`;
+  const marco = "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬";
+  let msg = `${marco}\n🔧 *AGENDA DEL DÍA* 🔧\n📅 *${fechaFmt}*\n${marco}\n`;
 
   const hayContenido = wsEquipos.some(eq => eq.tareas.length) || celda?.texto;
   if (!hayContenido) {
@@ -1015,6 +1016,7 @@ function genMsg() {
     if (celda?.texto) msg += `\n📋 *ADEMÁS:*\n${celda.texto}\n`;
   }
   if (nota) msg += `\n📌 ${nota}`;
+  msg += `\n${marco}`;
   prev.textContent = msg;
 }
 

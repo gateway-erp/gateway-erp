@@ -433,6 +433,22 @@ Como las claves nunca coincidían, el contenido de una pantalla era invisible en
 - `wsConfirmarTareas()`: las tareas de texto libre ahora se agrupan por su propio turno (mañana/tarde) y cada grupo se guarda en la celda correspondiente, no todo en "libre".
 - **Migración de dato real**: había una nota ya confirmada en producción bajo `turno="libre"` (día 5/10, "Realizar las modificaciones en los Racks pedidas por Nestor") que habría quedado huérfana. Se migró manualmente a `turno="manana"` vía POST directo a `/api/agenda/celda` antes de deployar, y se vació la celda "libre" vieja. Confirmado en vivo: el texto aparece igual en `/agenda` (campo Mañana) y en el calendario del dashboard (celda M del día 5).
 
+#### Corrección de modelo conceptual: "tarea de texto libre" ≠ "nota del día" (2026-10-04)
+El fix anterior (unificar mañana/tarde) resolvió la sincronización pero mezcló dos conceptos que el usuario distingue claramente:
+- **Texto libre** (lo que se agrega dentro de un equipo en el generador de WhatsApp, `+ Texto libre`) es una **tarea real para los técnicos**, al mismo nivel que un mantenimiento del catálogo.
+- **Nota extra** (el campo de comentario general del generador, ej. "pasar por el depósito a buscar insumos") es un comentario, no una tarea.
+
+Ninguna de las dos es lo mismo que el campo Mañana/Tarde de notas generales (que sigue existiendo, para uso manual directo del operador, sin relación con el generador de WhatsApp). Se separaron en celdas propias dentro de la misma hoja `agenda_celdas` (reutilizando el mecanismo genérico, sin tocar el schema):
+- `turno="tareas_libres"`: JSON por día, `[{texto, equipo, turno}]`. En `/agenda` se renderiza como tarjeta propia (`.lcard`, estilo distinto al de un mantenimiento — borde punteado violeta — pero mismo peso visual, con ícono 📝). En el dashboard se muestra como un popup de solo texto (`title` nativo del navegador) al pasar el cursor sobre la celda M/T correspondiente — decisión explícita del usuario, dado el poco espacio disponible ahí.
+- `turno="nota_extra"`: texto plano por día. En `/agenda` se muestra como un ícono 📌 en el encabezado del día, con el texto completo en el popup al pasar el cursor. Se persiste al perder foco (`wsGuardarNotaActual()`) y se precarga al volver a seleccionar ese día en el generador (`wsPoblarDesdeDia()`).
+
+Helpers nuevos en `agenda.html`: `celdaTareasLibres()`, `guardarTareasLibres()`, `celdaNotaExtra()`, `guardarNotaExtra()`, `guardarCeldaRaw()` (función genérica de la que ahora derivan `guardarLibre()` y las dos anteriores).
+
+#### Fix: el panel de carga de WhatsApp no se limpiaba al confirmar (2026-10-04)
+Bug reportado por el usuario: después de "Confirmar tareas", el equipo recién cargado seguía apareciendo en el panel tal cual, sin distinguirse de uno nuevo — esto impedía en la práctica cargar un segundo equipo para el mismo día (ej. turno tarde/noche), porque no quedaba claro si se estaba editando el equipo ya confirmado o agregando uno nuevo, y los clicks en los chips de técnicos terminaban mezclando gente en el equipo equivocado.
+
+**Fix:** al terminar `wsConfirmarTareas()`, en vez de dejar el array `wsEquipos` tal cual (con los ítems marcados `confirmado:true` en memoria), se vuelve a construir desde cero llamando a `wsPoblarDesdeDia(iso)` — la misma función que se usa al seleccionar el día por primera vez. Para que esto no "pierda" las tareas de texto libre ya confirmadas (que antes `wsPoblarDesdeDia` no leía, solo mantenimientos), se agregó `wsTecStr()`: normaliza cualquier lista de técnicos al orden canónico de `TECNICOS_ALL`, para que una tarea de mantenimiento y una de texto libre con el mismo equipo (guardadas con formatos de string distintos: `"Camilo,Pablo"` vs `"CAMILO + PABLO"`) caigan agrupadas en el mismo bloque. Resultado: tras confirmar, el panel muestra los equipos ya guardados (sin la marca "sin confirmar") y queda libre para sumar un equipo nuevo con "+ Agregar equipo" sin arrastrar estado del anterior. Confirmado en vivo con 2 equipos reales en el mismo día (Camilo+Pablo turno mañana, Matías+Nacho turno tarde).
+
 #### Archivos del módulo
 ```
 db.py                       ← funciones mantenimientos/visitas (líneas ~440-660 aprox.)
@@ -458,4 +474,4 @@ Versión extendida del módulo Presupuestos para trabajos grandes (instalaciones
 **Estado: planificado** — módulo ya desarrollado externamente, a incorporar.
 
 ---
-*Última actualización: 2026-10-04 (unificación de texto libre /agenda ↔ dashboard)*
+*Última actualización: 2026-10-04 (tarea de texto libre separada de nota extra; panel de WhatsApp se limpia al confirmar)*

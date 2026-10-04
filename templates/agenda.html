@@ -137,6 +137,20 @@
     .mcard-tec    { font-size: 8px; opacity: .7; display: block; }
     .mcard-check  { font-size: 11px; margin-left: auto; flex-shrink: 0; }
 
+    /* ── CARDS TAREA LIBRE (cargadas desde WhatsApp, no son del catálogo de mantenimientos) ── */
+    .lcard {
+      border-radius: 5px; padding: 5px 7px; font-size: 10px; font-weight: 600;
+      display: flex; align-items: flex-start; gap: 4px; line-height: 1.35;
+      background: rgba(99,102,241,.14); border: 1px dashed rgba(99,102,241,.5); color: #c7d2fe;
+    }
+    .lcard-ico   { flex-shrink: 0; margin-top: 1px; }
+    .lcard-body  { flex: 1; }
+    .lcard-nombre{ display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 120px; }
+    .lcard-tec   { font-size: 8px; opacity: .7; display: block; }
+
+    /* ── ÍCONO NOTA EXTRA (popup al pasar el cursor) ── */
+    .day-nota { cursor: help; font-size: 10px; margin-left: 4px; opacity: .85; }
+
     /* ── ÁREA LIBRE (Mañana/Tarde — misma data que el calendario del dashboard) ── */
     .libre-wrap { padding: 0 6px 6px; margin-top: auto; display: flex; flex-direction: column; gap: 3px; }
     .libre-row  { display: flex; align-items: flex-start; gap: 4px; }
@@ -317,7 +331,8 @@
       </div>
       <div class="ws-fld" style="flex:1;">
         <label class="ws-lbl">Nota extra</label>
-        <textarea class="ws-ta" id="ws-nota" placeholder="Ej: Recuerden llevar los insumos y pasar por mi casa…" oninput="genMsg()" rows="2"></textarea>
+        <textarea class="ws-ta" id="ws-nota" placeholder="Ej: Recuerden llevar los insumos y pasar por mi casa…"
+          oninput="genMsg()" onblur="wsGuardarNotaActual(this.value)" rows="2"></textarea>
       </div>
     </div>
 
@@ -570,6 +585,20 @@ function renderWeek() {
     const libreM = celdaLibre(dNum, dMes, dAnio, "manana");
     const libreT = celdaLibre(dNum, dMes, dAnio, "tarde");
 
+    const tareasLibres = celdaTareasLibres(dNum, dMes, dAnio);
+    const lcards = tareasLibres.map(t => {
+      const turnoIco = t.turno === "tarde" ? "🌙" : "☀️";
+      return `<div class="lcard" title="${esc(t.texto)} · ${esc(t.equipo||"")}">
+        <span class="lcard-ico">📝</span>
+        <span class="lcard-body">
+          <span class="lcard-nombre">${esc(t.texto)}</span>
+          <span class="lcard-tec">${esc(t.equipo||"")} · ${turnoIco}</span>
+        </span>
+      </div>`;
+    }).join("");
+
+    const notaExtra = celdaNotaExtra(dNum, dMes, dAnio);
+
     const esFinde = dow === 0 || dow === 6;
     const clsDia = [esHoy && "is-today", esPas && "is-past", esFinde && "is-finde"].filter(Boolean).join(" ");
     html += `<div class="day-col ${clsDia}" data-iso="${iso}" data-dia="${dNum}">
@@ -578,9 +607,11 @@ function renderWeek() {
         <span class="day-num">${dNum}</span>
         ${dMes !== mes ? `<span class="day-mes">${MESES[dMes-1].substring(0,3)}</span>` : ""}
         ${esHoy ? '<span class="day-hoy-badge">HOY</span>' : ""}
+        ${notaExtra ? `<span class="day-nota" title="📌 ${esc(notaExtra)}">📌</span>` : ""}
       </div>
       <div class="day-body">
         ${cards}
+        ${lcards}
       </div>
       <div class="libre-wrap">
         <div class="libre-row">
@@ -802,7 +833,7 @@ function notasDelDia(dia, dMes, dAnio) {
   return m || t || "";
 }
 
-async function guardarLibre(dia, dMes, dAnio, turno, texto) {
+async function guardarCeldaRaw(dia, dMes, dAnio, turno, texto) {
   const body = { año:dAnio, mes:dMes, dia, turno, texto, color:"", negrita:false };
   await fetch("/api/agenda/celda", { method:"POST",
     headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
@@ -810,7 +841,37 @@ async function guardarLibre(dia, dMes, dAnio, turno, texto) {
   const idx = celdas.findIndex(c => String(c.dia)===String(dia) && String(c.año||año)===String(dAnio) &&
     String(c.mes||mes)===String(dMes) && c.turno===turno);
   if (idx>=0) celdas[idx]=upd; else celdas.push(upd);
+}
+
+async function guardarLibre(dia, dMes, dAnio, turno, texto) {
+  await guardarCeldaRaw(dia, dMes, dAnio, turno, texto);
   fillWsDias(); genMsg();
+}
+
+// ── TAREAS LIBRES (del generador de WhatsApp — mismo nivel que un mantenimiento) ──
+// Se guardan como JSON en una celda propia ("tareas_libres"), separadas de las notas
+// generales de Mañana/Tarde, para poder mostrarlas como tarjeta propia en /agenda.
+function celdaTareasLibres(dia, dMes, dAnio) {
+  const c = celdas.find(c => String(c.dia) === String(dia) &&
+    String(c.año||año) === String(dAnio) && String(c.mes||mes) === String(dMes) && c.turno === "tareas_libres");
+  if (!c || !c.texto) return [];
+  try { return JSON.parse(c.texto); } catch(e) { return []; }
+}
+
+async function guardarTareasLibres(dia, dMes, dAnio, arr) {
+  await guardarCeldaRaw(dia, dMes, dAnio, "tareas_libres", JSON.stringify(arr));
+}
+
+// ── NOTA EXTRA (comentario del día, no es una tarea — se persiste para el popup) ──
+function celdaNotaExtra(dia, dMes, dAnio) {
+  const c = celdas.find(c => String(c.dia) === String(dia) &&
+    String(c.año||año) === String(dAnio) && String(c.mes||mes) === String(dMes) && c.turno === "nota_extra");
+  return c ? c.texto : "";
+}
+
+async function guardarNotaExtra(dia, dMes, dAnio, texto) {
+  await guardarCeldaRaw(dia, dMes, dAnio, "nota_extra", texto);
+  render();
 }
 
 // ── WS GENERATOR ─────────────────────────────────────────────────────────────
@@ -865,7 +926,8 @@ function wsPendientesPool() {
 
 function wsPoblarDesdeDia(iso) {
   wsEquipos = [];
-  if (!iso) return;
+  const notaEl = document.getElementById("ws-nota");
+  if (!iso) { notaEl.value = ""; return; }
   const visHoy = visitas.filter(v => v.fecha_real === iso && v.estado !== "realizado");
   const grupos = {};
   visHoy.forEach(v => {
@@ -877,6 +939,16 @@ function wsPoblarDesdeDia(iso) {
                                   turno: v.turno || "mañana", confirmado:true, label:`${m.nombre} (${m.horas_visita}hs)` });
   });
   wsEquipos = Object.values(grupos);
+
+  const dia = new Date(iso + "T00:00:00");
+  notaEl.value = celdaNotaExtra(dia.getDate(), dia.getMonth() + 1, dia.getFullYear());
+}
+
+function wsGuardarNotaActual(texto) {
+  const iso = document.getElementById("ws-dia").value;
+  if (!iso) return;
+  const dia = new Date(iso + "T00:00:00");
+  guardarNotaExtra(dia.getDate(), dia.getMonth() + 1, dia.getFullYear(), texto.trim());
 }
 
 function wsAgregarEquipo() {
@@ -930,11 +1002,15 @@ async function wsConfirmarTareas() {
   if (!iso) { alert("Elegí un día primero."); return; }
 
   const pendientesMant  = [];
-  const pendientesLibre = [];
-  wsEquipos.forEach(eq => eq.tareas.forEach(t => {
-    if (t.confirmado) return;
-    (t.tipo === "mant" ? pendientesMant : pendientesLibre).push(t);
-  }));
+  const pendientesLibre = []; // { t, equipo }
+  wsEquipos.forEach(eq => {
+    const nombreEquipo = eq.tecnicos.length ? eq.tecnicos.join(" + ").toUpperCase() : "SIN EQUIPO ASIGNADO";
+    eq.tareas.forEach(t => {
+      if (t.confirmado) return;
+      if (t.tipo === "mant") pendientesMant.push(t);
+      else pendientesLibre.push({ t, equipo: nombreEquipo });
+    });
+  });
   if (!pendientesMant.length && !pendientesLibre.length) return;
 
   const btn = document.getElementById("btn-confirmar");
@@ -947,23 +1023,18 @@ async function wsConfirmarTareas() {
   }
 
   if (pendientesLibre.length) {
-    // El texto libre del generador se agrega a la nota de Mañana/Tarde del día
-    // (mismas claves que usa el calendario del dashboard), separado por turno,
-    // así queda visible ahí y no sólo en el mensaje de WhatsApp.
+    // Las tareas de texto libre son tan "tarea" como un mantenimiento — se guardan
+    // en su propia celda ("tareas_libres", JSON) para poder mostrarlas como tarjeta
+    // propia en /agenda y como popup en el dashboard, en vez de mezclarse con las
+    // notas generales de Mañana/Tarde.
     const dia   = new Date(iso + "T00:00:00");
     const dNum  = dia.getDate();
     const dMes  = dia.getMonth() + 1;
     const dAnio = dia.getFullYear();
-    for (const turnoCelda of ["manana", "tarde"]) {
-      const tareasTurno = pendientesLibre.filter(t =>
-        turnoCelda === "tarde" ? t.turno === "tarde" : t.turno !== "tarde");
-      if (!tareasTurno.length) continue;
-      const previo = celdaLibre(dNum, dMes, dAnio, turnoCelda);
-      const nuevasLineas = tareasTurno.map(t => t.texto).join("\n");
-      const textoFinal = previo ? `${previo}\n${nuevasLineas}` : nuevasLineas;
-      await guardarLibre(dNum, dMes, dAnio, turnoCelda, textoFinal);
-    }
-    pendientesLibre.forEach(t => t.confirmado = true);
+    const actuales = celdaTareasLibres(dNum, dMes, dAnio);
+    const nuevas = pendientesLibre.map(({t, equipo}) => ({ texto: t.texto, equipo, turno: t.turno || "mañana" }));
+    await guardarTareasLibres(dNum, dMes, dAnio, [...actuales, ...nuevas]);
+    pendientesLibre.forEach(({t}) => t.confirmado = true);
   }
 
   render();

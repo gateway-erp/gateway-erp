@@ -415,6 +415,8 @@ El usuario propuso ir más allá del texto: generar una **imagen** con el mismo 
 - Exportación: `canvas.toBlob()` → intenta copiar directo al portapapeles con `navigator.clipboard.write([new ClipboardItem(...)])` (funciona en Chrome/Edge de escritorio con gesto de usuario); si falla, descarga el PNG como respaldo.
 - Botón "🖼 Copiar como imagen" al lado de "📋 Copiar mensaje" — ambas opciones conviven, no se sacó la de texto.
 
+**Ajuste de jerarquía del encabezado (2026-10-04)**: feedback del usuario sobre una captura de la imagen generada — quería que el día resaltara más que el título "AGENDA". Se invirtió el orden y el estilo entre ambas líneas (mismos dos estilos de letra que ya existían, solo intercambiados): la fecha pasó arriba usando el estilo grande/navy (800 24px) que antes tenía el título, y "AGENDA DEL DÍA" bajó usando el estilo chico/azul (700 16px) que antes tenía la fecha. También se cambió el emoji: antes era `🔧 AGENDA DEL DÍA` (llave sola al frente), ahora es `📅🔧 AGENDA DEL DÍA` (calendario primero, llave justo detrás) a pedido del usuario. Confirmado en vivo generando una imagen de prueba para el 5/10.
+
 #### Archivos del módulo
 ```
 db.py                       ← funciones mantenimientos/visitas (líneas ~440-660 aprox.)
@@ -440,4 +442,4 @@ Versión extendida del módulo Presupuestos para trabajos grandes (instalaciones
 **Estado: planificado** — módulo ya desarrollado externamente, a incorporar.
 
 ---
-*Última actualización: 2026-10-04*
+*Última actualización: 2026-10-04 (ajuste de jerarquía del encabezado de la imagen de agenda)*

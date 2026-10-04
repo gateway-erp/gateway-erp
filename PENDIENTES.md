@@ -81,6 +81,7 @@
 - [x] **Bug grave #3**: "Quitar"/cualquier acción del modal fallaba en visitas prestadas de otro mes de origen (creaba fila fantasma en el mes equivocado, la original quedaba intacta). Arreglado con `modalOrigen` guardando el año/mes real. Confirmado en vivo.
 - [x] Mensaje de WhatsApp ahora lleva un marco visual (estrellas + título, sin el emoji de calendario que confundía) para destacarse del resto del chat
 - [x] Generador de imagen "tipo cartel" para WhatsApp: fondo claro, logo de Gateway, tareas en grilla simétrica de 2 columnas, copia directo al portapapeles (o descarga como respaldo)
+- [x] Imagen de agenda: encabezado reordenado — fecha arriba y más grande (resalta más), "📅🔧 AGENDA DEL DÍA" abajo en azul
 
 ---
-*Última actualización: 2026-10-04*
+*Última actualización: 2026-10-04 (encabezado de la imagen de agenda reordenado)*

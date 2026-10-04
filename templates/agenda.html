@@ -206,6 +206,9 @@
     .btn-copy { background: var(--green); color: #fff; border: none; border-radius: 7px; padding: 7px 18px; font-family: var(--font); font-size: 12px; font-weight: 600; cursor: pointer; transition: background .15s; }
     .btn-copy:hover   { background: #16a34a; }
     .btn-copy.copied  { background: var(--navy-line); }
+    .btn-img { background: rgba(59,130,246,.15); border: 1px solid var(--accent); color: var(--accent); border-radius: 7px; padding: 7px 18px; font-family: var(--font); font-size: 12px; font-weight: 600; cursor: pointer; transition: background .15s; }
+    .btn-img:hover  { background: rgba(59,130,246,.28); }
+    .btn-img.copied { background: var(--green); border-color: var(--green); color: #fff; }
     .btn-confirmar { background: rgba(59,130,246,.15); border: 1px solid var(--accent); color: var(--accent); border-radius: 7px; padding: 7px 18px; font-family: var(--font); font-size: 12px; font-weight: 600; cursor: pointer; transition: background .15s; }
     .btn-confirmar:hover:not(:disabled) { background: rgba(59,130,246,.25); }
     .btn-confirmar:disabled { opacity: .6; cursor: default; }
@@ -323,8 +326,10 @@
     <div class="ws-actions-row">
       <button class="btn-confirmar" id="btn-confirmar" onclick="wsConfirmarTareas()">✓ Confirmar tareas</button>
       <button class="btn-copy" id="btn-copy" onclick="copiar()">📋 Copiar mensaje</button>
+      <button class="btn-img" id="btn-img" onclick="generarImagen()">🖼 Copiar como imagen</button>
     </div>
   </div>
+  <canvas id="ws-canvas" style="display:none;"></canvas>
 
 </div>
 
@@ -1037,6 +1042,229 @@ function copiar() {
     btn.textContent = "✓ Copiado"; btn.classList.add("copied");
     setTimeout(() => { btn.textContent = "📋 Copiar mensaje"; btn.classList.remove("copied"); }, 2000);
   });
+}
+
+// ── IMAGEN PARA WHATSAPP (tipo cartel) ────────────────────────────────────────
+let _wsLogoImg = null;
+function wsLoadLogo() {
+  return new Promise(resolve => {
+    if (_wsLogoImg) { resolve(_wsLogoImg); return; }
+    const img = new Image();
+    img.onload  = () => { _wsLogoImg = img; resolve(img); };
+    img.onerror = () => resolve(null);
+    img.src = "/static/logo-gateway.jpeg";
+  });
+}
+
+function wsWrapText(ctx, text, maxWidth) {
+  const words = String(text).split(" ");
+  const lines = [];
+  let actual = "";
+  words.forEach(w => {
+    const test = actual ? actual + " " + w : w;
+    if (ctx.measureText(test).width > maxWidth && actual) { lines.push(actual); actual = w; }
+    else actual = test;
+  });
+  if (actual) lines.push(actual);
+  return lines;
+}
+
+function wsRoundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function wsBuildModel() {
+  const iso  = document.getElementById("ws-dia").value;
+  const nota = document.getElementById("ws-nota").value.trim();
+  if (!iso) return null;
+
+  const dia   = new Date(iso + "T00:00:00");
+  const dow   = dia.getDay();
+  const dNum  = dia.getDate();
+  const dMes  = dia.getMonth() + 1;
+  const fechaFmt = `${DIAS_F[dow].toUpperCase()} ${dNum} DE ${MESES[dMes-1].toUpperCase()}`;
+
+  const celda = celdas.find(c => String(c.dia)===String(dNum) &&
+    String(c.mes||mes)===String(dMes) && c.turno==="libre");
+
+  const equipos = wsEquipos
+    .filter(eq => eq.tareas.length)
+    .map(eq => ({
+      nombre: eq.tecnicos.length ? eq.tecnicos.join(" + ").toUpperCase() : "SIN EQUIPO ASIGNADO",
+      tareas: eq.tareas.map(t => ({
+        texto: t.tipo === "mant" ? t.label : t.texto,
+        turno: t.turno === "tarde" ? "tarde" : "mañana",
+      })),
+    }));
+
+  return { iso, fechaFmt, equipos, ademas: celda?.texto || "", nota };
+}
+
+async function generarImagen() {
+  const modelo = wsBuildModel();
+  if (!modelo) { alert("Elegí un día primero."); return; }
+
+  const btn = document.getElementById("btn-img");
+  const txtOriginal = btn.textContent;
+  btn.disabled = true; btn.textContent = "Generando…";
+
+  try {
+    const logo = await wsLoadLogo();
+    const canvas = document.getElementById("ws-canvas");
+    const ctx = canvas.getContext("2d");
+
+    const W = 720, PAD = 44, DPR = 2;
+    const contentW = W - PAD * 2;
+    const fFamily = "'Montserrat', 'Segoe UI', sans-serif";
+
+    // ── Pasada 1: medir alto total ──
+    let y = PAD;
+    if (logo) y += 56 + 18;
+    y += 30 + 22 + 14 + 24; // título + fecha + espacio + divisor
+
+    if (!modelo.equipos.length && !modelo.ademas) y += 24;
+
+    modelo.equipos.forEach(eq => {
+      y += 34;
+      eq.tareas.forEach(t => {
+        ctx.font = `700 15px ${fFamily}`;
+        const lineas = wsWrapText(ctx, t.texto, contentW - 24);
+        y += lineas.length * 20;
+        y += 22 + 10;
+      });
+      y += 14;
+    });
+    if (modelo.ademas) {
+      ctx.font = `400 13px ${fFamily}`;
+      y += 20 + wsWrapText(ctx, modelo.ademas, contentW).length * 19 + 10;
+    }
+    if (modelo.nota) {
+      ctx.font = `400 13px ${fFamily}`;
+      y += wsWrapText(ctx, `📌 ${modelo.nota}`, contentW).length * 19;
+    }
+    y += PAD;
+    const H = Math.round(y);
+
+    canvas.width  = W * DPR;
+    canvas.height = H * DPR;
+    ctx.scale(DPR, DPR);
+
+    // ── Fondo tipo cartel, claro ──
+    ctx.fillStyle = "#FDFDFE";
+    ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = "#0F1F3D"; ctx.lineWidth = 3;
+    ctx.strokeRect(6, 6, W - 12, H - 12);
+    ctx.strokeStyle = "#3B82F6"; ctx.lineWidth = 1;
+    ctx.strokeRect(12, 12, W - 24, H - 24);
+
+    let cy = PAD;
+    if (logo) {
+      const ratio = logo.naturalWidth ? logo.naturalHeight / logo.naturalWidth : 0.35;
+      const lw = 160, lh = Math.min(lw * ratio, 56);
+      ctx.drawImage(logo, (W - lw) / 2, cy, lw, lh);
+      cy += 56 + 18;
+    }
+
+    ctx.textAlign = "center";
+    ctx.fillStyle = "#0F1F3D";
+    ctx.font = `800 24px ${fFamily}`;
+    ctx.fillText("🔧 AGENDA DEL DÍA", W / 2, cy + 20);
+    cy += 30;
+
+    ctx.fillStyle = "#3B82F6";
+    ctx.font = `700 16px ${fFamily}`;
+    ctx.fillText(modelo.fechaFmt, W / 2, cy + 14);
+    cy += 22 + 14;
+
+    ctx.strokeStyle = "#E2E5EA"; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(PAD, cy); ctx.lineTo(W - PAD, cy); ctx.stroke();
+    cy += 24;
+
+    ctx.textAlign = "left";
+    if (!modelo.equipos.length && !modelo.ademas) {
+      ctx.fillStyle = "#6B7280";
+      ctx.font = `400 14px ${fFamily}`;
+      ctx.textAlign = "center";
+      ctx.fillText("Sin mantenimientos programados para este día.", W / 2, cy);
+      cy += 24;
+      ctx.textAlign = "left";
+    }
+
+    modelo.equipos.forEach(eq => {
+      const chipText = `👷 ${eq.nombre}`;
+      ctx.font = `700 15px ${fFamily}`;
+      const chipW = Math.min(contentW, ctx.measureText(chipText).width + 28);
+      ctx.fillStyle = "#EAF2FF";
+      wsRoundRect(ctx, PAD, cy - 6, chipW, 28, 8);
+      ctx.fill();
+      ctx.fillStyle = "#0F1F3D";
+      ctx.fillText(chipText, PAD + 14, cy + 13);
+      cy += 34;
+
+      eq.tareas.forEach(t => {
+        ctx.font = `700 15px ${fFamily}`;
+        ctx.fillStyle = "#1F2937";
+        const lineas = wsWrapText(ctx, t.texto, contentW - 24);
+        lineas.forEach((linea, idx) => {
+          cy += 16;
+          ctx.fillText((idx === 0 ? "•  " : "    ") + linea, PAD + 10, cy);
+          cy += 4;
+        });
+        const turnoIcono = t.turno === "tarde" ? "🌙" : "☀️";
+        const turnoLbl   = t.turno === "tarde" ? "Turno tarde" : "Turno mañana";
+        ctx.font = `400 13px ${fFamily}`;
+        ctx.fillStyle = "#6B7280";
+        cy += 18;
+        ctx.fillText(`${turnoIcono}  ${turnoLbl}`, PAD + 24, cy);
+        cy += 14;
+      });
+      cy += 14;
+    });
+
+    if (modelo.ademas) {
+      cy += 10;
+      ctx.font = `700 14px ${fFamily}`;
+      ctx.fillStyle = "#0F1F3D";
+      ctx.fillText("📋 ADEMÁS:", PAD, cy);
+      cy += 20;
+      ctx.font = `400 13px ${fFamily}`;
+      ctx.fillStyle = "#374151";
+      wsWrapText(ctx, modelo.ademas, contentW).forEach(linea => { ctx.fillText(linea, PAD, cy); cy += 19; });
+    }
+    if (modelo.nota) {
+      cy += 6;
+      ctx.font = `italic 400 13px ${fFamily}`;
+      ctx.fillStyle = "#6B7280";
+      wsWrapText(ctx, `📌 ${modelo.nota}`, contentW).forEach(linea => { ctx.fillText(linea, PAD, cy); cy += 19; });
+    }
+
+    canvas.toBlob(async (blob) => {
+      if (!blob) { alert("No se pudo generar la imagen."); btn.disabled=false; btn.textContent=txtOriginal; return; }
+      try {
+        await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+        btn.textContent = "✓ Copiada"; btn.classList.add("copied");
+        setTimeout(() => { btn.textContent = txtOriginal; btn.classList.remove("copied"); btn.disabled=false; }, 2000);
+      } catch (e) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url; a.download = `agenda-${modelo.iso}.png`;
+        document.body.appendChild(a); a.click(); a.remove();
+        URL.revokeObjectURL(url);
+        btn.textContent = "⬇ Descargada";
+        setTimeout(() => { btn.textContent = txtOriginal; btn.disabled=false; }, 2000);
+      }
+    }, "image/png");
+  } catch (e) {
+    console.error(e);
+    alert("No se pudo generar la imagen. Probá de nuevo.");
+    btn.disabled = false; btn.textContent = txtOriginal;
+  }
 }
 
 // ── MODO ──────────────────────────────────────────────────────────────────────

@@ -79,7 +79,8 @@
 - [x] Etiqueta chica bajo el logo sacada del dashboard (redundante con el tab activo); se mantiene en las otras 6
 - [x] Logo de Clientes y Nuevo Presupuesto usaba `logo.png` (fondo negro, desentonaba) — unificado a `logo-gateway.jpeg`
 - [x] **Bug grave #3**: "Quitar"/cualquier acción del modal fallaba en visitas prestadas de otro mes de origen (creaba fila fantasma en el mes equivocado, la original quedaba intacta). Arreglado con `modalOrigen` guardando el año/mes real. Confirmado en vivo.
-- [x] Mensaje de WhatsApp ahora lleva un marco visual (línea de separadores + título) para destacarse del resto del chat
+- [x] Mensaje de WhatsApp ahora lleva un marco visual (estrellas + título, sin el emoji de calendario que confundía) para destacarse del resto del chat
+- [x] Generador de imagen "tipo cartel" para WhatsApp: fondo claro, logo de Gateway, tareas en grilla simétrica de 2 columnas, copia directo al portapapeles (o descarga como respaldo)
 
 ---
-*Última actualización: 2026-10-03*
+*Última actualización: 2026-10-04*

@@ -403,7 +403,17 @@ Efecto colateral del fix del bug #2 (visitas visibles en el mes destino aunque s
 **Fix:** `abrirModal()` ahora guarda el año/mes real de la visita encontrada en una variable `modalOrigen`, y `accion()` la usa al llamar `saveVisita()` en vez de asumir el mes principal de la vista. Confirmado en vivo: se pudo quitar correctamente una visita de TBAR CCTV (origen septiembre) que estaba reprogramada para el 5/10.
 
 #### Mensaje de WhatsApp con marco visual (2026-10-03)
-Pedido estético: que el mensaje generado se destaque como algo distinto dentro del chat del grupo, no como un mensaje más. Se agregó un marco con línea de separadores (`▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬`) arriba y abajo, con título "🔧 AGENDA DEL DÍA 🔧" antes de la fecha. WhatsApp no soporta recuadros reales (solo *negrita*, _cursiva_, ~tachado~, texto monoespaciado), esto es lo más parecido logrado con texto plano + unicode.
+Pedido estético: que el mensaje generado se destaque como algo distinto dentro del chat del grupo, no como un mensaje más. Primer intento: marco de líneas (`▬`) con emoji 📅 de fecha — descartado porque WhatsApp renderiza 📅 con un número superpuesto que se confundía con el día real. Versión final: marco de estrellas (`✦ ✦ ✦`), sin emoji de calendario, fecha en formato "MARTES 6 DE OCTUBRE", mucho más espaciado entre secciones ("que respire"), cada tarea en 2 líneas (nombre + turno aparte). WhatsApp no soporta recuadros reales (solo *negrita*, _cursiva_, ~tachado~, texto monoespaciado), esto es lo más parecido logrado con texto plano + unicode.
+
+#### Generador de imagen "tipo cartel" para WhatsApp (2026-10-03)
+El usuario propuso ir más allá del texto: generar una **imagen** con el mismo contenido pero con diseño propio, sin depender de cómo WhatsApp interpreta negrita/emojis. Implementado con `<canvas>` (oculto, `#ws-canvas`):
+
+- Estilo "cartel": fondo claro, doble marco (navy + azul), logo de Gateway arriba, elegido por el usuario sobre la alternativa de mantener el tema navy oscuro de la app.
+- Mismo contenido que el mensaje de texto (`wsBuildModel()` es compartido entre ambos generadores).
+- **Grilla simétrica de 2 columnas para las tareas**: cada tarea es una tarjeta con borde propio; se acomodan de a 2 por fila bajo el chip (centrado) de cada equipo. Si hay un número impar de tareas, la última fila queda con una sola tarjeta sin forzar un espacio vacío dibujado al lado. Si hay más de un equipo en el día, el segundo bloque (chip + grilla de tareas) se agrega debajo del primero con la misma estructura — mantiene la simetría pedida por el usuario tras los primeros retoques visuales.
+- Medición en 2 pasadas: `equiposLayout` (array con el layout de filas/tarjetas por equipo, incluyendo el wrap de texto y el alto de cada tarjeta) se calcula una sola vez y lo usan tanto la pasada de medir el alto total del canvas como la pasada de dibujo — evita que ambas pasadas se desincronicen si se edita una sin la otra.
+- Exportación: `canvas.toBlob()` → intenta copiar directo al portapapeles con `navigator.clipboard.write([new ClipboardItem(...)])` (funciona en Chrome/Edge de escritorio con gesto de usuario); si falla, descarga el PNG como respaldo.
+- Botón "🖼 Copiar como imagen" al lado de "📋 Copiar mensaje" — ambas opciones conviven, no se sacó la de texto.
 
 #### Archivos del módulo
 ```
@@ -430,4 +440,4 @@ Versión extendida del módulo Presupuestos para trabajos grandes (instalaciones
 **Estado: planificado** — módulo ya desarrollado externamente, a incorporar.
 
 ---
-*Última actualización: 2026-10-03*
+*Última actualización: 2026-10-04*

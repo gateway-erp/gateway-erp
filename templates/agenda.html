@@ -924,6 +924,14 @@ function wsPendientesPool() {
   return pool;
 }
 
+// Agrupa por el mismo string de técnicos (en el orden "canónico" de TECNICOS_ALL)
+// para que una tarea de mantenimiento y una de texto libre con el mismo equipo
+// caigan en el mismo grupo, aunque vengan guardadas con formatos distintos.
+function wsTecStr(nombres) {
+  const set = new Set(nombres.map(n => n.trim().toUpperCase()));
+  return TECNICOS_ALL.filter(n => set.has(n.toUpperCase())).join(",");
+}
+
 function wsPoblarDesdeDia(iso) {
   wsEquipos = [];
   const notaEl = document.getElementById("ws-nota");
@@ -933,14 +941,24 @@ function wsPoblarDesdeDia(iso) {
   visHoy.forEach(v => {
     const m = mants.find(x => String(x.id) === String(v.mant_id));
     if (!m) return;
-    const tecStr = m.tecnicos || "";
-    if (!grupos[tecStr]) grupos[tecStr] = { tecnicos: tecStr.split(",").map(s=>s.trim()).filter(Boolean), tareas: [] };
+    const tecStr = wsTecStr((m.tecnicos || "").split(","));
+    if (!grupos[tecStr]) grupos[tecStr] = { tecnicos: tecStr ? tecStr.split(",") : [], tareas: [] };
     grupos[tecStr].tareas.push({ tipo:"mant", año, mes, mant_id:v.mant_id, semana:v.semana, visita_num:v.visita_num||1,
                                   turno: v.turno || "mañana", confirmado:true, label:`${m.nombre} (${m.horas_visita}hs)` });
   });
-  wsEquipos = Object.values(grupos);
 
+  // Tareas de texto libre ya confirmadas para el día — se incorporan al mismo
+  // equipo si coinciden los técnicos, para que la composición quede completa
+  // al reabrir el día (sin esto, "desaparecían" de la vista aunque seguían guardadas).
   const dia = new Date(iso + "T00:00:00");
+  const tareasLibres = celdaTareasLibres(dia.getDate(), dia.getMonth() + 1, dia.getFullYear());
+  tareasLibres.forEach(t => {
+    const tecStr = wsTecStr(String(t.equipo || "").split("+"));
+    if (!grupos[tecStr]) grupos[tecStr] = { tecnicos: tecStr ? tecStr.split(",") : [], tareas: [] };
+    grupos[tecStr].tareas.push({ tipo:"libre", texto: t.texto, turno: t.turno || "mañana", confirmado:true });
+  });
+
+  wsEquipos = Object.values(grupos);
   notaEl.value = celdaNotaExtra(dia.getDate(), dia.getMonth() + 1, dia.getFullYear());
 }
 
@@ -1038,6 +1056,12 @@ async function wsConfirmarTareas() {
   }
 
   render();
+  // Recarga el panel de carga desde lo ya guardado: así queda "limpio" (sin la
+  // marca "sin confirmar") y listo para cargar el próximo equipo del mismo día,
+  // sin arrastrar inputs sueltos del equipo anterior.
+  wsPoblarDesdeDia(iso);
+  renderWsEquipos();
+  genMsg();
   btn.textContent = "✓ Confirmado";
   setTimeout(() => { btn.textContent = "✓ Confirmar tareas"; btn.disabled = false; }, 1500);
 }

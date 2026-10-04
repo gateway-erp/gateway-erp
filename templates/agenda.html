@@ -1121,7 +1121,28 @@ async function generarImagen() {
 
     const W = 720, PAD = 44, DPR = 2;
     const contentW = W - PAD * 2;
+    const GAP  = 16;
+    const colW = (contentW - GAP) / 2;
     const fFamily = "'Montserrat', 'Segoe UI', sans-serif";
+
+    // Arma la grilla de 2 columnas por equipo (misma estructura para medir y dibujar,
+    // así las dos pasadas siempre coinciden en alto).
+    const equiposLayout = modelo.equipos.map(eq => {
+      const cards = eq.tareas.map(t => {
+        ctx.font = `700 14px ${fFamily}`;
+        const lineas = wsWrapText(ctx, t.texto, colW - 28);
+        const turnoIcono = t.turno === "tarde" ? "🌙" : "☀️";
+        const turnoLbl   = t.turno === "tarde" ? "Turno tarde" : "Turno mañana";
+        const h = 16 + lineas.length * 18 + 10 + 18 + 14;
+        return { lineas, turnoIcono, turnoLbl, h };
+      });
+      const filas = [];
+      for (let i = 0; i < cards.length; i += 2) {
+        const par = [cards[i], cards[i + 1] || null];
+        filas.push({ par, h: Math.max(par[0].h, par[1]?.h || 0) });
+      }
+      return { nombre: eq.nombre, filas };
+    });
 
     // ── Pasada 1: medir alto total ──
     let y = PAD;
@@ -1130,15 +1151,10 @@ async function generarImagen() {
 
     if (!modelo.equipos.length && !modelo.ademas) y += 24;
 
-    modelo.equipos.forEach(eq => {
-      y += 34;
-      eq.tareas.forEach(t => {
-        ctx.font = `700 15px ${fFamily}`;
-        const lineas = wsWrapText(ctx, t.texto, contentW - 24);
-        y += lineas.length * 20;
-        y += 22 + 10;
-      });
-      y += 14;
+    equiposLayout.forEach(eq => {
+      y += 34; // chip del equipo
+      eq.filas.forEach(fila => { y += fila.h + 12; });
+      y += 10;
     });
     if (modelo.ademas) {
       ctx.font = `400 13px ${fFamily}`;
@@ -1196,35 +1212,45 @@ async function generarImagen() {
       ctx.textAlign = "left";
     }
 
-    modelo.equipos.forEach(eq => {
+    equiposLayout.forEach(eq => {
+      // Chip del equipo, centrado
       const chipText = `👷 ${eq.nombre}`;
       ctx.font = `700 15px ${fFamily}`;
       const chipW = Math.min(contentW, ctx.measureText(chipText).width + 28);
+      const chipX = (W - chipW) / 2;
       ctx.fillStyle = "#EAF2FF";
-      wsRoundRect(ctx, PAD, cy - 6, chipW, 28, 8);
+      wsRoundRect(ctx, chipX, cy - 6, chipW, 28, 8);
       ctx.fill();
+      ctx.textAlign = "center";
       ctx.fillStyle = "#0F1F3D";
-      ctx.fillText(chipText, PAD + 14, cy + 13);
+      ctx.fillText(chipText, W / 2, cy + 13);
+      ctx.textAlign = "left";
       cy += 34;
 
-      eq.tareas.forEach(t => {
-        ctx.font = `700 15px ${fFamily}`;
-        ctx.fillStyle = "#1F2937";
-        const lineas = wsWrapText(ctx, t.texto, contentW - 24);
-        lineas.forEach((linea, idx) => {
-          cy += 16;
-          ctx.fillText((idx === 0 ? "•  " : "    ") + linea, PAD + 10, cy);
-          cy += 4;
+      // Tareas en grilla simétrica de 2 columnas
+      eq.filas.forEach(fila => {
+        fila.par.forEach((card, idx) => {
+          if (!card) return;
+          const x = PAD + idx * (colW + GAP);
+          ctx.fillStyle = "#FFFFFF";
+          ctx.strokeStyle = "#D7DEE8";
+          ctx.lineWidth = 1.2;
+          wsRoundRect(ctx, x, cy, colW, fila.h, 10);
+          ctx.fill();
+          ctx.stroke();
+
+          let ty = cy + 16 + 12;
+          ctx.font = `700 14px ${fFamily}`;
+          ctx.fillStyle = "#1F2937";
+          card.lineas.forEach(linea => { ctx.fillText(linea, x + 14, ty); ty += 18; });
+          ty += 8;
+          ctx.font = `400 12px ${fFamily}`;
+          ctx.fillStyle = "#6B7280";
+          ctx.fillText(`${card.turnoIcono}  ${card.turnoLbl}`, x + 14, ty);
         });
-        const turnoIcono = t.turno === "tarde" ? "🌙" : "☀️";
-        const turnoLbl   = t.turno === "tarde" ? "Turno tarde" : "Turno mañana";
-        ctx.font = `400 13px ${fFamily}`;
-        ctx.fillStyle = "#6B7280";
-        cy += 18;
-        ctx.fillText(`${turnoIcono}  ${turnoLbl}`, PAD + 24, cy);
-        cy += 14;
+        cy += fila.h + 12;
       });
-      cy += 14;
+      cy += 10;
     });
 
     if (modelo.ademas) {

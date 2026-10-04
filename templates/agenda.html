@@ -1002,31 +1002,31 @@ function genMsg() {
   const celda = celdas.find(c => String(c.dia)===String(dNum) &&
     String(c.mes||mes)===String(dMes) && c.turno==="libre");
 
-  const fechaFmt = `${DIAS_F[dow].toUpperCase()} ${dNum}/${zz(dMes)}/${dia.getFullYear()}`;
-  const marco = "▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬";
-  let msg = `${marco}\n🔧 *AGENDA DEL DÍA* 🔧\n📅 *${fechaFmt}*\n${marco}\n`;
+  const fechaFmt = `${DIAS_F[dow].toUpperCase()} ${dNum} DE ${MESES[dMes-1].toUpperCase()}`;
+  const marco = "✦ ✦ ✦ ✦ ✦ ✦ ✦ ✦ ✦ ✦ ✦ ✦";
+  let msg = `${marco}\n\n🔧 *AGENDA DEL DÍA*\n\n*${fechaFmt}*\n\n${marco}\n`;
 
   const hayContenido = wsEquipos.some(eq => eq.tareas.length) || celda?.texto;
   if (!hayContenido) {
-    msg += "\nSin mantenimientos programados para este día.";
+    msg += "\nSin mantenimientos programados para este día.\n";
   } else {
     wsEquipos.forEach(eq => {
       if (!eq.tareas.length) return;
       const nombreEquipo = eq.tecnicos.length
         ? eq.tecnicos.join(" + ").toUpperCase()
         : "SIN EQUIPO ASIGNADO";
-      msg += `\n👷 *${nombreEquipo}*\n`;
+      msg += `\n\n👷 *${nombreEquipo}*\n`;
       eq.tareas.forEach(t => {
         const turnoIcono = t.turno === "tarde" ? "🌙" : "☀️";
-        const turnoLbl   = t.turno === "tarde" ? "T-Tarde" : "T-Mañana";
+        const turnoLbl   = t.turno === "tarde" ? "Turno tarde" : "Turno mañana";
         const texto      = t.tipo === "mant" ? t.label : t.texto;
-        msg += `  • _*${texto}*_ ${turnoIcono} _${turnoLbl}_\n`;
+        msg += `\n   • _*${texto}*_\n      ${turnoIcono} ${turnoLbl}\n`;
       });
     });
-    if (celda?.texto) msg += `\n📋 *ADEMÁS:*\n${celda.texto}\n`;
+    if (celda?.texto) msg += `\n\n📋 *ADEMÁS:*\n${celda.texto}\n`;
   }
-  if (nota) msg += `\n📌 ${nota}`;
-  msg += `\n${marco}`;
+  if (nota) msg += `\n\n📌 ${nota}`;
+  msg += `\n\n${marco}`;
   prev.textContent = msg;
 }
 

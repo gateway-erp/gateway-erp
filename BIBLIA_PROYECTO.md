@@ -417,6 +417,22 @@ El usuario propuso ir más allá del texto: generar una **imagen** con el mismo 
 
 **Ajuste de jerarquía del encabezado (2026-10-04)**: feedback del usuario sobre una captura de la imagen generada — quería que el día resaltara más que el título "AGENDA". Se invirtió el orden y el estilo entre ambas líneas (mismos dos estilos de letra que ya existían, solo intercambiados): la fecha pasó arriba usando el estilo grande/navy (800 24px) que antes tenía el título, y "AGENDA DEL DÍA" bajó usando el estilo chico/azul (700 16px) que antes tenía la fecha. También se cambió el emoji: antes era `🔧 AGENDA DEL DÍA` (llave sola al frente), ahora es `📅🔧 AGENDA DEL DÍA` (calendario primero, llave justo detrás) a pedido del usuario. Confirmado en vivo generando una imagen de prueba para el 5/10.
 
+#### Fix: unificación de "texto libre" entre `/agenda` y el calendario del dashboard (2026-10-04)
+Bug reportado por el usuario: una tarea de texto libre cargada desde el generador de WhatsApp (confirmada) no se reflejaba en el calendario "Agenda Operativa" del dashboard.
+
+**Causa raíz:** la hoja `agenda_celdas` es compartida por ambas pantallas, pero usaban vocabularios de `turno` distintos para la misma idea de "nota del día":
+- `/agenda` (vista semanal) guardaba todo bajo un único campo por día con `turno="libre"`.
+- El dashboard (calendario M/T) sólo lee/escribe `turno="manana"` / `turno="tarde"`.
+
+Como las claves nunca coincidían, el contenido de una pantalla era invisible en la otra aunque compartieran hoja.
+
+**Fix (decisión del usuario, consultada antes de implementar):** se eliminó el campo único "libre" de `/agenda` y se reemplazó por dos campos por día (☀️ Mañana / 🌙 Tarde) que usan exactamente las mismas claves `manana`/`tarde` que ya usaba el dashboard. Cambios:
+- `renderWeek()`: dos `<textarea>` por día en vez de uno, cada uno con su propio `onblur="guardarLibre(...,'manana'|'tarde',...)"`.
+- `guardarLibre(dia, mes, año, turno, texto)` ahora recibe el turno como parámetro en vez de hardcodear `"libre"`.
+- Nuevas funciones helper `celdaLibre(dia, mes, año, turno)` y `notasDelDia(dia, mes, año)` (combina mañana+tarde para el bloque "ADEMÁS" del mensaje/imagen de WhatsApp).
+- `wsConfirmarTareas()`: las tareas de texto libre ahora se agrupan por su propio turno (mañana/tarde) y cada grupo se guarda en la celda correspondiente, no todo en "libre".
+- **Migración de dato real**: había una nota ya confirmada en producción bajo `turno="libre"` (día 5/10, "Realizar las modificaciones en los Racks pedidas por Nestor") que habría quedado huérfana. Se migró manualmente a `turno="manana"` vía POST directo a `/api/agenda/celda` antes de deployar, y se vació la celda "libre" vieja. Confirmado en vivo: el texto aparece igual en `/agenda` (campo Mañana) y en el calendario del dashboard (celda M del día 5).
+
 #### Archivos del módulo
 ```
 db.py                       ← funciones mantenimientos/visitas (líneas ~440-660 aprox.)
@@ -442,4 +458,4 @@ Versión extendida del módulo Presupuestos para trabajos grandes (instalaciones
 **Estado: planificado** — módulo ya desarrollado externamente, a incorporar.
 
 ---
-*Última actualización: 2026-10-04 (ajuste de jerarquía del encabezado de la imagen de agenda)*
+*Última actualización: 2026-10-04 (unificación de texto libre /agenda ↔ dashboard)*

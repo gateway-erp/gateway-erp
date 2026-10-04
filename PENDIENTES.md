@@ -43,7 +43,7 @@
 - [x] **Bug grave: semana que cruza de mes perdía los datos del mes siguiente** — `cargar()` solo pedía un mes (el del miércoles de la semana visible), así que jueves/viernes de la semana quedaban vacíos si ya eran del mes siguiente. Ahora se piden todos los meses que toque la semana y se mergean. Reproducido y confirmado en vivo con la semana real 28/09-2/10/2026.
 - [x] "Arrastrado" seguía marcado como tal aunque ya tuviera fecha asignada (el filtro no miraba `fecha_real`) — corregido en `cargar_agenda_completa`.
 - [x] Texto libre del generador de WhatsApp no se guardaba en ningún lado — ahora se agrega al "trabajo libre" del día al confirmar. Limitación conocida: sacarlo del compositor no revierte el texto ya guardado en la celda (hay que editarla a mano si hace falta).
-- [ ] **Dos calendarios de texto libre sin unificar**: el del dashboard (M/T por día) y el de `/agenda` (trabajo libre semanal) escriben a la misma hoja `agenda_celdas` pero son experiencias separadas — evaluar si conviene unificarlas más adelante.
+- [x] **Dos calendarios de texto libre sin unificar — resuelto**: `/agenda` guardaba todo bajo `turno="libre"` (un campo por día) mientras el dashboard solo lee `turno="manana"`/`"tarde"` — por eso el texto libre confirmado desde WhatsApp no se veía en el dashboard. Ahora `/agenda` tiene dos campos por día (☀️ Mañana / 🌙 Tarde) con las mismas claves que el dashboard. Se migró manualmente el único dato real que había bajo "libre" (nota del 5/10 de Nestor) a "manana". Confirmado en vivo en ambas pantallas.
 - [x] **Bug grave #2: mantenimiento reprogramado a otro mes no se veía en el mes destino** (ej. de septiembre reprogramado al 5/10 — invisible en el dashboard de octubre). Arreglado en `cargar_agenda_completa` incluyendo filas de otro mes de origen cuya fecha_real caiga en el mes pedido. Confirmado en vivo.
 - [ ] Edge case conocido sin resolver: si se reprograma un mantenimiento a otro mes y DESPUÉS se corre "Completar mes" sobre ese mes destino para el mismo slot, puede quedar una fila nativa duplicada compitiendo con la reprogramada. Poco frecuente, no resuelto a propósito (evitar mover filas físicamente entre meses y arriesgar colisiones).
 - [x] Grilla semanal de `/agenda` pasaba por alto sábado y domingo (solo lun-vie) — el operador trabaja fines de semana seguido. Ahora muestra 7 días, y el selector de día del generador de WhatsApp también los incluye.
@@ -84,4 +84,4 @@
 - [x] Imagen de agenda: encabezado reordenado — fecha arriba y más grande (resalta más), "📅🔧 AGENDA DEL DÍA" abajo en azul
 
 ---
-*Última actualización: 2026-10-04 (encabezado de la imagen de agenda reordenado)*
+*Última actualización: 2026-10-04 (texto libre unificado entre /agenda y el dashboard)*

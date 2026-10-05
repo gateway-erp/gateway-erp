@@ -962,7 +962,7 @@ function wsPoblarDesdeDia(iso) {
     if (!m) return;
     const tecStr = wsTecStr((m.tecnicos || "").split(","));
     if (!grupos[tecStr]) grupos[tecStr] = { tecnicos: tecStr ? tecStr.split(",") : [], tareas: [] };
-    grupos[tecStr].tareas.push({ tipo:"mant", año, mes, mant_id:v.mant_id, semana:v.semana, visita_num:v.visita_num||1,
+    grupos[tecStr].tareas.push({ tipo:"mant", año:v.año, mes:v.mes, mant_id:v.mant_id, semana:v.semana, visita_num:v.visita_num||1,
                                   turno: v.turno || "mañana", confirmado:true, label:`${m.nombre} (${m.horas_visita}hs)` });
   });
 
@@ -1048,9 +1048,16 @@ async function wsConfirmarTareas() {
       else pendientesLibre.push({ t, equipo: nombreEquipo });
     });
   });
-  if (!pendientesMant.length && !pendientesLibre.length) return;
-
   const btn = document.getElementById("btn-confirmar");
+  if (!pendientesMant.length && !pendientesLibre.length) {
+    // Sin esto, tocar el botón cuando ya está todo confirmado no da ninguna señal
+    // y parece que el click no hizo nada.
+    const txtOriginal = btn.textContent;
+    btn.textContent = "Nada para confirmar";
+    setTimeout(() => { btn.textContent = txtOriginal; }, 1200);
+    return;
+  }
+
   btn.disabled = true; btn.textContent = "Confirmando…";
 
   for (const t of pendientesMant) {

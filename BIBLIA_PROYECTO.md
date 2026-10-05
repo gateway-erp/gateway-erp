@@ -449,6 +449,18 @@ Bug reportado por el usuario: después de "Confirmar tareas", el equipo recién 
 
 **Fix:** al terminar `wsConfirmarTareas()`, en vez de dejar el array `wsEquipos` tal cual (con los ítems marcados `confirmado:true` en memoria), se vuelve a construir desde cero llamando a `wsPoblarDesdeDia(iso)` — la misma función que se usa al seleccionar el día por primera vez. Para que esto no "pierda" las tareas de texto libre ya confirmadas (que antes `wsPoblarDesdeDia` no leía, solo mantenimientos), se agregó `wsTecStr()`: normaliza cualquier lista de técnicos al orden canónico de `TECNICOS_ALL`, para que una tarea de mantenimiento y una de texto libre con el mismo equipo (guardadas con formatos de string distintos: `"Camilo,Pablo"` vs `"CAMILO + PABLO"`) caigan agrupadas en el mismo bloque. Resultado: tras confirmar, el panel muestra los equipos ya guardados (sin la marca "sin confirmar") y queda libre para sumar un equipo nuevo con "+ Agregar equipo" sin arrastrar estado del anterior. Confirmado en vivo con 2 equipos reales en el mismo día (Camilo+Pablo turno mañana, Matías+Nacho turno tarde).
 
+#### Turno Noche (🌕) agregado como 3ra opción (2026-10-04)
+El sistema solo tenía Mañana (☀️) y Tarde (🌙). El usuario aclaró un caso real: un equipo puede trabajar Mañana o Tarde indistintamente (Camilo+Pablo), y otro trabaja Tarde-Noche (Matías+Nacho) — y pidió explícitamente agregar el turno Noche con el emoji de luna llena.
+
+Se agregó `turno="noche"` en todos los lugares donde ya existía la elección Mañana/Tarde (no se creó una ruta nueva, el campo `turno` ya era un string libre en `agenda_celdas` y `mant_visitas`, así que no hizo falta tocar el backend):
+- Selector de turno por tarea en el generador de WhatsApp (mantenimiento o texto libre): ahora 3 botones ☀️/🌙/🌕.
+- Selector de turno del modal principal de `/agenda` (al asignar fecha a una visita): ídem, 3 botones.
+- Campo general de notas del día en `/agenda`: ahora 3 campos (Mañana/Tarde/Noche), mismas claves `manana`/`tarde`/`noche` que usa el dashboard.
+- Calendario "Agenda Operativa" del dashboard: nueva fila "N" por día (antes solo M/T).
+- Popup de tareas libres en el dashboard y tarjetas `.lcard` en `/agenda`: distinguen los 3 turnos.
+
+Se centralizó la lógica de ícono/etiqueta por turno (antes duplicada en 4 lugares con un ternario binario `=== "tarde" ? 🌙 : ☀️`) en un único helper `turnoInfo(turno)`. De paso se corrigió un bug en `wsBuildModel()` que colapsaba cualquier turno que no fuera `"tarde"` en `"mañana"` — con esa lógica, una tarea en turno "noche" se habría guardado bien pero se habría mostrado como "mañana" en el mensaje/imagen. Confirmado en vivo: tarea de texto libre en turno noche (Matías+Nacho) se ve correctamente como 🌕 en el mensaje, en la tarjeta de `/agenda` y en el popup de la fila N del dashboard.
+
 #### Archivos del módulo
 ```
 db.py                       ← funciones mantenimientos/visitas (líneas ~440-660 aprox.)
@@ -474,4 +486,4 @@ Versión extendida del módulo Presupuestos para trabajos grandes (instalaciones
 **Estado: planificado** — módulo ya desarrollado externamente, a incorporar.
 
 ---
-*Última actualización: 2026-10-04 (tarea de texto libre separada de nota extra; panel de WhatsApp se limpia al confirmar)*
+*Última actualización: 2026-10-04 (turno Noche agregado en agenda, mensaje/imagen WS y dashboard)*

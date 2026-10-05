@@ -1323,6 +1323,12 @@ function agendaRenderCal() {
     html += '<td class="td-turno-lbl" style="font-size:7px">T</td>';
     for (let c=0;c<7;c++,dia++) html += celHtml(dia,'tarde',c>=5,semana);
     html += '</tr>';
+    dia -= 7;
+    // Noche row
+    html += '<tr>';
+    html += '<td class="td-turno-lbl" style="font-size:7px">N</td>';
+    for (let c=0;c<7;c++,dia++) html += celHtml(dia,'noche',c>=5,semana);
+    html += '</tr>';
     if (dia <= diasMes) html += '<tr class="tr-sep"><td colspan="8"></td></tr>';
     semana++;
   }
@@ -1357,12 +1363,18 @@ function agendaRenderCal() {
 
 // Tareas de texto libre cargadas desde /agenda (WhatsApp) — mismo nivel que un
 // mantenimiento, pero acá sólo hay lugar para un popup de texto al pasar el cursor.
+function aTareaTurnoCelda(t) {
+  if (t.turno === 'noche') return 'noche';
+  if (t.turno === 'tarde') return 'tarde';
+  return 'manana';
+}
+
 function aTareasLibres(dia, turno) {
   const raw = aCeldas[`${dia}-tareas_libres`];
   if (!raw || !raw.texto) return [];
   let arr = [];
   try { arr = JSON.parse(raw.texto); } catch(e) { return []; }
-  return arr.filter(t => (t.turno === 'tarde' ? 'tarde' : 'manana') === turno);
+  return arr.filter(t => aTareaTurnoCelda(t) === turno);
 }
 
 function celHtml(dia, turno, esWknd, semana) {

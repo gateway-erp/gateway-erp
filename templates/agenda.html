@@ -361,6 +361,7 @@
     <div class="turno-row">
       <button class="turno-btn active" id="t-man" onclick="setTurno('mañana')">☀️ Mañana</button>
       <button class="turno-btn"        id="t-tar" onclick="setTurno('tarde')">🌙 Tarde</button>
+      <button class="turno-btn"        id="t-noc" onclick="setTurno('noche')">🌕 Noche</button>
     </div>
     <div class="modal-actions">
       <button class="mbtn green" onclick="accion('realizado')">✓ Marcar como REALIZADO</button>
@@ -407,6 +408,13 @@ function getMondayOf(d) {
 function isoDate(d)  { return `${d.getFullYear()}-${zz(d.getMonth()+1)}-${zz(d.getDate())}`; }
 function zz(n)       { return String(n).padStart(2,"0"); }
 function esc(s)      { return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+// Ícono y etiqueta de turno, usado en tarjetas, mensaje e imagen de WhatsApp.
+function turnoInfo(turno) {
+  if (turno === "noche") return { icono: "🌕", lbl: "Turno noche" };
+  if (turno === "tarde") return { icono: "🌙", lbl: "Turno tarde" };
+  return { icono: "☀️", lbl: "Turno mañana" };
+}
 function spin(on)    { document.getElementById("spin").classList.toggle("spinning", on); }
 
 function semanaDelMes(diaNum) { return Math.ceil(diaNum / 7); }
@@ -584,10 +592,11 @@ function renderWeek() {
 
     const libreM = celdaLibre(dNum, dMes, dAnio, "manana");
     const libreT = celdaLibre(dNum, dMes, dAnio, "tarde");
+    const libreN = celdaLibre(dNum, dMes, dAnio, "noche");
 
     const tareasLibres = celdaTareasLibres(dNum, dMes, dAnio);
     const lcards = tareasLibres.map(t => {
-      const turnoIco = t.turno === "tarde" ? "🌙" : "☀️";
+      const turnoIco = turnoInfo(t.turno).icono;
       return `<div class="lcard" title="${esc(t.texto)} · ${esc(t.equipo||"")}">
         <span class="lcard-ico">📝</span>
         <span class="lcard-body">
@@ -625,6 +634,12 @@ function renderWeek() {
           <textarea class="libre-ta" placeholder="+ tarde…"
             onblur="guardarLibre(${dNum},${dMes},${dAnio},'tarde',this.value)"
             rows="1">${esc(libreT)}</textarea>
+        </div>
+        <div class="libre-row">
+          <span class="libre-lbl" title="Noche">🌕</span>
+          <textarea class="libre-ta" placeholder="+ noche…"
+            onblur="guardarLibre(${dNum},${dMes},${dAnio},'noche',this.value)"
+            rows="1">${esc(libreN)}</textarea>
         </div>
       </div>
     </div>`;
@@ -744,6 +759,7 @@ function cerrarModal() {
 function setTurno(t) {
   document.getElementById("t-man").classList.toggle("active", t === "mañana");
   document.getElementById("t-tar").classList.toggle("active", t === "tarde");
+  document.getElementById("t-noc").classList.toggle("active", t === "noche");
   if (modalKey) {
     const [mid,s,vn] = modalKey.split("_");
     const idx = visitas.findIndex(x => String(x.mant_id)===mid && String(x.semana)===s && String(x.visita_num||1)===(vn||"1"));
@@ -827,10 +843,13 @@ function celdaLibre(dia, dMes, dAnio, turno) {
 // Junta las notas de Mañana y Tarde de un día para mostrarlas como "ADEMÁS"
 // en el mensaje/imagen de WhatsApp (antepone el turno sólo si hay texto en ambos).
 function notasDelDia(dia, dMes, dAnio) {
-  const m = celdaLibre(dia, dMes, dAnio, "manana");
-  const t = celdaLibre(dia, dMes, dAnio, "tarde");
-  if (m && t) return `☀️ ${m}\n🌙 ${t}`;
-  return m || t || "";
+  const partes = [
+    ["☀️", celdaLibre(dia, dMes, dAnio, "manana")],
+    ["🌙", celdaLibre(dia, dMes, dAnio, "tarde")],
+    ["🌕", celdaLibre(dia, dMes, dAnio, "noche")],
+  ].filter(([, texto]) => texto);
+  if (partes.length > 1) return partes.map(([ico, texto]) => `${ico} ${texto}`).join("\n");
+  return partes.length ? partes[0][1] : "";
 }
 
 async function guardarCeldaRaw(dia, dMes, dAnio, turno, texto) {
@@ -1094,6 +1113,7 @@ function renderWsEquipos() {
         <div class="ws-tarea-right">
           <span class="ws-turno-btn ${turno==='mañana'?'active':''}" onclick="wsSetTareaTurno(${idx},${tIdx},'mañana')" title="Mañana">☀️</span>
           <span class="ws-turno-btn ${turno==='tarde'?'active':''}" onclick="wsSetTareaTurno(${idx},${tIdx},'tarde')" title="Tarde">🌙</span>
+          <span class="ws-turno-btn ${turno==='noche'?'active':''}" onclick="wsSetTareaTurno(${idx},${tIdx},'noche')" title="Noche">🌕</span>
           <span class="ws-tarea-rm" onclick="wsQuitarTarea(${idx},${tIdx})">✕</span>
         </div>
       </div>`;
@@ -1147,9 +1167,8 @@ function genMsg() {
         : "SIN EQUIPO ASIGNADO";
       msg += `\n\n👷 *${nombreEquipo}*\n`;
       eq.tareas.forEach(t => {
-        const turnoIcono = t.turno === "tarde" ? "🌙" : "☀️";
-        const turnoLbl   = t.turno === "tarde" ? "Turno tarde" : "Turno mañana";
-        const texto      = t.tipo === "mant" ? t.label : t.texto;
+        const { icono: turnoIcono, lbl: turnoLbl } = turnoInfo(t.turno);
+        const texto = t.tipo === "mant" ? t.label : t.texto;
         msg += `\n   • _*${texto}*_\n      ${turnoIcono} ${turnoLbl}\n`;
       });
     });
@@ -1224,7 +1243,7 @@ function wsBuildModel() {
       nombre: eq.tecnicos.length ? eq.tecnicos.join(" + ").toUpperCase() : "SIN EQUIPO ASIGNADO",
       tareas: eq.tareas.map(t => ({
         texto: t.tipo === "mant" ? t.label : t.texto,
-        turno: t.turno === "tarde" ? "tarde" : "mañana",
+        turno: t.turno || "mañana",
       })),
     }));
 
@@ -1256,8 +1275,7 @@ async function generarImagen() {
       const cards = eq.tareas.map(t => {
         ctx.font = `700 14px ${fFamily}`;
         const lineas = wsWrapText(ctx, t.texto, colW - 28);
-        const turnoIcono = t.turno === "tarde" ? "🌙" : "☀️";
-        const turnoLbl   = t.turno === "tarde" ? "Turno tarde" : "Turno mañana";
+        const { icono: turnoIcono, lbl: turnoLbl } = turnoInfo(t.turno);
         const h = 16 + lineas.length * 18 + 10 + 18 + 14;
         return { lineas, turnoIcono, turnoLbl, h };
       });

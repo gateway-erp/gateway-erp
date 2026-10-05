@@ -461,6 +461,19 @@ Se agregó `turno="noche"` en todos los lugares donde ya existía la elección M
 
 Se centralizó la lógica de ícono/etiqueta por turno (antes duplicada en 4 lugares con un ternario binario `=== "tarde" ? 🌙 : ☀️`) en un único helper `turnoInfo(turno)`. De paso se corrigió un bug en `wsBuildModel()` que colapsaba cualquier turno que no fuera `"tarde"` en `"mañana"` — con esa lógica, una tarea en turno "noche" se habría guardado bien pero se habría mostrado como "mañana" en el mensaje/imagen. Confirmado en vivo: tarea de texto libre en turno noche (Matías+Nacho) se ve correctamente como 🌕 en el mensaje, en la tarjeta de `/agenda` y en el popup de la fila N del dashboard.
 
+#### Bug grave #4: tareas de mantenimiento recargadas con el mes global en vez del real (2026-10-05)
+Reportado por el usuario: tareas ya cargadas en el generador de WhatsApp (ej. TBAR CCTV y TBAR RED INCENDIOS para el 5/10) "no se reflejaban en el dashboard", y el botón "Confirmar tareas" parecía no hacer nada.
+
+**Causa raíz:** `wsPoblarDesdeDia()` armaba cada tarea de tipo "mant" así: `{ tipo:"mant", año, mes, mant_id:v.mant_id, ... }` — usando las variables **globales** `año`/`mes` (el mes que la página tiene como "vista general", ej. porque la semana visible arranca en el mes anterior) en vez de `v.año`/`v.mes` (el mes real de origen de esa visita, el que realmente existe en `mant_visitas`). Si el usuario tenía la vista general en septiembre pero la tarea era de octubre, la tarea quedaba en memoria etiquetada como "septiembre" — y cualquier acción posterior sobre ella (`wsQuitarTarea`, cambiar turno + confirmar) llamaba a `saveVisita()` apuntando al mes equivocado, pudiendo crear una fila fantasma en septiembre en vez de actualizar la fila real de octubre.
+
+Este bug ya existía desde que se escribió `wsPoblarDesdeDia()`, pero quedaba oculto porque antes esa función solo corría una vez (al seleccionar el día). Se volvió mucho más visible con el fix del "panel no se limpiaba al confirmar" (2026-10-04), que ahora llama a `wsPoblarDesdeDia()` en cada confirmación — multiplicando las chances de pisar el mes.
+
+**Verificación de daño:** se revisó `mant_visitas` de septiembre para los mant_id afectados — ninguna fila tenía `fecha_real` seteada de forma espuria, así que el bug no llegó a corromper datos reales antes de corregirse, solo quedaba latente.
+
+**Fix:** una línea — `año:v.año, mes:v.mes` en vez de `año, mes`. Confirmado en vivo forzando el mes global a septiembre y comprobando que `wsPoblarDesdeDia('2026-10-05')` arma las tareas con `mes:10` igual (el real de la visita).
+
+**De paso:** el botón "Confirmar tareas" ahora muestra "Nada para confirmar" (1.2s) en vez de no hacer nada cuando todo lo cargado ya estaba confirmado — antes esto se sentía como que el click no se registraba.
+
 #### Archivos del módulo
 ```
 db.py                       ← funciones mantenimientos/visitas (líneas ~440-660 aprox.)
@@ -486,4 +499,4 @@ Versión extendida del módulo Presupuestos para trabajos grandes (instalaciones
 **Estado: planificado** — módulo ya desarrollado externamente, a incorporar.
 
 ---
-*Última actualización: 2026-10-04 (turno Noche agregado en agenda, mensaje/imagen WS y dashboard)*
+*Última actualización: 2026-10-05 (bug grave #4: mes global vs mes real en wsPoblarDesdeDia)*

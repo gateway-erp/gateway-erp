@@ -975,10 +975,10 @@ function wsPoblarDesdeDia(iso) {
   // al reabrir el día (sin esto, "desaparecían" de la vista aunque seguían guardadas).
   const dia = new Date(iso + "T00:00:00");
   const tareasLibres = celdaTareasLibres(dia.getDate(), dia.getMonth() + 1, dia.getFullYear());
-  tareasLibres.forEach(t => {
+  tareasLibres.forEach((t, i) => {
     const tecStr = wsTecStr(String(t.equipo || "").split("+"));
     if (!grupos[tecStr]) grupos[tecStr] = { tecnicos: tecStr ? tecStr.split(",") : [], tareas: [] };
-    grupos[tecStr].tareas.push({ tipo:"libre", texto: t.texto, turno: t.turno || "mañana", confirmado:true });
+    grupos[tecStr].tareas.push({ tipo:"libre", texto: t.texto, turno: t.turno || "mañana", confirmado:true, _rawIdx:i });
   });
 
   wsEquipos = Object.values(grupos);
@@ -1034,6 +1034,18 @@ async function wsQuitarTarea(idx, tIdx) {
   if (t.tipo === "mant" && t.confirmado) {
     await saveVisita({ mant_id:t.mant_id, semana:t.semana, visita_num:t.visita_num,
                         fecha_real:"", estado:"pendiente", turno:"mañana" }, t.año, t.mes);
+  }
+  if (t.tipo === "libre" && t.confirmado) {
+    // Tarea libre ya guardada en el backend ("tareas_libres") — hay que sacarla
+    // de ahí también, si no reaparece al volver a abrir el día (quedaba "pegada").
+    const iso = document.getElementById("ws-dia").value;
+    if (iso && t._rawIdx != null) {
+      const dia   = new Date(iso + "T00:00:00");
+      const dNum  = dia.getDate(), dMes = dia.getMonth()+1, dAnio = dia.getFullYear();
+      const actuales = celdaTareasLibres(dNum, dMes, dAnio);
+      actuales.splice(t._rawIdx, 1);
+      await guardarTareasLibres(dNum, dMes, dAnio, actuales);
+    }
   }
   renderWsEquipos(); genMsg();
 }

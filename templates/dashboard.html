@@ -143,12 +143,12 @@
     .cell-date.today-date { color:#4ade80; font-weight:800; }
     .fer-banner { position:absolute; top:50%; left:0; right:0; transform:translateY(-50%); text-align:center; font-size:7px; font-weight:700; letter-spacing:.04em; color:#fca5a5; text-transform:uppercase; pointer-events:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:0 2px; opacity:.85; }
     .cell-inner { min-height:42px; padding:2px 20px 2px 4px; font-size:11px; line-height:1.3; outline:none; word-break:break-word; }
-    .cell-libre-ico { position:absolute; bottom:2px; right:3px; font-size:10px; cursor:help; pointer-events:auto; z-index:1; opacity:.9; }
     .cell-mant { display:flex; flex-direction:column; gap:1px; padding:2px 20px 0 3px; }
     .mant-chip { font-size:8px; font-weight:700; padding:1px 4px; border-radius:3px; line-height:1.35; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:help; }
     .mant-chip.st-pendiente { background:rgba(245,158,11,.22); color:#fde68a; }
     .mant-chip.st-proximo   { background:rgba(245,158,11,.22); color:#fde68a; }
     .mant-chip.st-realizado { background:rgba(34,197,94,.18); color:#86efac; opacity:.75; }
+    .libre-chip { font-size:8px; font-weight:700; padding:1px 4px; border-radius:3px; line-height:1.35; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:help; background:rgba(59,130,246,.2); color:#93c5fd; }
     /* cell colors */
     .c-verde    { background:#14532d!important; color:#bbf7d0; }
     .c-azul     { background:#1e3a8a!important; color:#bfdbfe; }
@@ -1402,11 +1402,6 @@ function celHtml(dia, turno, esWknd, semana) {
   const fStr  = `${aAño}-${String(aMes).padStart(2,'0')}-${String(dia).padStart(2,'0')}`;
   const feNom = FERIADOS_AR[fStr];
 
-  const tLibres = aTareasLibres(dia, turno);
-  const libreTitle = tLibres.map(t => `📝 ${t.texto}${t.equipo ? ' (' + t.equipo + ')' : ''}`).join('\n');
-  const libreIco = tLibres.length
-    ? `<span class="cell-libre-ico" title="${aEsc(libreTitle)}">📝</span>` : '';
-
   // Mantenimientos asignados a esta celda: ocupan el turno igual que cualquier otra
   // tarea del técnico (si están haciendo TBAR CCTV, no están libres para otra cosa),
   // así que se muestran como contenido real de la celda, no como un ícono escondido.
@@ -1419,7 +1414,17 @@ function celHtml(dia, turno, esWknd, semana) {
     const title = `🔧 ${nombre}${tec ? ' · ' + tec : ''} (${aEstLbl(est)})`;
     return `<span class="mant-chip st-${est}" title="${aEsc(title)}">🔧 ${aEsc(nombre)}</span>`;
   }).join('');
-  const mantRow = mantChips ? `<div class="cell-mant">${mantChips}</div>` : '';
+
+  // Tareas de texto libre (equipos del generador de WhatsApp): mismo nivel visual
+  // que un mantenimiento, antes se mostraban como un ícono diminuto que requería
+  // pasar el mouse — por eso "no aparecían" aunque sí estaban guardadas.
+  const tLibres = aTareasLibres(dia, turno);
+  const libreChips = tLibres.map(t => {
+    const title = `📝 ${t.texto}${t.equipo ? ' · ' + t.equipo : ''}`;
+    return `<span class="libre-chip" title="${aEsc(title)}">📝 ${aEsc(t.texto)}</span>`;
+  }).join('');
+
+  const mantRow = (mantChips || libreChips) ? `<div class="cell-mant">${mantChips}${libreChips}</div>` : '';
 
   const hoy = new Date();
   const esHoy = dia === hoy.getDate() && aMes === hoy.getMonth()+1 && aAño === hoy.getFullYear();
@@ -1437,7 +1442,7 @@ function celHtml(dia, turno, esWknd, semana) {
     if (feNom) dateLabel += `<span class="fer-banner">${aEsc(feNom)}</span>`;
   }
   return `<td class="${cls}" data-dia="${dia}" data-turno="${turno}" data-semana="${semana}">
-    ${dateLabel}${libreIco}${mantRow}<div class="cell-inner" contenteditable="true" style="${negri}">${txt}</div></td>`;
+    ${dateLabel}${mantRow}<div class="cell-inner" contenteditable="true" style="${negri}">${txt}</div></td>`;
 }
 
 function aCelActivar(td) {

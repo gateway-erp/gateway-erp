@@ -144,6 +144,7 @@
     .fer-banner { position:absolute; top:50%; left:0; right:0; transform:translateY(-50%); text-align:center; font-size:7px; font-weight:700; letter-spacing:.04em; color:#fca5a5; text-transform:uppercase; pointer-events:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:0 2px; opacity:.85; }
     .cell-inner { min-height:42px; padding:2px 20px 2px 4px; font-size:11px; line-height:1.3; outline:none; word-break:break-word; }
     .cell-libre-ico { position:absolute; bottom:2px; right:3px; font-size:10px; cursor:help; pointer-events:auto; z-index:1; opacity:.9; }
+    .cell-mant-ico  { position:absolute; bottom:2px; left:3px; font-size:10px; cursor:help; pointer-events:auto; z-index:1; opacity:.9; }
     /* cell colors */
     .c-verde    { background:#14532d!important; color:#bbf7d0; }
     .c-azul     { background:#1e3a8a!important; color:#bfdbfe; }
@@ -1269,6 +1270,7 @@ let aMes = new Date().getMonth() + 1;
 let aCeldas  = {};  // "dia-turno" → {texto, color, negrita}
 let aMants   = [];
 let aVisitas = {}; // "mantId-semana-visitaNum" → {fecha_real, estado}
+let aVisitasPorDia = {}; // "dia-turno" → [{mant_id, estado}] — para el indicador en el calendario
 let aCelActEl   = null;
 let aCelActDia  = null;
 let aCelActTurno= null;
@@ -1279,7 +1281,7 @@ async function agendaCargar() {
   try {
     const r = await fetch(`/api/agenda/${aAño}/${aMes}`);
     const d = await r.json();
-    aCeldas = {}; aMants = []; aVisitas = {};
+    aCeldas = {}; aMants = []; aVisitas = {}; aVisitasPorDia = {};
     if (d.ok) {
       (d.celdas||[]).forEach(c => {
         aCeldas[`${c.dia}-${c.turno}`] = {texto:c.texto||'', color:c.color||'', negrita:c.negrita==='si'};
@@ -1287,6 +1289,13 @@ async function agendaCargar() {
       aMants = d.mantenimientos || [];
       (d.visitas||[]).forEach(v => {
         aVisitas[`${v.mant_id}-${v.semana}-${v.visita_num||1}`] = {fecha_real:v.fecha_real||'', estado:v.estado||'pendiente'};
+        if (!v.fecha_real) return;
+        const fd = new Date(v.fecha_real + 'T00:00:00');
+        if (fd.getFullYear() !== aAño || (fd.getMonth()+1) !== aMes) return;
+        const turnoCelda = v.turno === 'tarde' ? 'tarde' : (v.turno === 'noche' ? 'noche' : 'manana');
+        const key = `${fd.getDate()}-${turnoCelda}`;
+        if (!aVisitasPorDia[key]) aVisitasPorDia[key] = [];
+        aVisitasPorDia[key].push({mant_id:v.mant_id, estado:v.estado, fecha_real:v.fecha_real});
       });
     }
   } catch(e) { console.error('[Agenda]', e); }
@@ -1394,6 +1403,18 @@ function celHtml(dia, turno, esWknd, semana) {
   const libreIco = tLibres.length
     ? `<span class="cell-libre-ico" title="${aEsc(libreTitle)}">📝</span>` : '';
 
+  // Indicador de mantenimientos asignados a esta celda — el detalle completo (con
+  // estado realizado/próximo/pendiente) vive en el panel "Mantenimientos del mes",
+  // esto es solo para que el calendario general no se vea "vacío" cuando hay trabajo.
+  const visDia = aVisitasPorDia[`${dia}-${turno}`] || [];
+  const mantTitle = visDia.map(v => {
+    const m = aMants.find(x => String(x.id) === String(v.mant_id));
+    const est = aEstLbl(aEstadoVisual(v));
+    return `🔧 ${m ? m.nombre : v.mant_id} (${est})`;
+  }).join('\n');
+  const mantIco = visDia.length
+    ? `<span class="cell-mant-ico" title="${aEsc(mantTitle)}">🔧</span>` : '';
+
   const hoy = new Date();
   const esHoy = dia === hoy.getDate() && aMes === hoy.getMonth()+1 && aAño === hoy.getFullYear();
 
@@ -1410,7 +1431,7 @@ function celHtml(dia, turno, esWknd, semana) {
     if (feNom) dateLabel += `<span class="fer-banner">${aEsc(feNom)}</span>`;
   }
   return `<td class="${cls}" data-dia="${dia}" data-turno="${turno}" data-semana="${semana}">
-    ${dateLabel}${libreIco}<div class="cell-inner" contenteditable="true" style="${negri}">${txt}</div></td>`;
+    ${dateLabel}${mantIco}${libreIco}<div class="cell-inner" contenteditable="true" style="${negri}">${txt}</div></td>`;
 }
 
 function aCelActivar(td) {

@@ -474,6 +474,16 @@ Este bug ya existía desde que se escribió `wsPoblarDesdeDia()`, pero quedaba o
 
 **De paso:** el botón "Confirmar tareas" ahora muestra "Nada para confirmar" (1.2s) en vez de no hacer nada cuando todo lo cargado ya estaba confirmado — antes esto se sentía como que el click no se registraba.
 
+#### Equipos del generador WS indistinguibles visualmente (2026-10-05)
+El usuario reportó que al cargar un 2do equipo para el mismo día, terminaba "mezclando" técnicos en un solo equipo de 4 personas. Se reprodujo el flujo exacto en vivo (agregar equipo → elegir Matías+Nacho → agregar tarea → confirmar) y el estado interno se mantuvo correctamente separado en todo momento — no era un bug de datos, sino de legibilidad: los dos bloques `.ws-equipo` se veían casi idénticos y sin numeración, fácil confundir a cuál se le está tocando los chips de técnicos.
+
+**Fix:** cada bloque ahora muestra un encabezado "EQUIPO 1 — CAMILO + PABLO" (se actualiza solo al elegir técnicos) y un borde izquierdo de color distinto por posición (azul/verde/ámbar, cíclico). Las tareas ya confirmadas muestran "✓ guardada" en vez de no mostrar nada, para que se note que el guardado funcionó.
+
+#### Mantenimientos invisibles en el calendario general del dashboard (2026-10-05/12)
+El usuario insistió dos veces en que las visitas de mantenimiento (TBAR CCTV, etc.) no se veían en el calendario "Agenda Operativa" (M/T/N) del dashboard — solo estaban en el panel "Mantenimientos del mes" más abajo. Primer intento: un ícono 🔧 chico, visible solo al pasar el cursor — el usuario aclaró que **no alcanza**: "son las tareas que van a hacer ese día los técnicos, por ende no pueden hacer otras... no podemos dejar el calendario principal vacío". Es decir: un mantenimiento programado ocupa el turno igual que cualquier otra tarea (es información de capacidad, no un detalle secundario), y tiene que verse como contenido real de la celda, no escondido en un tooltip.
+
+**Fix definitivo:** `agendaCargar()` arma `aVisitasPorDia["dia-turno"]` (a partir de `d.visitas`, usando `fecha_real` + `turno` de cada visita, mapeado a las claves `manana`/`tarde`/`noche` del dashboard). `celHtml()` ahora renderiza una ficha visible (`.mant-chip`) con el nombre del mantenimiento dentro de la celda —ámbar si está pendiente/próximo, verde si ya se realizó—, con técnicos y estado completo en el `title`. Se sacó el `height:46px` fijo de `.agenda-cell` (quedó solo `min-height`) para que las celdas con mantenimiento puedan crecer y mostrar la ficha sin recortarla. El panel "Mantenimientos del mes" sigue siendo el lugar con el detalle completo por visita; esto es el resumen visible día a día.
+
 #### Archivos del módulo
 ```
 db.py                       ← funciones mantenimientos/visitas (líneas ~440-660 aprox.)
@@ -499,4 +509,4 @@ Versión extendida del módulo Presupuestos para trabajos grandes (instalaciones
 **Estado: planificado** — módulo ya desarrollado externamente, a incorporar.
 
 ---
-*Última actualización: 2026-10-05 (bug grave #4: mes global vs mes real en wsPoblarDesdeDia)*
+*Última actualización: 2026-10-12 (mantenimientos visibles como ficha real en el calendario del dashboard)*

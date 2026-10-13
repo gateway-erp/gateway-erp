@@ -55,6 +55,15 @@
 - [x] Grilla semanal de `/agenda` pasaba por alto sábado y domingo (solo lun-vie) — el operador trabaja fines de semana seguido. Ahora muestra 7 días, y el selector de día del generador de WhatsApp también los incluye.
 - [x] Dato corrupto: 4 mantenimientos tenían una visita con `semana` fuera de su patrón real (semana=4 en mantenimientos cuyo patrón es "1;3" o "3") — restos de pruebas previas al fix de las comas en Sheets. Corregidas las 4 filas.
 - [x] Agregado botón "Quitar — enviar a pendientes sin fecha" en el modal principal de `/agenda` — antes no había forma de desasignar una tarea ya cargada en la grilla, solo marcarla realizado/vencido/cambiar fecha.
+- [x] **Tareas libres "pegadas" — no se podían borrar**: `wsQuitarTarea()` solo revertía el backend para tareas de tipo "mant"; una tarea libre ya confirmada se sacaba de la vista pero reaparecía al reabrir el día (seguía guardada en `tareas_libres`). Ahora cada tarea libre carga su índice real dentro del array guardado (`_rawIdx`) y al quitarla se reescribe el array sin ese elemento.
+- [x] **Botón "Confirmar tareas" sin hacer nada**: era consecuencia del bug anterior — las tareas ya estaban confirmadas, por eso no había nada que confirmar. El botón ya avisaba "Nada para confirmar" (ver bug #4 arriba), pero no se veía porque el fix vivía en un commit que no había llegado a producción (ver nota de proceso más abajo).
+- [x] **Tareas libres de un equipo "no aparecían" en el dashboard**: sí se guardaban bien, pero se dibujaban como un ícono de 10px que exigía pasar el mouse para leer el texto — invisible en la práctica. Ahora se muestran como chip con texto (`.libre-chip`), igual que los mantenimientos.
+- [x] **Borrado directo de una tarea libre desde su propia tarjeta**: se agregó una ✕ en cada tarjeta `.lcard` de la grilla semanal (con confirmación antes de borrar) — mejor flujo que tener que ir hasta el panel de WhatsApp para sacarla.
+- [x] Dropdown de día del generador de WhatsApp — fue y volvió: se restringió a "desde mañana" (no programar en el pasado), después se amplió a "últimos 7 días + futuro" (para poder reabrir y editar tareas ya cargadas), y finalmente volvió a "desde HOY en adelante" porque el borrado directo con ✕ en la tarjeta (punto anterior) resuelve la edición de días pasados sin tener que mezclar pasado en este selector — se navega con las flechas de semana (‹ ›) en su lugar.
+- [ ] **Visualización del calendario del dashboard poco adaptable**: al tener 3 turnos (M/T/N) y varias tareas apiladas, las celdas se ven "mini". La grilla es una `<table>` HTML real, así que toda la fila comparte altura entre los 7 días de la semana — si un día tiene 4 tareas, esa fila crece para todos aunque el resto esté vacío. Para que cada celda crezca/achique de forma independiente habría que migrar de `<table>` a CSS Grid, un cambio grande (1500+ líneas, toca painting de colores, click-to-edit, drag, feriados). **Decisión: no se hace por ahora** — queda anotado como mejora cosmética, no urgente.
+
+### Nota de proceso — commits sin pushear
+El 2026-10-13 se detectó que un fix ya hecho y commiteado localmente nunca llegó a `gestion.gateway.com.ar` porque el commit no se había pusheado a `origin/master`. El usuario probó en vivo y "seguía todo igual" — no era que el fix estuviera mal, es que nunca se desplegó. **Regla a partir de ahora: después de cada fix, hacer `git push` (con confirmación del usuario) antes de pedirle que verifique en el sitio en vivo.** Además, no hay ningún archivo de config de deploy (`render.yaml`, `Procfile`, Dockerfile, GitHub Actions) en el repo — el deploy parece estar configurado manualmente en el panel del hosting, no se pudo confirmar si hay auto-deploy desde `origin/master`.
 
 ## Módulos nuevos — por arrancar
 
@@ -90,4 +99,4 @@
 - [x] Imagen de agenda: encabezado reordenado — fecha arriba y más grande (resalta más), "📅🔧 AGENDA DEL DÍA" abajo en azul
 
 ---
-*Última actualización: 2026-10-12 (mantenimientos como ficha visible en el calendario del dashboard)*
+*Última actualización: 2026-10-13 (tareas libres: fix de borrado pegado, chip visible en dashboard, ✕ directo en tarjeta)*

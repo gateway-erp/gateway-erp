@@ -133,7 +133,7 @@
     .agenda-table thead th.th-turno { width:24px; min-width:24px; }
     .agenda-table thead th.th-wknd { color:rgba(139,163,204,.4); }
     .td-turno-lbl { background:var(--navy-mid); border:1px solid var(--navy-line); font-size:8px; font-weight:700; text-transform:uppercase; letter-spacing:.2px; color:var(--text-dim); text-align:center; vertical-align:middle; width:24px; padding:2px 1px; }
-    .agenda-cell { border:1px solid var(--navy-line); padding:0; vertical-align:top; min-height:46px; height:46px; position:relative; cursor:text; transition:border-color .1s; }
+    .agenda-cell { border:1px solid var(--navy-line); padding:0; vertical-align:top; min-height:46px; position:relative; cursor:text; transition:border-color .1s; }
     .agenda-cell:focus-within { border-color:rgba(59,130,246,.7); z-index:2; }
     .agenda-cell.feriado-cell { background:rgba(239,68,68,.18); border-color:rgba(239,68,68,.35); }
     .agenda-cell.wknd-cell { background:rgba(255,255,255,.04); }
@@ -144,7 +144,11 @@
     .fer-banner { position:absolute; top:50%; left:0; right:0; transform:translateY(-50%); text-align:center; font-size:7px; font-weight:700; letter-spacing:.04em; color:#fca5a5; text-transform:uppercase; pointer-events:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:0 2px; opacity:.85; }
     .cell-inner { min-height:42px; padding:2px 20px 2px 4px; font-size:11px; line-height:1.3; outline:none; word-break:break-word; }
     .cell-libre-ico { position:absolute; bottom:2px; right:3px; font-size:10px; cursor:help; pointer-events:auto; z-index:1; opacity:.9; }
-    .cell-mant-ico  { position:absolute; bottom:2px; left:3px; font-size:10px; cursor:help; pointer-events:auto; z-index:1; opacity:.9; }
+    .cell-mant { display:flex; flex-direction:column; gap:1px; padding:2px 20px 0 3px; }
+    .mant-chip { font-size:8px; font-weight:700; padding:1px 4px; border-radius:3px; line-height:1.35; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:help; }
+    .mant-chip.st-pendiente { background:rgba(245,158,11,.22); color:#fde68a; }
+    .mant-chip.st-proximo   { background:rgba(245,158,11,.22); color:#fde68a; }
+    .mant-chip.st-realizado { background:rgba(34,197,94,.18); color:#86efac; opacity:.75; }
     /* cell colors */
     .c-verde    { background:#14532d!important; color:#bbf7d0; }
     .c-azul     { background:#1e3a8a!important; color:#bfdbfe; }
@@ -1403,17 +1407,19 @@ function celHtml(dia, turno, esWknd, semana) {
   const libreIco = tLibres.length
     ? `<span class="cell-libre-ico" title="${aEsc(libreTitle)}">📝</span>` : '';
 
-  // Indicador de mantenimientos asignados a esta celda — el detalle completo (con
-  // estado realizado/próximo/pendiente) vive en el panel "Mantenimientos del mes",
-  // esto es solo para que el calendario general no se vea "vacío" cuando hay trabajo.
+  // Mantenimientos asignados a esta celda: ocupan el turno igual que cualquier otra
+  // tarea del técnico (si están haciendo TBAR CCTV, no están libres para otra cosa),
+  // así que se muestran como contenido real de la celda, no como un ícono escondido.
   const visDia = aVisitasPorDia[`${dia}-${turno}`] || [];
-  const mantTitle = visDia.map(v => {
+  const mantChips = visDia.map(v => {
     const m = aMants.find(x => String(x.id) === String(v.mant_id));
-    const est = aEstLbl(aEstadoVisual(v));
-    return `🔧 ${m ? m.nombre : v.mant_id} (${est})`;
-  }).join('\n');
-  const mantIco = visDia.length
-    ? `<span class="cell-mant-ico" title="${aEsc(mantTitle)}">🔧</span>` : '';
+    const nombre = m ? m.nombre : v.mant_id;
+    const tec = m ? String(m.tecnicos || '').split(',').map(s => s.trim()).filter(Boolean).join(' + ') : '';
+    const est = aEstadoVisual(v);
+    const title = `🔧 ${nombre}${tec ? ' · ' + tec : ''} (${aEstLbl(est)})`;
+    return `<span class="mant-chip st-${est}" title="${aEsc(title)}">🔧 ${aEsc(nombre)}</span>`;
+  }).join('');
+  const mantRow = mantChips ? `<div class="cell-mant">${mantChips}</div>` : '';
 
   const hoy = new Date();
   const esHoy = dia === hoy.getDate() && aMes === hoy.getMonth()+1 && aAño === hoy.getFullYear();
@@ -1431,7 +1437,7 @@ function celHtml(dia, turno, esWknd, semana) {
     if (feNom) dateLabel += `<span class="fer-banner">${aEsc(feNom)}</span>`;
   }
   return `<td class="${cls}" data-dia="${dia}" data-turno="${turno}" data-semana="${semana}">
-    ${dateLabel}${mantIco}${libreIco}<div class="cell-inner" contenteditable="true" style="${negri}">${txt}</div></td>`;
+    ${dateLabel}${libreIco}${mantRow}<div class="cell-inner" contenteditable="true" style="${negri}">${txt}</div></td>`;
 }
 
 function aCelActivar(td) {

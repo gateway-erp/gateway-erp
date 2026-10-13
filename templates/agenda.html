@@ -901,13 +901,15 @@ async function guardarNotaExtra(dia, dMes, dAnio, texto) {
 function fillWsDias() {
   const sel = document.getElementById("ws-dia");
   const prev = sel.value;
-  // Mostrar próximos 14 días (incluye fin de semana — el operador suele trabajar sábados/domingos)
+  // Incluye los últimos 7 días (hoy y hacia atrás) para poder volver a abrir un día
+  // ya cargado y borrar/modificar tareas, más los próximos 14 para programar.
+  // Incluye fin de semana — el operador suele trabajar sábados/domingos.
   let opts = `<option value="">— Seleccionar —</option>`;
-  for (let i = 1; i <= 14; i++) {
+  for (let i = -7; i <= 14; i++) {
     const d = new Date(HOY); d.setDate(HOY.getDate() + i);
     const dow = d.getDay();
     const iso = isoDate(d);
-    const lbl = `${DIAS_F[dow]} ${d.getDate()}/${zz(d.getMonth()+1)}`;
+    const lbl = `${DIAS_F[dow]} ${d.getDate()}/${zz(d.getMonth()+1)}${i===0?' (HOY)':''}`;
     opts += `<option value="${iso}">${lbl}</option>`;
   }
   sel.innerHTML = opts;

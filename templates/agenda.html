@@ -147,6 +147,8 @@
     .lcard-body  { flex: 1; }
     .lcard-nombre{ display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; max-width: 120px; }
     .lcard-tec   { font-size: 8px; opacity: .7; display: block; }
+    .lcard-rm    { flex-shrink: 0; cursor: pointer; color: #c7d2fe; opacity: .6; font-size: 11px; padding: 0 1px; }
+    .lcard-rm:hover { opacity: 1; color: var(--red); }
 
     /* ── ÍCONO NOTA EXTRA (popup al pasar el cursor) ── */
     .day-nota { cursor: help; font-size: 10px; margin-left: 4px; opacity: .85; }
@@ -599,7 +601,7 @@ function renderWeek() {
     const libreN = celdaLibre(dNum, dMes, dAnio, "noche");
 
     const tareasLibres = celdaTareasLibres(dNum, dMes, dAnio);
-    const lcards = tareasLibres.map(t => {
+    const lcards = tareasLibres.map((t, i) => {
       const turnoIco = turnoInfo(t.turno).icono;
       return `<div class="lcard" title="${esc(t.texto)} · ${esc(t.equipo||"")}">
         <span class="lcard-ico">📝</span>
@@ -607,6 +609,7 @@ function renderWeek() {
           <span class="lcard-nombre">${esc(t.texto)}</span>
           <span class="lcard-tec">${esc(t.equipo||"")} · ${turnoIco}</span>
         </span>
+        <span class="lcard-rm" title="Quitar tarea" onclick="event.stopPropagation(); borrarTareaLibreDia(${dNum},${dMes},${dAnio},${i})">✕</span>
       </div>`;
     }).join("");
 
@@ -885,6 +888,27 @@ async function guardarTareasLibres(dia, dMes, dAnio, arr) {
   await guardarCeldaRaw(dia, dMes, dAnio, "tareas_libres", JSON.stringify(arr));
 }
 
+// Borrado directo de una tarea libre desde su propia tarjeta en la grilla semanal
+// (con confirmación — es la forma más natural de sacarla, en vez de tener que
+// pasar por el panel de carga de WhatsApp).
+async function borrarTareaLibreDia(dia, dMes, dAnio, idx) {
+  const arr = celdaTareasLibres(dia, dMes, dAnio);
+  const t = arr[idx];
+  if (!t) return;
+  if (!confirm(`¿Quitar la tarea "${t.texto}"${t.equipo ? ' de ' + t.equipo : ''}?`)) return;
+  arr.splice(idx, 1);
+  await guardarTareasLibres(dia, dMes, dAnio, arr);
+  render();
+  // Si ese mismo día está abierto en el panel de carga de WhatsApp, refrescarlo
+  // también — si no, sus índices locales (_rawIdx) quedan desfasados.
+  const isoSel = document.getElementById("ws-dia").value;
+  if (isoSel === isoDate(new Date(dAnio, dMes - 1, dia))) {
+    wsPoblarDesdeDia(isoSel);
+    renderWsEquipos();
+    genMsg();
+  }
+}
+
 // ── NOTA EXTRA (comentario del día, no es una tarea — se persiste para el popup) ──
 function celdaNotaExtra(dia, dMes, dAnio) {
   const c = celdas.find(c => String(c.dia) === String(dia) &&
@@ -901,11 +925,12 @@ async function guardarNotaExtra(dia, dMes, dAnio, texto) {
 function fillWsDias() {
   const sel = document.getElementById("ws-dia");
   const prev = sel.value;
-  // Incluye los últimos 7 días (hoy y hacia atrás) para poder volver a abrir un día
-  // ya cargado y borrar/modificar tareas, más los próximos 14 para programar.
+  // Solo HOY en adelante: para borrar/modificar tareas de días pasados ahora se
+  // navega con las flechas de semana y se usa la ✕ directo en cada tarjeta
+  // (en vez de tener que traer el día acá y contaminar este selector con pasado).
   // Incluye fin de semana — el operador suele trabajar sábados/domingos.
   let opts = `<option value="">— Seleccionar —</option>`;
-  for (let i = -7; i <= 14; i++) {
+  for (let i = 0; i <= 14; i++) {
     const d = new Date(HOY); d.setDate(HOY.getDate() + i);
     const dow = d.getDay();
     const iso = isoDate(d);

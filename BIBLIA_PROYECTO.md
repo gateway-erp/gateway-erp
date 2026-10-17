@@ -496,6 +496,15 @@ templates/agenda.html       ← página completa (vista semanal, modal, generado
 - Decidir si el módulo se integra visualmente dentro del dashboard principal o queda como página separada (por ahora: separada, con nav propio)
 - Falta cargar los 15 mantenimientos reales completos si hay más de los 6 iniciales (confirmado por el usuario: "son todos los que tenemos" — revisar si eso sigue siendo así)
 
+#### Densidad de información en el calendario del dashboard (2026-10-17)
+El usuario comparó el calendario del dashboard con su planilla Excel vieja de referencia ("MES DE OCTUBRE 2026 OPERACIONES GATEWAY") — mucho más densa en información (texto completo de cada tarea, técnicos, horarios) — y pidió explícitamente aprovechar el espacio disponible: "visualmente no dice nada nuestro dashboard, es demasiado poca la información que tiene, y tenemos espacio para desarrollar más".
+
+Se preguntó el alcance exacto antes de tocar nada (para no repetir el patrón de adivinar mal visto en fixes anteriores de este módulo) y el usuario pidió, puntualmente: nombre del mantenimiento + técnicos visibles en la ficha (no solo el nombre). Las tareas de texto libre ya se mostraban con ficha visible desde un fix anterior en esta misma sesión.
+
+**Fix:** la ficha `.mant-chip` pasó de mostrar solo `nombre` a mostrar `"${nombre} — ${tecnicos}"` (ej. "TBAR CCTV — Camilo + Pablo"), y el CSS pasó de una sola línea truncada con `text-overflow:ellipsis` a `white-space:normal; word-break:break-word`, para que el texto completo se lea en varias líneas dentro de la ficha en vez de cortarse. Confirmado en vivo.
+
+**Botones del generador de WhatsApp:** el mensaje de texto plano dejó de ser lo que se envía (ahora siempre se copia la imagen tipo cartel) — se sacó el botón "Copiar mensaje" (texto) y se renombró "Copiar como imagen" a "Copiar mensaje", que es como el usuario lo piensa ahora. Se eliminó también la función `copiar()` y el CSS `.btn-copy` que quedaban sin uso.
+
 ---
 
 ### Presupuestos alta gama
@@ -509,4 +518,4 @@ Versión extendida del módulo Presupuestos para trabajos grandes (instalaciones
 **Estado: planificado** — módulo ya desarrollado externamente, a incorporar.
 
 ---
-*Última actualización: 2026-10-12 (mantenimientos visibles como ficha real en el calendario del dashboard)*
+*Última actualización: 2026-10-17 (técnicos visibles en la ficha de mantenimiento; botones WS simplificados)*

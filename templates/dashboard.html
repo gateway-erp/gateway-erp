@@ -144,11 +144,11 @@
     .fer-banner { position:absolute; top:50%; left:0; right:0; transform:translateY(-50%); text-align:center; font-size:7px; font-weight:700; letter-spacing:.04em; color:#fca5a5; text-transform:uppercase; pointer-events:none; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; padding:0 2px; opacity:.85; }
     .cell-inner { min-height:42px; padding:2px 20px 2px 4px; font-size:11px; line-height:1.3; outline:none; word-break:break-word; }
     .cell-mant { display:flex; flex-direction:column; gap:1px; padding:2px 20px 0 3px; }
-    .mant-chip { font-size:8px; font-weight:700; padding:1px 4px; border-radius:3px; line-height:1.35; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:help; }
+    .mant-chip { display:block; font-size:8px; font-weight:700; padding:1px 4px; border-radius:3px; line-height:1.3; white-space:normal; word-break:break-word; cursor:help; }
     .mant-chip.st-pendiente { background:rgba(245,158,11,.22); color:#fde68a; }
     .mant-chip.st-proximo   { background:rgba(245,158,11,.22); color:#fde68a; }
     .mant-chip.st-realizado { background:rgba(34,197,94,.18); color:#86efac; opacity:.75; }
-    .libre-chip { font-size:8px; font-weight:700; padding:1px 4px; border-radius:3px; line-height:1.35; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:help; background:rgba(59,130,246,.2); color:#93c5fd; }
+    .libre-chip { display:block; font-size:8px; font-weight:700; padding:1px 4px; border-radius:3px; line-height:1.3; white-space:normal; word-break:break-word; cursor:help; background:rgba(59,130,246,.2); color:#93c5fd; }
     /* cell colors */
     .c-verde    { background:#14532d!important; color:#bbf7d0; }
     .c-azul     { background:#1e3a8a!important; color:#bfdbfe; }
@@ -1411,8 +1411,9 @@ function celHtml(dia, turno, esWknd, semana) {
     const nombre = m ? m.nombre : v.mant_id;
     const tec = m ? String(m.tecnicos || '').split(',').map(s => s.trim()).filter(Boolean).join(' + ') : '';
     const est = aEstadoVisual(v);
-    const title = `🔧 ${nombre}${tec ? ' · ' + tec : ''} (${aEstLbl(est)})`;
-    return `<span class="mant-chip st-${est}" title="${aEsc(title)}">🔧 ${aEsc(nombre)}</span>`;
+    const texto = tec ? `${nombre} — ${tec}` : nombre;
+    const title = `🔧 ${texto} (${aEstLbl(est)})`;
+    return `<span class="mant-chip st-${est}" title="${aEsc(title)}">🔧 ${aEsc(texto)}</span>`;
   }).join('');
 
   // Tareas de texto libre (equipos del generador de WhatsApp): mismo nivel visual

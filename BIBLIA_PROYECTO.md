@@ -505,6 +505,8 @@ Se preguntó el alcance exacto antes de tocar nada (para no repetir el patrón d
 
 **Botones del generador de WhatsApp:** el mensaje de texto plano dejó de ser lo que se envía (ahora siempre se copia la imagen tipo cartel) — se sacó el botón "Copiar mensaje" (texto) y se renombró "Copiar como imagen" a "Copiar mensaje", que es como el usuario lo piensa ahora. Se eliminó también la función `copiar()` y el CSS `.btn-copy` que quedaban sin uso.
 
+**La ficha de texto libre también pasó a mostrar el equipo** ("tarea — EQUIPO", mismo patrón que la de mantenimiento). Al revisar los datos reales para verificar esto se encontró algo importante: dos tareas guardadas el 19/10 tenían `"equipo":"CAMILO + PABLO + MATIAS + NACHO"` — los 4 técnicos mezclados en una sola tarea. Esto **confirma retroactivamente** el bug de "me arma un equipo de 4 mezclado" que el usuario reportó varios mensajes atrás, y que no se había podido reproducir en vivo en su momento (se probó el flujo exacto y los equipos quedaban bien separados). Conclusión: ese dato quedó guardado así por el bug real que existía **antes** de los fixes de esta sesión (numeración "EQUIPO 1/2" + borde de color, que resolvieron la confusión de a qué bloque se le tocaban los chips) — no es un bug que siga vigente, sino un resabio de datos viejos. Se corrigió a mano vía `/api/agenda/celda` a `"MATIAS + NACHO"` (el equipo correcto según la composición original).
+
 ---
 
 ### Presupuestos alta gama
@@ -518,4 +520,4 @@ Versión extendida del módulo Presupuestos para trabajos grandes (instalaciones
 **Estado: planificado** — módulo ya desarrollado externamente, a incorporar.
 
 ---
-*Última actualización: 2026-10-17 (técnicos visibles en la ficha de mantenimiento; botones WS simplificados)*
+*Última actualización: 2026-10-17 (equipo visible en ficha de texto libre; confirmado el origen del bug de equipo-de-4 en datos viejos)*

@@ -1421,8 +1421,9 @@ function celHtml(dia, turno, esWknd, semana) {
   // pasar el mouse — por eso "no aparecían" aunque sí estaban guardadas.
   const tLibres = aTareasLibres(dia, turno);
   const libreChips = tLibres.map(t => {
-    const title = `📝 ${t.texto}${t.equipo ? ' · ' + t.equipo : ''}`;
-    return `<span class="libre-chip" title="${aEsc(title)}">📝 ${aEsc(t.texto)}</span>`;
+    const texto = t.equipo ? `${t.texto} — ${t.equipo}` : t.texto;
+    const title = `📝 ${texto}`;
+    return `<span class="libre-chip" title="${aEsc(title)}">📝 ${aEsc(texto)}</span>`;
   }).join('');
 
   const mantRow = (mantChips || libreChips) ? `<div class="cell-mant">${mantChips}${libreChips}</div>` : '';

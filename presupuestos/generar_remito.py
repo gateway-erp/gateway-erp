@@ -42,8 +42,8 @@ def draw_watermark(c):
     wm_x = MARGIN_L + (W - wm_w) / 2
     wm_y = (PAGE_H - wm_h) / 2
     c.saveState()
-    c.setFillAlpha(0.06)
-    c.setStrokeAlpha(0.06)
+    c.setFillAlpha(0.14)
+    c.setStrokeAlpha(0.14)
     c.drawImage(LOGO_ICONO, wm_x, wm_y, width=wm_w, height=wm_h,
                 preserveAspectRatio=True, mask="auto")
     c.restoreState()

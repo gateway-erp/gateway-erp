@@ -42,8 +42,8 @@ def draw_watermark(c):
     wm_x = MARGIN_L + (W - wm_w) / 2
     wm_y = (PAGE_H - wm_h) / 2
     c.saveState()
-    c.setFillAlpha(0.14)
-    c.setStrokeAlpha(0.14)
+    c.setFillAlpha(0.18)
+    c.setStrokeAlpha(0.18)
     c.drawImage(LOGO_ICONO, wm_x, wm_y, width=wm_w, height=wm_h,
                 preserveAspectRatio=True, mask="auto")
     c.restoreState()
@@ -171,7 +171,7 @@ def generar_remito(datos, output_path):
     st_cant = s("cant", fontName="Helvetica", fontSize=8, textColor=colors.black,
                 alignment=TA_CENTER, leading=11)
 
-    col_cant = 18*mm
+    col_cant = 24*mm
     col_det  = W - col_cant
 
     table_data = [

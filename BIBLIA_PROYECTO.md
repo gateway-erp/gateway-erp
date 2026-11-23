@@ -509,6 +509,18 @@ Se preguntó el alcance exacto antes de tocar nada (para no repetir el patrón d
 
 ---
 
+### Módulo Remitos
+**Estado: en uso.** Genera remitos en PDF (`presupuestos/generar_remito.py`, reportlab) desde un formulario (`/remito`, `templates/remito.html`) con autocompletado de clientes, tabla de ítems editable, y subida automática a Drive (carpeta del cliente / Remitos) cuando el nombre de "Entrega" matchea un cliente existente. Se guarda un registro en la hoja `remitos` (`db.guardar_remito`/`load_remitos`) con los ítems en JSON.
+
+#### Referencia a OC + Atte automáticos, y marca de agua (2026-11-23)
+El usuario mostró una planilla de referencia (de un proveedor anterior) donde el remito siempre incluye, al final del detalle, a qué Orden de Compra está atada la entrega y a nombre de quién — pero el operador tenía que escribir esa leyenda a mano cada vez como un ítem más (fácil de olvidar u olvidar el formato exacto).
+
+**Fix:** dos campos dedicados y opcionales en el formulario — "Orden de Compra Nº" y "Atte." (`.oc-atte-row` en `remito.html`) — con la leyenda fija a la izquierda, el operador solo completa el número/nombre. En `/remito/generar` (`main.py`), si se completan, se agregan automáticamente como las últimas filas del detalle (`"ENTREGA SEGÚN ORDEN DE COMPRA Nº: {oc_numero}"` / `"ATTE. {atte}"`), con cantidad vacía — mismo aspecto visual que cuando se escribían a mano, pero sin que el operador tenga que recordar la leyenda.
+
+**Marca de agua:** el usuario mostró un ejemplo de otro proveedor con el logo de fondo, pero "en un tono mas claro, ahi hasta incluso dificulta un poco la vision". Se agregó `draw_watermark()` en `generar_remito.py`: dibuja `logo-gateway-icono.png` centrado en la página, a `alpha 0.06` (`c.setFillAlpha()`/`setStrokeAlpha()` de reportlab — SÍ aplica a imágenes, no solo a formas/texto), dibujado antes que el resto del contenido para que quede detrás. Confirmado en vivo generando un PDF de prueba vía curl y leyéndolo con el skill de PDF: la marca de agua se ve sutil, no estorba la lectura del detalle.
+
+---
+
 ### Presupuestos alta gama
 **Estado: planificado.**
 
@@ -520,4 +532,4 @@ Versión extendida del módulo Presupuestos para trabajos grandes (instalaciones
 **Estado: planificado** — módulo ya desarrollado externamente, a incorporar.
 
 ---
-*Última actualización: 2026-10-17 (equipo visible en ficha de texto libre; confirmado el origen del bug de equipo-de-4 en datos viejos)*
+*Última actualización: 2026-11-23 (remitos: referencia a OC + Atte automáticos, marca de agua)*

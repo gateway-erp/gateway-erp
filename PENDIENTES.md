@@ -76,6 +76,7 @@ El 2026-10-13 se detectó que un fix ya hecho y commiteado localmente nunca lleg
 
 ## Resueltos ✓
 
+- [x] **Remitos**: campos "Orden de Compra Nº" / "Atte." dedicados en el formulario (antes había que escribirlos a mano como ítem suelto) — se agregan automáticamente como últimas filas del detalle si se completan. Marca de agua (ícono Gateway, alpha 0.06) agregada al PDF. (2026-11-23)
 - [x] Hosting: Render free plan — `gestion.gateway.com.ar` live
 - [x] Google Sheets como DB — Service Account configurado, todas las hojas activas
 - [x] Google Drive como almacenamiento persistente — PDFs subidos automáticamente por cliente
@@ -102,4 +103,4 @@ El 2026-10-13 se detectó que un fix ya hecho y commiteado localmente nunca lleg
 - [x] Imagen de agenda: encabezado reordenado — fecha arriba y más grande (resalta más), "📅🔧 AGENDA DEL DÍA" abajo en azul
 
 ---
-*Última actualización: 2026-10-17 (equipo visible en ficha de texto libre; dato viejo corrupto corregido)*
+*Última actualización: 2026-11-23 (remitos: referencia a OC + Atte automáticos, marca de agua)*

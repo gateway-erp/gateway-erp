@@ -672,6 +672,9 @@ async def remito_generar(request: Request):
     cuit_d   = form.get("cuit_dest", "").strip()
     domicilio= form.get("domicilio", "").strip()
 
+    oc_numero= form.get("oc_numero", "").strip()
+    atte     = form.get("atte", "").strip()
+
     cantidades = form.getlist("cant[]")
     detalles   = form.getlist("det[]")
     items = [
@@ -679,6 +682,12 @@ async def remito_generar(request: Request):
         for i in range(len(cantidades))
         if detalles[i].strip()
     ]
+    # La referencia a la OC y el "Atte" van siempre como últimas filas del detalle,
+    # con la leyenda fija — el operador solo carga el número/nombre.
+    if oc_numero:
+        items.append({"cantidad": "", "detalle": f"ENTREGA SEGÚN ORDEN DE COMPRA Nº: {oc_numero}"})
+    if atte:
+        items.append({"cantidad": "", "detalle": f"ATTE. {atte}"})
 
     nombre_archivo = f"{numero}.pdf"
     output_path    = os.path.join("presupuestos", "output", nombre_archivo)

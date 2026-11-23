@@ -33,6 +33,22 @@ def s(name, **kw):
     return ParagraphStyle(name, **kw)
 
 
+def draw_watermark(c):
+    """Logo (ícono) de fondo, muy tenue, detrás de todo el contenido de la página."""
+    if not os.path.exists(LOGO_ICONO):
+        return
+    wm_w = W * 0.65
+    wm_h = wm_w
+    wm_x = MARGIN_L + (W - wm_w) / 2
+    wm_y = (PAGE_H - wm_h) / 2
+    c.saveState()
+    c.setFillAlpha(0.06)
+    c.setStrokeAlpha(0.06)
+    c.drawImage(LOGO_ICONO, wm_x, wm_y, width=wm_w, height=wm_h,
+                preserveAspectRatio=True, mask="auto")
+    c.restoreState()
+
+
 def draw_footer(c):
     y_bottom = 12*mm
     box_top  = y_bottom + FOOTER_H
@@ -143,6 +159,7 @@ def generar_remito(datos, output_path):
 
     c = Canvas(output_path, pagesize=A4)
 
+    draw_watermark(c)
     content_top = draw_header(c, datos)
     draw_footer(c)
 

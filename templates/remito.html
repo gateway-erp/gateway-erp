@@ -138,6 +138,16 @@
     }
     .btn-add-row:hover { border-color: var(--doc-navy); color: var(--doc-navy); }
 
+    /* referencia OC / Atte */
+    .oc-atte-grid { margin-top: 10px; display: flex; flex-direction: column; gap: 5px; }
+    .oc-atte-row { display: flex; align-items: baseline; gap: 6px; border-bottom: 1px dashed #ccc; padding-bottom: 2px; }
+    .oc-atte-label { font-weight: 700; font-size: 10px; color: var(--doc-navy); text-transform: uppercase; white-space: nowrap; }
+    .oc-atte-row input {
+      flex: 1; border: none; outline: none; font-size: 11px;
+      font-family: Helvetica, Arial, sans-serif; background: transparent; color: #111;
+    }
+    .oc-atte-row input::placeholder { color: #bbb; }
+
     /* pie del documento */
     .doc-footer { margin-top: 28px; }
     .footer-label { font-weight: 700; font-size: 9px; color: var(--doc-navy); text-transform: uppercase; margin-bottom: 6px; }
@@ -240,6 +250,18 @@
         <tbody id="items-body"></tbody>
       </table>
       <button type="button" class="btn-add-row" onclick="addItem()">+ Agregar ítem</button>
+
+      <!-- Referencia OC / Atte — se agregan como últimas filas del detalle con la leyenda fija -->
+      <div class="oc-atte-grid">
+        <div class="oc-atte-row">
+          <span class="oc-atte-label">Entrega según Orden de Compra Nº:</span>
+          <input type="text" name="oc_numero" placeholder="N° de OC (opcional)">
+        </div>
+        <div class="oc-atte-row">
+          <span class="oc-atte-label">Atte.</span>
+          <input type="text" name="atte" placeholder="A nombre de… (opcional)">
+        </div>
+      </div>
 
       <!-- Pie -->
       <div class="doc-footer">

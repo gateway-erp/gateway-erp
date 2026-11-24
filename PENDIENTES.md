@@ -8,6 +8,7 @@
 - [ ] **Vista LISTA** como alternativa al kanban — toggle en el dashboard para ver todos los presupuestos en tabla con filtros por estado, cliente, fecha.
 - [ ] **Limpieza de filas vacías** en la hoja `clientes` de Sheets (códigos 2-10 generados durante debugging). Hacer manualmente desde Google Sheets.
 - [ ] **Endpoint /debug-error**: sacar de producción una vez estabilizado (o dejarlo solo para IPs internas).
+- [ ] **Dashboard no es responsive — a propósito, a la espera**: `dashboard.html` no tiene ni una sola media query. En mobile el topbar se corta, el calendario desborda con scroll horizontal, y cualquier modal (confirmado con el popup de aviso de Remitos) queda mal centrado porque hereda ese desborde. Detectado al probar el popup de novedades en el celular (2026-11-24). Se decidió **no** arreglarlo todavía: el usuario está evaluando un rediseño del dashboard (demos de "clientes como raíz" / "mapa de clientes" / "kanban con antigüedad plegada" ya mostradas) y no tiene sentido hacerlo responsive dos veces. Retomar esto recién cuando se elija el diseño definitivo.
 
 ## Módulo Presupuestos — mejoras de UX pendientes
 
@@ -76,7 +77,8 @@ El 2026-10-13 se detectó que un fix ya hecho y commiteado localmente nunca lleg
 
 ## Resueltos ✓
 
-- [x] **Remitos**: campos "Orden de Compra Nº" / "Atte." dedicados en el formulario (antes había que escribirlos a mano como ítem suelto) — se agregan automáticamente como últimas filas del detalle si se completan. Marca de agua (ícono Gateway, alpha 0.06) agregada al PDF. (2026-11-23)
+- [x] **Remitos**: campos "Orden de Compra Nº" / "Atte." dedicados en el formulario (antes había que escribirlos a mano como ítem suelto) — se agregan automáticamente como últimas filas del detalle si se completan. Marca de agua (ícono Gateway, alpha 0.18 tras ajuste en vivo) agregada al PDF. (2026-11-23)
+- [x] **Popup de aviso de novedades en el dashboard**: modal al abrir `/` avisando que remitos ya tiene OC+Atte y marca de agua, con casilla "No volver a mostrar" (persiste en `localStorage`, clave versionada `gw_aviso_remitos_2026_11` para poder reusar el mecanismo con el próximo aviso). (2026-11-24)
 - [x] Hosting: Render free plan — `gestion.gateway.com.ar` live
 - [x] Google Sheets como DB — Service Account configurado, todas las hojas activas
 - [x] Google Drive como almacenamiento persistente — PDFs subidos automáticamente por cliente
@@ -103,4 +105,4 @@ El 2026-10-13 se detectó que un fix ya hecho y commiteado localmente nunca lleg
 - [x] Imagen de agenda: encabezado reordenado — fecha arriba y más grande (resalta más), "📅🔧 AGENDA DEL DÍA" abajo en azul
 
 ---
-*Última actualización: 2026-11-23 (remitos: referencia a OC + Atte automáticos, marca de agua)*
+*Última actualización: 2026-11-24 (popup de aviso de novedades; dashboard no-responsive detectado y pospuesto)*

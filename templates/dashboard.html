@@ -935,6 +935,30 @@
   </div>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     MODAL AVISO — novedades (se puede silenciar con la casilla)
+     ═══════════════════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="modal-aviso">
+  <div class="modal" style="max-width:420px">
+    <button class="modal-close" onclick="cerrarAviso()">×</button>
+    <div class="modal-title">🆕 Novedades en Remitos</div>
+    <div class="modal-subtitle" style="margin-bottom:14px">
+      Ya está lista la parte de <b>Remitos</b>:
+    </div>
+    <ul style="margin:0 0 16px; padding-left:18px; font-size:13px; line-height:1.6; color:var(--text);">
+      <li>Campos de <b>"Orden de Compra Nº"</b> y <b>"Atte."</b> — ya no hace falta escribirlos a mano, el sistema los agrega solo al final del detalle si los completás.</li>
+      <li>El PDF ahora lleva una <b>marca de agua</b> con el logo de Gateway.</li>
+    </ul>
+    <label style="display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-dim); cursor:pointer; margin-bottom:4px;">
+      <input type="checkbox" id="aviso-no-mostrar" style="width:15px; height:15px; cursor:pointer;">
+      No volver a mostrar este mensaje
+    </label>
+    <div class="modal-footer">
+      <button type="button" class="btn-modal-confirm" onclick="cerrarAviso()">Entendido</button>
+    </div>
+  </div>
+</div>
+
 
 <script>
 // ── MODALES ──────────────────────────────────────────────────────────────────
@@ -944,6 +968,21 @@ function cerrarModal(id) { document.getElementById(id).classList.remove('open');
 document.querySelectorAll('.modal-overlay').forEach(el => {
   el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
 });
+
+// ── AVISO DE NOVEDADES ───────────────────────────────────────────────────────
+// Clave versionada: si el día de mañana hay otro aviso, basta con cambiar el
+// sufijo (ej. "remitos-2026-11") para que vuelva a mostrarse aunque el
+// operador ya haya tildado "no mostrar" para el aviso anterior.
+const AVISO_KEY = 'gw_aviso_remitos_2026_11';
+function cerrarAviso() {
+  if (document.getElementById('aviso-no-mostrar').checked) {
+    try { localStorage.setItem(AVISO_KEY, '1'); } catch(e) {}
+  }
+  cerrarModal('modal-aviso');
+}
+try {
+  if (!localStorage.getItem(AVISO_KEY)) abrirModal('modal-aviso');
+} catch(e) { abrirModal('modal-aviso'); }
 
 function abrirAprobar(numero, cliente) {
   document.getElementById('aprobar-numero').value = numero;

@@ -77,15 +77,16 @@
     #page-root.vista-3 #agenda-section { order: 2; margin-bottom: 0; margin-top: 24px; }
     #page-root.vista-3 #pres-section { order: 1; }
 
-    /* Vista 4: clientes como raíz — agenda se oculta, el pipeline se divide en
-       panel de clientes + kanban filtrado. */
+    /* Vista 4: clientes como raíz — agenda se oculta. */
     #page-root.vista-4 #agenda-section { display: none; }
-    #pipeline-layout { display: block; }
-    #page-root.vista-4 #pipeline-layout { display: grid; grid-template-columns: 236px 1fr; gap: 16px; align-items: start; }
-    #page-root.vista-4 #pipeline-layout.cli-collapsed { grid-template-columns: 1fr; }
-    #page-root.vista-4 #pipeline-layout.cli-collapsed .cli-panel { display: none; }
-    .cli-panel { display: none; background: var(--navy-mid); border: 1px solid var(--navy-line); border-radius: 12px; overflow: hidden; }
-    #page-root.vista-4 #pipeline-layout .cli-panel { display: block; }
+
+    /* Panel de clientes + kanban: disponible en las 4 vistas. Se puede colapsar
+       a un chip para no robarle lugar al resto — en vista 2 arranca colapsado
+       porque el pipeline comparte ancho con la agenda. */
+    #pipeline-layout { display: grid; grid-template-columns: 236px 1fr; gap: 16px; align-items: start; }
+    #pipeline-layout.cli-collapsed { grid-template-columns: 1fr; }
+    #pipeline-layout.cli-collapsed .cli-panel { display: none; }
+    .cli-panel { background: var(--navy-mid); border: 1px solid var(--navy-line); border-radius: 12px; overflow: hidden; }
     .cli-panel-head { padding: 10px 12px 8px; border-bottom: 1px solid var(--navy-line); display: flex; align-items: center; justify-content: space-between; gap: 6px; }
     .cli-panel-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); }
     .cli-panel-collapse { background: none; border: 1px solid var(--navy-line); border-radius: 5px; color: var(--text-dim); font-size: 11px; cursor: pointer; padding: 2px 6px; line-height: 1.4; }
@@ -106,7 +107,7 @@
       display: none; align-items: center; gap: 8px; background: var(--navy-mid); border: 1px solid var(--navy-line);
       border-radius: 20px; padding: 6px 8px 6px 14px; font-size: 12px; font-weight: 600; margin-bottom: 14px; width: fit-content;
     }
-    #page-root.vista-4 #pipeline-layout.cli-collapsed .cli-chip-mini { display: flex; }
+    #pipeline-layout.cli-collapsed .cli-chip-mini { display: flex; }
     .cli-chip-mini button { background: var(--accent); color: #fff; border: none; border-radius: 16px; padding: 4px 11px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: var(--font-main); }
     .nav-item {
       padding: 6px 14px; border-radius: 6px;
@@ -1835,33 +1836,19 @@ function expandirPanelClientes() {
   const layout = document.getElementById('pipeline-layout');
   if (layout) layout.classList.remove('cli-collapsed');
 }
-function resetFiltroCliente() {
-  cliSeleccionado = null;
-  document.querySelectorAll('.kanban .kcard[data-cliente], .rechazados-grid .kcard[data-cliente]').forEach(card => { card.style.display = ''; });
-  document.querySelectorAll('.kanban-col').forEach(col => {
-    const countEl = col.querySelector('.kanban-col-count');
-    if (countEl) countEl.textContent = col.querySelectorAll('.kcard[data-cliente]').length;
-  });
-  const rechCountEl = document.getElementById('rechazados-count');
-  if (rechCountEl) {
-    rechCountEl.textContent = document.querySelectorAll('.rechazados-grid .kcard[data-cliente]').length;
-  }
-  actualizarBadgeVencidos();
-  expandirPanelClientes();
-}
-
 function setVista(n) {
   const page = document.getElementById('page-root');
   page.classList.remove('vista-2', 'vista-3', 'vista-4');
   if (n === 2) page.classList.add('vista-2');
   if (n === 3) page.classList.add('vista-3');
-  if (n === 4) {
-    page.classList.add('vista-4');
-    renderClientes();
-    aplicarFiltroCliente();
-  } else {
-    resetFiltroCliente();
-  }
+  if (n === 4) page.classList.add('vista-4');
+
+  renderClientes();
+  aplicarFiltroCliente();
+  // Vista 2 (mitad y mitad): el pipeline comparte ancho con la agenda, así que
+  // el panel arranca colapsado (a un chip) para no robarle lugar al kanban.
+  if (n === 2) colapsarPanelClientes();
+
   const bloquear = n === 2;
   document.body.style.overflow = bloquear ? 'hidden' : '';
   document.documentElement.style.overflow = bloquear ? 'hidden' : '';
@@ -1871,10 +1858,10 @@ function setVista(n) {
 }
 window.addEventListener('resize', ajustarAlturaVista2);
 (function() {
-  try {
-    const v = parseInt(localStorage.getItem('gw-vista') || '1');
-    if (v >= 2) setVista(v);
-  } catch(e) {}
+  let v = 1;
+  try { v = parseInt(localStorage.getItem('gw-vista') || '1'); } catch(e) {}
+  if (v >= 2) setVista(v);
+  else { renderClientes(); aplicarFiltroCliente(); }
 })();
 </script>
 

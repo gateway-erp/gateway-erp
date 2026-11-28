@@ -54,9 +54,19 @@
 
     /* ── VIEW TOGGLE ── */
     .view-toggle { display: flex; gap: 3px; padding: 4px; background: var(--navy); border-radius: 8px; border: 1px solid var(--navy-line); }
+    .vbtn-wrap { position: relative; display: flex; }
     .vbtn { background: none; border: none; color: var(--text-dim); padding: 4px 7px; border-radius: 5px; cursor: pointer; display: flex; align-items: center; transition: background .15s, color .15s; }
     .vbtn:hover { background: var(--navy-card); color: var(--text); }
     .vbtn.active { background: var(--accent); color: #fff; }
+    .vbtn-pop {
+      position: absolute; top: calc(100% + 8px); left: 50%; transform: translateX(-50%) translateY(-4px);
+      width: 198px; background: var(--navy-card); border: 1px solid var(--navy-line); border-radius: 8px;
+      padding: 9px 11px; box-shadow: 0 8px 20px rgba(0,0,0,.4); z-index: 200;
+      opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .12s, transform .12s;
+    }
+    .vbtn-wrap:hover .vbtn-pop { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); }
+    .vbtn-pop-title { font-size: 11.5px; font-weight: 700; color: var(--text); margin-bottom: 3px; }
+    .vbtn-pop-desc { font-size: 11px; color: var(--text-dim); line-height: 1.45; }
 
     /* ── VISTAS ── */
     /* Vista 1: default (agenda arriba, pres abajo) — nada que hacer */
@@ -66,6 +76,37 @@
     #page-root.vista-3 { display: flex; flex-direction: column; }
     #page-root.vista-3 #agenda-section { order: 2; margin-bottom: 0; margin-top: 24px; }
     #page-root.vista-3 #pres-section { order: 1; }
+
+    /* Vista 4: clientes como raíz — agenda se oculta, el pipeline se divide en
+       panel de clientes + kanban filtrado. */
+    #page-root.vista-4 #agenda-section { display: none; }
+    #pipeline-layout { display: block; }
+    #page-root.vista-4 #pipeline-layout { display: grid; grid-template-columns: 236px 1fr; gap: 16px; align-items: start; }
+    #page-root.vista-4 #pipeline-layout.cli-collapsed { grid-template-columns: 1fr; }
+    #page-root.vista-4 #pipeline-layout.cli-collapsed .cli-panel { display: none; }
+    .cli-panel { background: var(--navy-mid); border: 1px solid var(--navy-line); border-radius: 12px; overflow: hidden; }
+    .cli-panel-head { padding: 10px 12px 8px; border-bottom: 1px solid var(--navy-line); display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+    .cli-panel-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); }
+    .cli-panel-collapse { background: none; border: 1px solid var(--navy-line); border-radius: 5px; color: var(--text-dim); font-size: 11px; cursor: pointer; padding: 2px 6px; line-height: 1.4; }
+    .cli-panel-collapse:hover { color: var(--text); border-color: var(--accent); }
+    .cli-search { width: 100%; background: var(--navy); border: 1px solid var(--navy-line); border-radius: 7px; padding: 6px 9px; color: var(--text); font-family: var(--font-main); font-size: 12px; outline: none; margin: 8px 10px 4px; width: calc(100% - 20px); }
+    .cli-search:focus { border-color: var(--accent); }
+    .cli-list { max-height: 560px; overflow-y: auto; padding: 6px; }
+    .cli-row { width: 100%; display: flex; align-items: center; gap: 9px; padding: 8px 8px; border-radius: 7px; cursor: pointer; border: 1px solid transparent; background: none; text-align: left; font-family: var(--font-main); color: var(--text); }
+    .cli-row:hover { background: var(--navy-card); }
+    .cli-row.active { background: var(--navy-card); border-color: var(--accent); }
+    .cli-row.active .cli-name { color: var(--accent); }
+    .cli-row.todos { font-weight: 700; border-bottom: 1px solid var(--navy-line); border-radius: 0; margin-bottom: 4px; padding-bottom: 11px; }
+    .cli-name { font-size: 12px; font-weight: 600; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cli-stale-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--red); flex-shrink: 0; box-shadow: 0 0 5px rgba(239,68,68,.6); }
+    .cli-count { font-size: 10px; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--text-dim); background: var(--navy); border-radius: 20px; padding: 2px 7px; flex-shrink: 0; }
+    .cli-count.hot { color: #FCA5A5; background: rgba(239,68,68,.18); }
+    .cli-chip-mini {
+      display: none; align-items: center; gap: 8px; background: var(--navy-mid); border: 1px solid var(--navy-line);
+      border-radius: 20px; padding: 6px 8px 6px 14px; font-size: 12px; font-weight: 600; margin-bottom: 14px; width: fit-content;
+    }
+    #page-root.vista-4 #pipeline-layout.cli-collapsed .cli-chip-mini { display: flex; }
+    .cli-chip-mini button { background: var(--accent); color: #fff; border: none; border-radius: 16px; padding: 4px 11px; font-size: 11px; font-weight: 600; cursor: pointer; font-family: var(--font-main); }
     .nav-item {
       padding: 6px 14px; border-radius: 6px;
       font-size: 13px; font-weight: 500;
@@ -480,15 +521,30 @@
     <a class="nav-item" href="/agenda">Agenda</a>
   </nav>
   <div class="view-toggle" id="view-toggle">
-    <button class="vbtn active" id="vbtn-1" onclick="setVista(1)" title="Agenda arriba">
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="1" width="16" height="5" rx="1.5" fill="currentColor" opacity=".9"/><rect x="1" y="8" width="16" height="9" rx="1.5" fill="currentColor" opacity=".45"/></svg>
-    </button>
-    <button class="vbtn" id="vbtn-2" onclick="setVista(2)" title="Pantalla dividida">
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="1" width="7.5" height="16" rx="1.5" fill="currentColor" opacity=".9"/><rect x="9.5" y="1" width="7.5" height="16" rx="1.5" fill="currentColor" opacity=".45"/></svg>
-    </button>
-    <button class="vbtn" id="vbtn-3" onclick="setVista(3)" title="Presupuestos arriba">
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="1" width="16" height="9" rx="1.5" fill="currentColor" opacity=".9"/><rect x="1" y="12" width="16" height="5" rx="1.5" fill="currentColor" opacity=".45"/></svg>
-    </button>
+    <div class="vbtn-wrap">
+      <button class="vbtn active" id="vbtn-1" onclick="setVista(1)">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="1" width="16" height="5" rx="1.5" fill="currentColor" opacity=".9"/><rect x="1" y="8" width="16" height="9" rx="1.5" fill="currentColor" opacity=".45"/></svg>
+      </button>
+      <div class="vbtn-pop"><div class="vbtn-pop-title">Agenda arriba</div><div class="vbtn-pop-desc">Agenda operativa arriba, pipeline de presupuestos abajo. Vista por defecto.</div></div>
+    </div>
+    <div class="vbtn-wrap">
+      <button class="vbtn" id="vbtn-2" onclick="setVista(2)">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="1" width="7.5" height="16" rx="1.5" fill="currentColor" opacity=".9"/><rect x="9.5" y="1" width="7.5" height="16" rx="1.5" fill="currentColor" opacity=".45"/></svg>
+      </button>
+      <div class="vbtn-pop"><div class="vbtn-pop-title">Pantalla dividida</div><div class="vbtn-pop-desc">Agenda y presupuestos lado a lado, cada uno con su propio scroll independiente.</div></div>
+    </div>
+    <div class="vbtn-wrap">
+      <button class="vbtn" id="vbtn-3" onclick="setVista(3)">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="1" width="16" height="9" rx="1.5" fill="currentColor" opacity=".9"/><rect x="1" y="12" width="16" height="5" rx="1.5" fill="currentColor" opacity=".45"/></svg>
+      </button>
+      <div class="vbtn-pop"><div class="vbtn-pop-title">Presupuestos arriba</div><div class="vbtn-pop-desc">Pipeline de presupuestos arriba, agenda operativa abajo.</div></div>
+    </div>
+    <div class="vbtn-wrap">
+      <button class="vbtn" id="vbtn-4" onclick="setVista(4)">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="1" width="5" height="16" rx="1.5" fill="currentColor" opacity=".9"/><rect x="8" y="1" width="9" height="5" rx="1.5" fill="currentColor" opacity=".45"/><rect x="8" y="8" width="9" height="9" rx="1.5" fill="currentColor" opacity=".45"/></svg>
+      </button>
+      <div class="vbtn-pop"><div class="vbtn-pop-title">Clientes como raíz</div><div class="vbtn-pop-desc">Elegís un cliente a la izquierda, ordenados por quién espera hace más tiempo, y el pipeline se filtra solo a lo suyo.</div></div>
+    </div>
   </div>
 </div>
 
@@ -577,6 +633,25 @@
   </div>
 
 
+  <!-- PIPELINE: panel de clientes (solo vista 4) + kanban -->
+  <div id="pipeline-layout">
+
+    <!-- PANEL DE CLIENTES (vista 4) -->
+    <div class="cli-panel" id="cli-panel">
+      <div class="cli-panel-head">
+        <span class="cli-panel-title">Clientes</span>
+        <button class="cli-panel-collapse" onclick="colapsarPanelClientes()" title="Ocultar panel">«</button>
+      </div>
+      <input type="text" class="cli-search" placeholder="Buscar cliente…" oninput="renderClientes(this.value)">
+      <div class="cli-list" id="cli-list"></div>
+    </div>
+
+    <!-- Chip compacto cuando el panel está colapsado -->
+    <div class="cli-chip-mini" id="cli-chip-mini">
+      <span id="cli-chip-nombre">Todos</span>
+      <button onclick="expandirPanelClientes()">Cambiar cliente</button>
+    </div>
+
   <!-- KANBAN BOARD -->
   <div class="kanban">
 
@@ -590,7 +665,7 @@
       <div class="kanban-col-body" id="enviados-col-body">
         {% if enviados %}
           {% for p in enviados %}
-          <div class="kcard" data-fecha="{{ p.fecha }}" data-numero="{{ p.numero }}">
+          <div class="kcard" data-fecha="{{ p.fecha }}" data-numero="{{ p.numero }}" data-cliente="{{ p.cliente_nombre | e }}">
             <div class="kcard-top">
               <a class="kcard-numero" href="/editar/{{ p.numero }}" title="Editar presupuesto">{{ p.numero }}</a>
               <span class="kcard-fecha">{{ p.fecha }}</span>
@@ -630,7 +705,7 @@
       <div class="kanban-col-body">
         {% if aprobados %}
           {% for p in aprobados %}
-          <div class="kcard">
+          <div class="kcard" data-fecha="{{ p.fecha }}" data-numero="{{ p.numero }}" data-cliente="{{ p.cliente_nombre | e }}">
             <div class="kcard-top">
               <span class="kcard-numero">{{ p.numero }}</span>
               <span class="kcard-fecha">{{ p.fecha }}</span>
@@ -678,7 +753,7 @@
       <div class="kanban-col-body">
         {% if facturados %}
           {% for p in facturados %}
-          <div class="kcard">
+          <div class="kcard" data-fecha="{{ p.fecha }}" data-numero="{{ p.numero }}" data-cliente="{{ p.cliente_nombre | e }}">
             <div class="kcard-top">
               <span class="kcard-numero">{{ p.numero }}</span>
               <div style="display:flex;align-items:center;gap:6px">
@@ -735,6 +810,7 @@
     </div>
 
   </div><!-- /kanban -->
+  </div><!-- /pipeline-layout -->
 
   <!-- RECHAZADOS (colapsado) -->
   {% if rechazados %}
@@ -1642,11 +1718,95 @@ function ajustarAlturaVista2() {
   page.style.height = `${window.innerHeight - ocupado}px`;
 }
 
+// ── VISTA 4: CLIENTES COMO RAÍZ ──────────────────────────────────────────────
+let cliSeleccionado = null; // null = Todos
+
+function datosClientes() {
+  const cards = Array.from(document.querySelectorAll('.kanban .kcard[data-cliente]'));
+  const mapa = new Map();
+  cards.forEach(card => {
+    const nombre = card.dataset.cliente;
+    if (!nombre) return;
+    if (!mapa.has(nombre)) mapa.set(nombre, { nombre, activos: 0, maxDias: 0, hot: false });
+    const info = mapa.get(nombre);
+    const col = card.closest('.kanban-col');
+    if (!(col && col.classList.contains('col-facturado'))) info.activos++;
+    if (col && col.classList.contains('col-enviado') && card.dataset.fecha) {
+      const dias = diasDesde(card.dataset.fecha);
+      if (dias > info.maxDias) info.maxDias = dias;
+      if (dias >= LIMITE_DIAS) info.hot = true;
+    }
+  });
+  return Array.from(mapa.values()).sort((a, b) => b.maxDias - a.maxDias);
+}
+
+function renderClientes(filtro) {
+  const buscador = document.querySelector('.cli-search');
+  const q = (filtro !== undefined ? filtro : (buscador ? buscador.value : '')).trim().toLowerCase();
+  const lista = datosClientes();
+  const visibles = q ? lista.filter(c => c.nombre.toLowerCase().includes(q)) : lista;
+  const totalActivos = lista.reduce((a, c) => a + c.activos, 0);
+
+  let html = `<button class="cli-row todos ${cliSeleccionado === null ? 'active' : ''}" data-cli="">
+    <span class="cli-name">Todos los clientes</span>
+    <span class="cli-count">${totalActivos}</span>
+  </button>`;
+  html += visibles.map(c => `
+    <button class="cli-row ${cliSeleccionado === c.nombre ? 'active' : ''}" data-cli="${c.nombre.replace(/"/g, '&quot;')}">
+      ${c.hot ? '<span class="cli-stale-dot" title="Tiene algo esperando hace mucho"></span>' : ''}
+      <span class="cli-name">${c.nombre}</span>
+      <span class="cli-count ${c.hot ? 'hot' : ''}">${c.activos}</span>
+    </button>`).join('');
+
+  const listEl = document.getElementById('cli-list');
+  if (!listEl) return;
+  listEl.innerHTML = html;
+  listEl.querySelectorAll('.cli-row').forEach(row => {
+    row.addEventListener('click', () => seleccionarCliente(row.dataset.cli || null));
+  });
+}
+
+function aplicarFiltroCliente() {
+  document.querySelectorAll('.kanban .kcard[data-cliente]').forEach(card => {
+    card.style.display = (cliSeleccionado === null || card.dataset.cliente === cliSeleccionado) ? '' : 'none';
+  });
+  const chipNombre = document.getElementById('cli-chip-nombre');
+  if (chipNombre) chipNombre.textContent = cliSeleccionado || 'Todos';
+}
+
+function seleccionarCliente(nombre) {
+  cliSeleccionado = nombre;
+  renderClientes();
+  aplicarFiltroCliente();
+  if (nombre) colapsarPanelClientes(); else expandirPanelClientes();
+}
+
+function colapsarPanelClientes() {
+  const layout = document.getElementById('pipeline-layout');
+  if (layout) layout.classList.add('cli-collapsed');
+}
+function expandirPanelClientes() {
+  const layout = document.getElementById('pipeline-layout');
+  if (layout) layout.classList.remove('cli-collapsed');
+}
+function resetFiltroCliente() {
+  cliSeleccionado = null;
+  document.querySelectorAll('.kanban .kcard[data-cliente]').forEach(card => { card.style.display = ''; });
+  expandirPanelClientes();
+}
+
 function setVista(n) {
   const page = document.getElementById('page-root');
-  page.classList.remove('vista-2', 'vista-3');
+  page.classList.remove('vista-2', 'vista-3', 'vista-4');
   if (n === 2) page.classList.add('vista-2');
   if (n === 3) page.classList.add('vista-3');
+  if (n === 4) {
+    page.classList.add('vista-4');
+    renderClientes();
+    aplicarFiltroCliente();
+  } else {
+    resetFiltroCliente();
+  }
   const bloquear = n === 2;
   document.body.style.overflow = bloquear ? 'hidden' : '';
   document.documentElement.style.overflow = bloquear ? 'hidden' : '';

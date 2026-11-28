@@ -817,12 +817,12 @@
   <div class="rechazados-section">
     <div class="rechazados-toggle" onclick="toggleRechazados(this)">
       <svg class="arrow" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M4 2l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      Rechazados ({{ rechazados | length }})
+      Rechazados (<span id="rechazados-count">{{ rechazados | length }}</span>)
     </div>
     <div class="rechazados-body" id="rechazados-body">
       <div class="rechazados-grid">
         {% for p in rechazados %}
-        <div class="kcard kcard-rechazado">
+        <div class="kcard kcard-rechazado" data-cliente="{{ p.cliente_nombre | e }}">
           <div class="kcard-top">
             <a class="kcard-numero" href="/reutilizar/{{ p.numero }}" title="Reutilizar como nuevo presupuesto">{{ p.numero }}</a>
             <span class="kcard-fecha">{{ p.fecha }}</span>
@@ -1017,13 +1017,14 @@
 <div class="modal-overlay" id="modal-aviso">
   <div class="modal" style="max-width:420px">
     <button class="modal-close" onclick="cerrarAviso()">×</button>
-    <div class="modal-title">🆕 Novedades en Remitos</div>
+    <div class="modal-title">🆕 Novedades</div>
     <div class="modal-subtitle" style="margin-bottom:14px">
-      Ya está lista la parte de <b>Remitos</b>:
+      Hay cosas nuevas en el sistema:
     </div>
     <ul style="margin:0 0 16px; padding-left:18px; font-size:13px; line-height:1.6; color:var(--text);">
-      <li>Campos de <b>"Orden de Compra Nº"</b> y <b>"Atte."</b> — ya no hace falta escribirlos a mano, el sistema los agrega solo al final del detalle si los completás.</li>
-      <li>El PDF ahora lleva una <b>marca de agua</b> con el logo de Gateway.</li>
+      <li>Campos de <b>"Orden de Compra Nº"</b> y <b>"Atte."</b> en los remitos — ya no hace falta escribirlos a mano, el sistema los agrega solo al final del detalle si los completás.</li>
+      <li>El PDF de remito ahora lleva una <b>marca de agua</b> con el logo de Gateway.</li>
+      <li>Nueva 4ta opción de vista en el panel principal (el 4to ícono, arriba del kanban): <b>"Clientes como raíz"</b>. Elegís un cliente de la lista y el pipeline se filtra solo a lo suyo, para no tener que buscar entre todos los presupuestos.</li>
     </ul>
     <label style="display:flex; align-items:center; gap:8px; font-size:12px; color:var(--text-dim); cursor:pointer; margin-bottom:4px;">
       <input type="checkbox" id="aviso-no-mostrar" style="width:15px; height:15px; cursor:pointer;">
@@ -1049,7 +1050,7 @@ document.querySelectorAll('.modal-overlay').forEach(el => {
 // Clave versionada: si el día de mañana hay otro aviso, basta con cambiar el
 // sufijo (ej. "remitos-2026-11") para que vuelva a mostrarse aunque el
 // operador ya haya tildado "no mostrar" para el aviso anterior.
-const AVISO_KEY = 'gw_aviso_remitos_2026_11';
+const AVISO_KEY = 'gw_aviso_remitos_vista4_2026_11';
 function cerrarAviso() {
   if (document.getElementById('aviso-no-mostrar').checked) {
     try { localStorage.setItem(AVISO_KEY, '1'); } catch(e) {}
@@ -1767,7 +1768,7 @@ function renderClientes(filtro) {
 }
 
 function aplicarFiltroCliente() {
-  document.querySelectorAll('.kanban .kcard[data-cliente]').forEach(card => {
+  document.querySelectorAll('.kanban .kcard[data-cliente], .rechazados-grid .kcard[data-cliente]').forEach(card => {
     card.style.display = (cliSeleccionado === null || card.dataset.cliente === cliSeleccionado) ? '' : 'none';
   });
   const chipNombre = document.getElementById('cli-chip-nombre');
@@ -1781,6 +1782,11 @@ function aplicarFiltroCliente() {
     const visibles = col.querySelectorAll('.kcard[data-cliente]:not([style*="display: none"])').length;
     countEl.textContent = visibles;
   });
+
+  const rechCountEl = document.getElementById('rechazados-count');
+  if (rechCountEl) {
+    rechCountEl.textContent = document.querySelectorAll('.rechazados-grid .kcard[data-cliente]:not([style*="display: none"])').length;
+  }
 }
 
 function seleccionarCliente(nombre) {
@@ -1800,11 +1806,15 @@ function expandirPanelClientes() {
 }
 function resetFiltroCliente() {
   cliSeleccionado = null;
-  document.querySelectorAll('.kanban .kcard[data-cliente]').forEach(card => { card.style.display = ''; });
+  document.querySelectorAll('.kanban .kcard[data-cliente], .rechazados-grid .kcard[data-cliente]').forEach(card => { card.style.display = ''; });
   document.querySelectorAll('.kanban-col').forEach(col => {
     const countEl = col.querySelector('.kanban-col-count');
     if (countEl) countEl.textContent = col.querySelectorAll('.kcard[data-cliente]').length;
   });
+  const rechCountEl = document.getElementById('rechazados-count');
+  if (rechCountEl) {
+    rechCountEl.textContent = document.querySelectorAll('.rechazados-grid .kcard[data-cliente]').length;
+  }
   expandirPanelClientes();
 }
 

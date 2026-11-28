@@ -84,7 +84,8 @@
     #page-root.vista-4 #pipeline-layout { display: grid; grid-template-columns: 236px 1fr; gap: 16px; align-items: start; }
     #page-root.vista-4 #pipeline-layout.cli-collapsed { grid-template-columns: 1fr; }
     #page-root.vista-4 #pipeline-layout.cli-collapsed .cli-panel { display: none; }
-    .cli-panel { background: var(--navy-mid); border: 1px solid var(--navy-line); border-radius: 12px; overflow: hidden; }
+    .cli-panel { display: none; background: var(--navy-mid); border: 1px solid var(--navy-line); border-radius: 12px; overflow: hidden; }
+    #page-root.vista-4 #pipeline-layout .cli-panel { display: block; }
     .cli-panel-head { padding: 10px 12px 8px; border-bottom: 1px solid var(--navy-line); display: flex; align-items: center; justify-content: space-between; gap: 6px; }
     .cli-panel-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--text-dim); }
     .cli-panel-collapse { background: none; border: 1px solid var(--navy-line); border-radius: 5px; color: var(--text-dim); font-size: 11px; cursor: pointer; padding: 2px 6px; line-height: 1.4; }
@@ -1277,6 +1278,34 @@ function initVencidos() {
   }
 }
 
+function actualizarBadgeVencidos() {
+  const colBody = document.getElementById('enviados-col-body');
+  const badge   = document.getElementById('btn-vencidos-badge');
+  if (!colBody || !badge) return;
+
+  const dismissed = cargarDismissed();
+  const visibles = Array.from(colBody.querySelectorAll('.kcard.card-vencido[data-numero]'))
+    .filter(c => c.style.display !== 'none');
+  const vencActivos = visibles.filter(c => !dismissed.includes(c.dataset.numero));
+  const vencDesc    = visibles.filter(c =>  dismissed.includes(c.dataset.numero));
+  const totalV = vencActivos.length + vencDesc.length;
+
+  if (totalV > 0) {
+    badge.classList.add('visible');
+    if (vencActivos.length > 0) {
+      badge.innerHTML = '⚠ ' + vencActivos.length + ' vencido' + (vencActivos.length > 1 ? 's' : '') + ' — ocultar';
+      badge.title = '';
+    } else {
+      badge.innerHTML = '⚠ ' + totalV + ' vencido' + (totalV > 1 ? 's' : '') + ' — mostrar';
+      badge.title = 'Click para volver a mostrar arriba';
+    }
+    badge._modo = vencActivos.length > 0 ? 'ocultar' : 'mostrar';
+  } else {
+    badge.classList.remove('visible');
+    badge.innerHTML = '';
+  }
+}
+
 function dismissVencidos() {
   const colBody = document.getElementById('enviados-col-body');
   const badge   = document.getElementById('btn-vencidos-badge');
@@ -1787,6 +1816,8 @@ function aplicarFiltroCliente() {
   if (rechCountEl) {
     rechCountEl.textContent = document.querySelectorAll('.rechazados-grid .kcard[data-cliente]:not([style*="display: none"])').length;
   }
+
+  actualizarBadgeVencidos();
 }
 
 function seleccionarCliente(nombre) {
@@ -1815,6 +1846,7 @@ function resetFiltroCliente() {
   if (rechCountEl) {
     rechCountEl.textContent = document.querySelectorAll('.rechazados-grid .kcard[data-cliente]').length;
   }
+  actualizarBadgeVencidos();
   expandirPanelClientes();
 }
 

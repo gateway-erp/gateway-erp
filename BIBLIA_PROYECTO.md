@@ -250,6 +250,17 @@ El usuario pidió explícitamente diseñar una tercera opción visual (terminó 
 
 **Aviso actualizado:** se sumó al popup de novedades existente (ver arriba) una 3ra mención sobre la nueva 4ta vista, y se cambió la clave de `localStorage` (`gw_aviso_remitos_vista4_2026_11`) para que vuelva a aparecer aunque el operador ya hubiera tildado "no mostrar" en el aviso anterior de remitos.
 
+**Fix — el badge "vencidos" tampoco respetaba el filtro de cliente (2026-11-28):** mismo día, reportado por el usuario con un caso concreto: filtrando por un cliente con solo 6 presupuestos enviados, el badge rojo seguía mostrando "61 vencidos" (el total global). Causa: `initVencidos()` calcula el badge una sola vez al cargar la página, contando todas las `.kcard` de Enviados sin importar si después quedan ocultas por el filtro de cliente (que solo las oculta con `style.display`, no las saca del DOM). Se extrajo la lógica de conteo/texto del badge a una función nueva, `actualizarBadgeVencidos()`, que cuenta solo las tarjetas **visibles** (`card.style.display !== 'none'`) — se llama desde `aplicarFiltroCliente()` y `resetFiltroCliente()` además de desde `initVencidos()` en la carga inicial. Verificado en vivo: filtrando por "Vidrieria Argentina Sociedad Anonima" el badge pasó de "61 vencidos" a "3 vencidos" (el real de ese cliente).
+
+**Panel de clientes: de "solo vista 4" a "disponible en las 4 vistas" (2026-11-28, mismo día):** primer intento equivocado — al notar que `.cli-panel` no tenía ningún `display:none` por defecto (se filtraba apretado al costado en cualquier vista, incluida la "mitad y mitad" con la agenda, robándole ancho), se lo ocultó directamente fuera de `vista-4`. El usuario marcó que eso rompió algo que para él era intencional: el panel de clientes **tiene que estar disponible en las 4 vistas**, no ser exclusivo de "Clientes como raíz" — lo único a corregir era el comportamiento puntual en la vista 2 (mitad y mitad), donde por compartir ancho con la agenda el panel debía arrancar colapsado (a un chip) en vez de ir "al costado".
+
+**Fix definitivo:** se generalizó el grid `.cli-panel` + kanban (antes acotado a `#page-root.vista-4 ...`) para que aplique en las 4 vistas por igual, y se simplificó `setVista(n)`: siempre llama a `renderClientes()` + `aplicarFiltroCliente()` (el filtro de cliente elegido ahora **persiste al cambiar de vista**, no se resetea — se eliminó `resetFiltroCliente()`, que quedó sin uso). Reglas de colapso del panel:
+- Al entrar a **vista 2**: se colapsa automáticamente (`colapsarPanelClientes()`), porque ahí el pipeline comparte ancho con la agenda.
+- Al entrar a cualquier otra vista: se expande automáticamente, **salvo que ya haya un cliente elegido** (mismo criterio que al seleccionar un cliente manualmente desde el panel, que siempre colapsa).
+- Bug de paso detectado y corregido en la misma verificación: la primera versión de este fix solo colapsaba al *entrar* a vista 2, pero nada la volvía a expandir al salir — quedaba colapsada para siempre en el resto de las vistas tras visitar la 2 una vez.
+
+Verificado en vivo con `javascript_exec` recorriendo las 4 vistas en secuencia: panel visible (`block`) en 1/3/4, colapsado a chip en 2, visible de nuevo al volver a 1; filtro de cliente + badge de vencidos + contador de Rechazados consistentes en las 4 vistas sin resetearse al cambiar.
+
 ---
 
 ### Facturación AFIP
@@ -558,4 +569,4 @@ Versión extendida del módulo Presupuestos para trabajos grandes (instalaciones
 **Estado: planificado** — módulo ya desarrollado externamente, a incorporar.
 
 ---
-*Última actualización: 2026-11-28 (dashboard: 4ta vista "Clientes como raíz" + fixes de filtro en rechazados y contadores; remitos: ajuste final de marca de agua a 0.18 y fix de columna CANTIDAD)*
+*Última actualización: 2026-11-28 (dashboard: 4ta vista "Clientes como raíz" disponible en las 4 vistas + fixes de filtro en rechazados/badge de vencidos/contadores y colapso del panel en vista 2; remitos: ajuste final de marca de agua a 0.18 y fix de columna CANTIDAD)*

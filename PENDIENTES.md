@@ -83,6 +83,8 @@ El 2026-10-13 se detectó que un fix ya hecho y commiteado localmente nunca lleg
 - [x] **4ta vista del dashboard: "Clientes como raíz"**: panel lateral de clientes (ordenado por antigüedad del pendiente más viejo, no alfabético — decisión de diseño explícita pedida por el usuario), filtra el kanban existente sin tocar nada del backend ni de las tarjetas. Colapsable al elegir cliente, agregado como 4ta opción del selector de vistas de arriba (con popup de descripción al pasar el cursor en los 4 íconos). (2026-11-27/28)
 - [x] **Fix: contador de columna no reflejaba el filtro por cliente**: los encabezados de columna (ej. "87") no bajaban al filtrar por cliente. Ahora se recalculan al filtrar y al volver a "Todos". (2026-11-28)
 - [x] **Fix: el filtro de cliente no afectaba a Rechazados**: esas tarjetas viven fuera del `.kanban` y no tenían `data-cliente` — quedaban siempre visibles sin importar el cliente elegido. Agregado el atributo y ampliado el filtro para incluirlas; el contador del acordeón "Rechazados (N)" también se actualiza. Aviso de novedades actualizado para mencionar la nueva vista. (2026-11-28)
+- [x] **Fix: el badge "vencidos" tampoco respetaba el filtro de cliente**: se calculaba una sola vez al cargar la página sobre todas las tarjetas, sin importar si después quedaban ocultas por el filtro. Ahora se recalcula solo con las tarjetas visibles. (2026-11-28)
+- [x] **Panel de clientes disponible en las 4 vistas (no solo en "Clientes como raíz")**: primer intento lo ocultó fuera de la vista 4 por error — el usuario aclaró que tiene que verse siempre, el único ajuste real era que en la vista 2 ("mitad y mitad" con la agenda) el panel arranque colapsado (a un chip) para no robarle ancho, en vez de aparecer apretado al costado. El filtro de cliente elegido ahora persiste al cambiar de vista (antes se reseteaba). De paso se corrigió que el panel quedaba colapsado para siempre después de visitar la vista 2 una vez — ahora se re-expande solo al entrar a cualquier otra vista (salvo que ya haya un cliente elegido). (2026-11-28)
 - [x] Hosting: Render free plan — `gestion.gateway.com.ar` live
 - [x] Google Sheets como DB — Service Account configurado, todas las hojas activas
 - [x] Google Drive como almacenamiento persistente — PDFs subidos automáticamente por cliente
@@ -109,4 +111,4 @@ El 2026-10-13 se detectó que un fix ya hecho y commiteado localmente nunca lleg
 - [x] Imagen de agenda: encabezado reordenado — fecha arriba y más grande (resalta más), "📅🔧 AGENDA DEL DÍA" abajo en azul
 
 ---
-*Última actualización: 2026-11-28 (4ta vista "Clientes como raíz" + fixes de filtro en rechazados y contadores de columna; ajuste final de marca de agua a 0.18)*
+*Última actualización: 2026-11-28 (4ta vista "Clientes como raíz" disponible en las 4 vistas + fixes de filtro en rechazados/badge de vencidos/contadores de columna/colapso en vista 2; ajuste final de marca de agua a 0.18)*

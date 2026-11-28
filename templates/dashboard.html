@@ -1847,7 +1847,10 @@ function setVista(n) {
   aplicarFiltroCliente();
   // Vista 2 (mitad y mitad): el pipeline comparte ancho con la agenda, así que
   // el panel arranca colapsado (a un chip) para no robarle lugar al kanban.
+  // En el resto de las vistas vuelve a expandirse solo, salvo que ya haya un
+  // cliente elegido (ahí se mantiene colapsado, igual que al seleccionar uno).
   if (n === 2) colapsarPanelClientes();
+  else if (!cliSeleccionado) expandirPanelClientes();
 
   const bloquear = n === 2;
   document.body.style.overflow = bloquear ? 'hidden' : '';

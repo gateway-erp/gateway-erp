@@ -1772,6 +1772,15 @@ function aplicarFiltroCliente() {
   });
   const chipNombre = document.getElementById('cli-chip-nombre');
   if (chipNombre) chipNombre.textContent = cliSeleccionado || 'Todos';
+
+  // El contador de cada columna tiene que reflejar lo que se ve filtrado, si no
+  // queda inconsistente (ej. "87" arriba con 1 sola tarjeta visible debajo).
+  document.querySelectorAll('.kanban-col').forEach(col => {
+    const countEl = col.querySelector('.kanban-col-count');
+    if (!countEl) return;
+    const visibles = col.querySelectorAll('.kcard[data-cliente]:not([style*="display: none"])').length;
+    countEl.textContent = visibles;
+  });
 }
 
 function seleccionarCliente(nombre) {
@@ -1792,6 +1801,10 @@ function expandirPanelClientes() {
 function resetFiltroCliente() {
   cliSeleccionado = null;
   document.querySelectorAll('.kanban .kcard[data-cliente]').forEach(card => { card.style.display = ''; });
+  document.querySelectorAll('.kanban-col').forEach(col => {
+    const countEl = col.querySelector('.kanban-col-count');
+    if (countEl) countEl.textContent = col.querySelectorAll('.kcard[data-cliente]').length;
+  });
   expandirPanelClientes();
 }
 

@@ -226,6 +226,30 @@ GET  /debug-error              ← Diagnóstico: cuenta historial y facturas en 
 #### PDFs en Render (filesystem efímero)
 Los PDFs generados en `presupuestos/output/` se pierden con cada redeploy. La fuente de verdad es Google Drive. Los presupuestos generados a partir del 2026-08-06 tienen `drive_link` persistente. Los anteriores (de prueba) no tienen recuperación.
 
+#### Popup de aviso de novedades (2026-11-24)
+Pedido del usuario: avisar al operador, la próxima vez que abra `gestion.gateway.com.ar`, que la parte de remitos (OC/Atte + marca de agua) ya estaba lista — como un popup con una casilla "no volver a mostrar" que lo silencie para siempre.
+
+**Implementación:** `#modal-aviso` reutiliza los estilos/convenciones ya existentes (`.modal-overlay`/`.modal`/`abrirModal`/`cerrarModal`). Se persiste en `localStorage` con una clave versionada (`AVISO_KEY = 'gw_aviso_...'`): si el día de mañana hay otro aviso, alcanza con cambiar el sufijo de la clave para que vuelva a mostrarse aunque el operador ya haya tildado "no mostrar" uno anterior — este mecanismo se reutilizó después (ver más abajo) para el aviso de la 4ta vista.
+
+#### 4ta vista del dashboard: "Clientes como raíz" (2026-11-27/28)
+El usuario pidió explícitamente diseñar una tercera opción visual (terminó siendo la 4ta) separando el pipeline por cliente raíz, manteniendo la vista actual intacta para el resto: *"la idea principal seria meter en algun lado tal y como esta ahora el filtro de los clientes. O vos tenes alguna sugerencia mejor? no seas adulador, necesito de tus capacidades de diseñador web"*. Se armaron 3 conceptos de demo y, sobre el elegido, se tomó una decisión de diseño explícita (no solo seguir el pedido literal): ordenar la lista de clientes por **antigüedad del pendiente más viejo** en vez de alfabético, para que el cliente que lleva más tiempo esperando una respuesta salte primero a la vista.
+
+**Arquitectura — 100% client-side, sin cambios de backend:** la vista reutiliza al 100% el markup/CSS del kanban existente (botones Aprobar/Rechazar/Facturar/Cobrar, links a PDF, todo intacto) — solo cambia qué se muestra y oculta. Se agregó `data-cliente` (y `data-fecha`/`data-numero` donde faltaba) a cada `.kcard` ya renderizada por Jinja, y toda la lógica de agrupar/ordenar/filtrar/mostrar vive en JS puro sobre esos atributos.
+- `#page-root` suma la clase `vista-4` (mismo mecanismo que `vista-2`/`vista-3`, controlado por `setVista(n)`, persistido en `localStorage`).
+- Panel lateral `.cli-panel`: lista de clientes ordenada por `maxDias` (antigüedad del pendiente más viejo en Enviados), con punto rojo (`.cli-stale-dot`) si algún pendiente superó el límite de "vencido" (mismo `LIMITE_DIAS = 25` que ya usaba el kanban), buscador y fila "Todos los clientes".
+- Elegir un cliente filtra las `.kcard` (`style.display`) y recalcula los contadores de columna (`.kanban-col-count`) para que no queden inconsistentes (ej. "87" en el encabezado con 1 sola tarjeta visible debajo).
+
+**Refinamientos pedidos por el usuario sobre la 1ra versión** (*"me gustaría que se pueda esconder... porque eso nos esta robando lugar... que sea una opción mas de visualización... tendría que salir un popup con el detalle"*):
+- **Panel colapsable**: al elegir un cliente se colapsa solo a un chip mini ("Cliente · Cambiar cliente"), con botón manual "«" para colapsar/expandir en cualquier momento.
+- **4to botón del selector de vistas** (antes 3): mismo patrón que los otros 3, agregado como opción más (no un panel aparte).
+- **Popup de descripción por ícono**: se reemplazaron los `title=` nativos de los 4 botones por un tooltip propio (`.vbtn-pop`, `:hover` con `opacity`/`visibility`) con título + descripción de cada diseño, incluyendo el nuevo.
+
+**Fix — contador de columna no reflejaba el filtro (2026-11-28, mismo día):** autodetectado al verificar en vivo — los contadores de encabezado de columna mostraban el total general aunque el filtro de cliente ya hubiera ocultado casi todas las tarjetas. Se agregó el recálculo de `.kanban-col-count` tanto al aplicar el filtro como al volver a "Todos" (`resetFiltroCliente()`). Verificado en vivo con `javascript_exec`: filtrando por un cliente los 3 contadores pasaron a `["1","0","0"]`, y al volver a "Todos" se restauraron a `["87","14","0"]`.
+
+**Fix — el filtro no afectaba a Rechazados (2026-11-28):** reportado por el usuario. Causa: las tarjetas de la sección "Rechazados" viven fuera del `.kanban` (sección aparte, colapsable) y nunca habían recibido `data-cliente`, así que `aplicarFiltroCliente()`/`resetFiltroCliente()` (que solo buscaban dentro de `.kanban`) las ignoraban por completo. Se agregó `data-cliente` a esas tarjetas y se amplió el selector de ambas funciones para incluir `.rechazados-grid`; además el contador del acordeón "Rechazados (N)" ahora también se recalcula con el filtro aplicado. Verificado en vivo: filtrando por un cliente con rechazados reales, pasó de 15 a 3 visibles (y el número del acordeón acompañó el cambio); al volver a "Todos" restauró a 15.
+
+**Aviso actualizado:** se sumó al popup de novedades existente (ver arriba) una 3ra mención sobre la nueva 4ta vista, y se cambió la clave de `localStorage` (`gw_aviso_remitos_vista4_2026_11`) para que vuelva a aparecer aunque el operador ya hubiera tildado "no mostrar" en el aviso anterior de remitos.
+
 ---
 
 ### Facturación AFIP
@@ -519,6 +543,8 @@ El usuario mostró una planilla de referencia (de un proveedor anterior) donde e
 
 **Marca de agua:** el usuario mostró un ejemplo de otro proveedor con el logo de fondo, pero "en un tono mas claro, ahi hasta incluso dificulta un poco la vision". Se agregó `draw_watermark()` en `generar_remito.py`: dibuja `logo-gateway-icono.png` centrado en la página, a `alpha 0.06` (`c.setFillAlpha()`/`setStrokeAlpha()` de reportlab — SÍ aplica a imágenes, no solo a formas/texto), dibujado antes que el resto del contenido para que quede detrás. Confirmado en vivo generando un PDF de prueba vía curl y leyéndolo con el skill de PDF: la marca de agua se ve sutil, no estorba la lectura del detalle.
 
+**Ajuste de opacidad y detalle estético (2026-11-23/24)**: feedback del usuario sobre el PDF real: "La marca de agua es demasiado sutil, la veo cuando la pantalla se sombrea... pero de normal no se ve" → se subió `alpha` de 0.06 a 0.14. Revisión siguiente, con captura: "pasa la marca de agua a 0.18 para darle un cachito mas de visibilidad" → valor final `0.18`, confirmado satisfactorio. En la misma revisión se marcó un detalle estético aparte: el encabezado "CANTIDAD" de la tabla se partía en dos líneas ("CANTIDA"/"D") por falta de ancho de columna — se corrigió `col_cant` de `18*mm` a `24*mm`.
+
 ---
 
 ### Presupuestos alta gama
@@ -532,4 +558,4 @@ Versión extendida del módulo Presupuestos para trabajos grandes (instalaciones
 **Estado: planificado** — módulo ya desarrollado externamente, a incorporar.
 
 ---
-*Última actualización: 2026-11-23 (remitos: referencia a OC + Atte automáticos, marca de agua)*
+*Última actualización: 2026-11-28 (dashboard: 4ta vista "Clientes como raíz" + fixes de filtro en rechazados y contadores; remitos: ajuste final de marca de agua a 0.18 y fix de columna CANTIDAD)*
